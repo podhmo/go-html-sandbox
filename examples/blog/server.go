@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -77,6 +78,16 @@ func (s *server) route(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := r.URL.Path
+	// Redirect like ServeMux: to the cleaned path, and from a directory
+	// without its trailing slash.
+	if c := cleanPath(p); c != p || c == "/docs" {
+		if c == "/docs" {
+			c = "/docs/"
+		}
+		u := url.URL{Path: c, RawQuery: r.URL.RawQuery}
+		http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
+		return
+	}
 	slug, isPost := strings.CutPrefix(p, "/posts/")
 	switch {
 	case p == "/":
@@ -133,6 +144,16 @@ func (s *server) handleDoc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.page(w, r, docPage(s.env, d))
+}
+
+// cleanPath is p without "." and ".." elements and repeated slashes. A
+// trailing slash is kept.
+func cleanPath(p string) string {
+	c := path.Clean("/" + p)
+	if strings.HasSuffix(p, "/") && c != "/" {
+		c += "/"
+	}
+	return c
 }
 
 // handleFavicon serves the embedded icon. Embedded files have no

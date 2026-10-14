@@ -287,3 +287,26 @@ func TestBaseURL(t *testing.T) {
 		})
 	}
 }
+
+func TestRedirects(t *testing.T) {
+	h := newTestServer(t, testPosts)
+	cases := []struct{ path, location string }{
+		{"/docs", "/docs/"},
+		{"/docs?x=1", "/docs/?x=1"},
+		{"//posts/hello", "/posts/hello"},
+		{"/posts/../docs/", "/docs/"},
+		{"/docs/ja/../TODO", "/docs/TODO"},
+	}
+	for _, c := range cases {
+		t.Run(c.path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, c.path, nil))
+			if rec.Code != http.StatusTemporaryRedirect {
+				t.Errorf("status %d", rec.Code)
+			}
+			if got := rec.Header().Get("Location"); got != c.location {
+				t.Errorf("Location %q, want %q", got, c.location)
+			}
+		})
+	}
+}
