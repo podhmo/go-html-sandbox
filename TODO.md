@@ -54,7 +54,50 @@ This file tracks actionable tasks only; completed work is swept to
   gzipped, standard Go about 8 MiB; see
   [the report](docs/sketch/ja/blog-tinygo-workers.md)). Decide how much of
   `pkg/*` (HTML builder, Markdown parser) to port, and record the
-  comparison under `docs/`.
+  comparison under `docs/`. Each step below ends checkable with
+  `make test` and `make dev` in `moonbit/`, and deployable with
+  `make deploy`. Only what the Worker serves is in scope: no `-debug` or
+  `-watch`. Builds on
+  [the experiment](docs/sketch/ja/moonbit-workers-wasm.md).
+  - [ ] **Compare against the Go blog**: a script in `moonbit/` that
+    fetches the same paths from the Go blog (`go run ./examples/blog`)
+    and the MoonBit Worker (`make dev`) and diffs each response's status,
+    `Content-Type`, and body. Done when it runs over `/`, a post, a
+    document, `/docs/`, `/favicon.svg`, and a missing path, and reports
+    which differ (all of them, at first).
+  - [ ] **Embed the posts and documents**: MoonBit has no `go:embed`;
+    check whether moon's pre-build step (e.g. its `:embed` command) can
+    turn files into MoonBit sources, or else generate them with a script
+    run by `make` and the wrangler build. Use the Go blog's posts
+    (`go/examples/blog/posts/*.md`), `TODO.md`, and `docs/**/*.md`, as
+    file path and content pairs, without committing the generated
+    sources. Done when `moon test` checks that every one of them is
+    there, and a fresh checkout builds with `make build`.
+  - [ ] **HTML builder**: port `pkg/el` (nodes, escaping, rendering) and
+    the part of `pkg/picoel` the pages use. Done when `moon test` covers
+    the cases of their Go tests that apply, with the same output.
+  - [ ] **Front matter and Markdown**: port `pkg/tinyfrontmatter` and
+    `pkg/tinymarkdown` (sections up to `#####`, lists, paragraphs,
+    quotes, fenced code, tables; inline code and links). Done when
+    `moon test` covers the cases of their Go tests, with the same trees.
+  - [ ] **Posts**: load the embedded posts (`YYYY-MM-DD-slug.md`, title
+    and description from front matter or the first heading and
+    paragraph) and serve `/` and `/posts/{slug}` in the Go blog's layout
+    (pico.css, OGP tags from `BASE_URL`, passed in from `wrangler.jsonc`).
+    Done when the comparison script shows `/` and every post the same as
+    the Go blog.
+  - [ ] **Documents and links**: serve `/docs/` and `/docs/{path}`, and
+    resolve relative Markdown links as the Go blog does (to `/docs/` and
+    `/posts/` pages, to GitHub, or not linked). Done when the comparison
+    shows every document the same.
+  - [ ] **The rest of the routes**: `/favicon.svg`, `/site.css?v=<hash>`,
+    the `.md` sources of posts and documents, the redirects (unclean
+    paths, `/docs` to `/docs/`), and the 404 page. Done when the
+    comparison shows no differences over every path of the Go blog.
+  - [ ] **Compare and record**: deploy, then record in the research notes
+    the upload size and startup time wrangler reports, next to the TinyGo
+    and standard Go builds, and the time `serve` takes for the largest
+    page. Decide which implementation deploys as `blog`.
 
 ### Future work
 

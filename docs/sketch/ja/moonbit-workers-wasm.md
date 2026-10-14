@@ -235,7 +235,7 @@ binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけ�
 3. （済み）`moonbit/Makefile` に `build`、`test`、`dev`、`deploy` を用意する。「Makefile」の節を参照。
 4. （済み）本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。「デプロイ」の節を参照。
 5. （済み）`wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。「計測」の節を参照。
-6. `pkg/el`（HTML ビルダー）と `pkg/tinymarkdown`（Markdown パーサー）を移植し、記事 1 本を表示するところまで作る。Go 版とサイズを比べて、このレポートに追記する。
+6. ブログ全体を移植し、Go 版とサイズを比べて、このレポートに追記する。手順は TODO.md の「Reimplement the blog in MoonBit」の子タスクに分けた（Go 版との比較スクリプト、記事と文書の埋め込み、HTML ビルダー、Markdown、記事、文書とリンク、残りのルート、比較と記録）。
 
 ## spike のコード
 
