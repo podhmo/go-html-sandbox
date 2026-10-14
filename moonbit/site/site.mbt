@@ -31,21 +31,38 @@ fn page(
 }
 
 ///|
-/// render returns the HTML page for path: the top page for "/", and a
+/// Response is what the site answers to a request.
+pub(all) struct Response {
+  status : Int
+  headers : Array[(String, String)]
+  body : String
+}
+
+///|
+/// html_response wraps an HTML page with status.
+fn html_response(status : Int, body : String) -> Response {
+  { status, headers: [("content-type", "text/html; charset=utf-8")], body, }
+}
+
+///|
+/// render answers the request for path: the top page for "/", and a 404
 /// page saying nothing is there for any other path.
-pub fn render(path : String) -> String {
+pub fn render(path : String) -> Response {
   let sb = StringBuilder()
   match path {
-    "/" =>
+    "/" => {
       page(sb, "blog", fn(sb) {
         sb.write_string("<h1>blog</h1><p>Rendered with MoonBit.</p>")
       })
-    _ =>
+      html_response(200, sb.to_string())
+    }
+    _ => {
       page(sb, "Not found | blog", fn(sb) {
         sb.write_string("<h1>Not found</h1><p>No page at <code>")
         write_escaped(sb, path)
         sb.write_string("</code>.</p>")
       })
+      html_response(404, sb.to_string())
+    }
   }
-  sb.to_string()
 }

@@ -6,10 +6,13 @@ It is an experiment in progress; see
 [the research notes](../docs/sketch/ja/moonbit-workers-wasm.md) and
 `TODO.md` for what is next.
 
-- `site` — `render(path)`, returning the HTML page for a path
+- `site` — `render(path)`, returning the response for a path: status,
+  headers, and body
 - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
-  page sent back through the imported `host.put`, one UTF-16 code unit at
-  a time
+  response sent back through the imported `host` functions (`status`,
+  then `put` for text one UTF-16 code unit at a time, with `header_name`
+  and `header_value` taking what was put as a header; the rest is the
+  body)
 - `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for each
   request, and `wrangler.jsonc` builds it
 

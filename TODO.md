@@ -27,7 +27,7 @@ This file tracks actionable tasks only; completed work is swept to
     the MoonBit build and copies the Wasm next to `worker.mjs` (ignored by
     git). Done when `npx wrangler dev` in it serves the top page, and a
     path with `<` shows escaped.
-  - [ ] **Status and headers in the ABI**: let `serve` report the status
+  - [x] **Status and headers in the ABI**: let `serve` report the status
     code and the content type (e.g. through `host.status(code)` and a
     `host.header` call), so unknown paths return 404. Done when
     `curl -i` against `wrangler dev` shows 200 / 404 with the right

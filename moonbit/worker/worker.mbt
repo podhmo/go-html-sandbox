@@ -1,8 +1,28 @@
 ///|
-/// put sends one UTF-16 code unit of the response body to the host. The
-/// Wasm passes strings this way since Workers cannot compile it with the JS
-/// string builtins; see docs/sketch/ja/moonbit-workers-wasm.md.
+/// put appends one UTF-16 code unit to the host's buffer. The Wasm passes
+/// strings this way since Workers cannot compile it with the JS string
+/// builtins; see docs/sketch/ja/moonbit-workers-wasm.md.
 fn put(code : Int) = "host" "put"
+
+///|
+/// status sets the status code of the response.
+fn status(code : Int) = "host" "status"
+
+///|
+/// header_name takes the host's buffer as the name of the next header.
+fn header_name() = "host" "header_name"
+
+///|
+/// header_value takes the host's buffer as the value of the header named
+/// last.
+fn header_value() = "host" "header_value"
+
+///|
+fn put_string(s : String) -> Unit {
+  for i in 0..<s.length() {
+    put(s.code_unit_at(i).to_int())
+  }
+}
 
 ///|
 let path : StringBuilder = StringBuilder()
@@ -14,13 +34,19 @@ pub fn path_push(code : Int) -> Unit {
 }
 
 ///|
-/// serve renders the page for the pushed path, sends it through put, and
-/// clears the path for the next request.
+/// serve answers the pushed path, and clears it for the next request. It
+/// sends the status, then each header as a name and a value, then the
+/// body, which is what the host's buffer holds when serve returns.
 pub fn serve() -> Unit {
   let p = path.to_string()
   path.reset()
-  let html = @site.render(p)
-  for i in 0..<html.length() {
-    put(html.code_unit_at(i).to_int())
+  let res = @site.render(p)
+  status(res.status)
+  for h in res.headers {
+    put_string(h.0)
+    header_name()
+    put_string(h.1)
+    header_value()
   }
+  put_string(res.body)
 }
