@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"context"
@@ -31,14 +31,14 @@ const liveReloadScript = `(() => {
 })();
 `
 
-// enableLiveReload makes pages load the reload script and turns on the
+// EnableLiveReload makes pages load the reload script and turns on the
 // events endpoint. Call it before serving.
-func (s *server) enableLiveReload() {
+func (s *Server) EnableLiveReload() {
 	s.env.LiveReload = true
 	s.reload = newBroadcaster()
 }
 
-func (s *server) handleLiveReloadScript(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleLiveReloadScript(w http.ResponseWriter, r *http.Request) {
 	if s.reload == nil {
 		s.renderError(w, r, http.StatusNotFound, "Page not found.", nil)
 		return
@@ -51,7 +51,7 @@ func (s *server) handleLiveReloadScript(w http.ResponseWriter, r *http.Request) 
 
 // handleLiveReloadEvents streams a "reload" event each time the content
 // changes, until the client goes away.
-func (s *server) handleLiveReloadEvents(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleLiveReloadEvents(w http.ResponseWriter, r *http.Request) {
 	if s.reload == nil {
 		s.renderError(w, r, http.StatusNotFound, "Page not found.", nil)
 		return
@@ -119,22 +119,22 @@ func (b *broadcaster) publish() {
 	}
 }
 
-// source is a set of files to watch: paths in fsys, each a file or a
+// Source is a set of files to watch: paths in fsys, each a file or a
 // directory walked recursively.
-type source struct {
-	fsys  fs.FS
-	paths []string
+type Source struct {
+	FS    fs.FS
+	Paths []string
 }
 
-// watch polls sources every interval in a new goroutine until ctx is done.
+// Watch polls sources every interval in a new goroutine until ctx is done.
 // When any file's name, size, or modification time changes, it calls load
 // and, on success, serves the new content and tells open pages to reload.
 // On failure the old content stays and the error is logged, so a
 // half-written post does not take the site down.
 //
-// The first snapshot is taken before watch returns, so any change made
+// The first snapshot is taken before Watch returns, so any change made
 // after that is noticed.
-func (s *server) watch(ctx context.Context, interval time.Duration, load func() ([]Post, []Doc, error), sources ...source) error {
+func (s *Server) Watch(ctx context.Context, interval time.Duration, load func() ([]Post, []Doc, error), sources ...Source) error {
 	last, err := fingerprint(sources)
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func (s *server) watch(ctx context.Context, interval time.Duration, load func() 
 	return nil
 }
 
-func (s *server) poll(ctx context.Context, interval time.Duration, last string, load func() ([]Post, []Doc, error), sources []source) {
+func (s *Server) poll(ctx context.Context, interval time.Duration, last string, load func() ([]Post, []Doc, error), sources []Source) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
@@ -174,11 +174,11 @@ func (s *server) poll(ctx context.Context, interval time.Duration, last string, 
 
 // fingerprint describes every file in sources by path, size, and
 // modification time. It is cheap enough to poll: no file is read.
-func fingerprint(sources []source) (string, error) {
+func fingerprint(sources []Source) (string, error) {
 	var b strings.Builder
 	for i, src := range sources {
-		for _, root := range src.paths {
-			err := fs.WalkDir(src.fsys, root, func(name string, d fs.DirEntry, err error) error {
+		for _, root := range src.Paths {
+			err := fs.WalkDir(src.FS, root, func(name string, d fs.DirEntry, err error) error {
 				if err != nil || d.IsDir() {
 					return err
 				}

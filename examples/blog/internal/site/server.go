@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"bytes"
@@ -42,23 +42,23 @@ func newSite(posts []Post, docs []Doc) *site {
 	return st
 }
 
-type server struct {
+type Server struct {
 	env     pageEnv
 	site    atomic.Pointer[site]
 	reload  *broadcaster // nil unless live reload is enabled
 	handler http.Handler
 }
 
-// newServer serves posts and docs. baseURL is the public origin used for absolute
+// NewServer serves posts and docs. baseURL is the public origin used for absolute
 // URLs in OGP tags, e.g. "https://example.com". Path prefixes are rejected
 // because links inside the site are root-relative.
-func newServer(baseURL string, posts []Post, docs []Doc) (*server, error) {
+func NewServer(baseURL string, posts []Post, docs []Doc) (*Server, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
 		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
 		return nil, fmt.Errorf("base URL must be an http(s) origin such as https://example.com, got %q", baseURL)
 	}
-	s := &server{env: pageEnv{BaseURL: strings.TrimSuffix(u.String(), "/")}}
+	s := &Server{env: pageEnv{BaseURL: strings.TrimSuffix(u.String(), "/")}}
 	s.update(posts, docs)
 	s.handler = s.recoverer(http.HandlerFunc(s.route))
 	return s, nil
@@ -68,7 +68,7 @@ func newServer(baseURL string, posts []Post, docs []Doc) (*server, error) {
 // TinyGo's net/http still has the pre-Go 1.22 ServeMux, which ignores
 // methods, {$}, and {name...}. Path values are set with SetPathValue so the
 // handlers read them as if a ServeMux had matched.
-func (s *server) route(w http.ResponseWriter, r *http.Request) {
+func (s *Server) route(w http.ResponseWriter, r *http.Request) {
 	notFound := func(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, http.StatusNotFound, "Page not found.", nil)
 	}
@@ -100,20 +100,20 @@ func (s *server) route(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.handler.ServeHTTP(w, r)
 }
 
 // update replaces the content being served.
-func (s *server) update(posts []Post, docs []Doc) {
+func (s *Server) update(posts []Post, docs []Doc) {
 	s.site.Store(newSite(posts, docs))
 }
 
-func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	s.page(w, r, postList(s.env, s.site.Load().posts))
 }
 
-func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlePost(w http.ResponseWriter, r *http.Request) {
 	p, ok := s.site.Load().bySlug[r.PathValue("slug")]
 	if !ok {
 		s.renderError(w, r, http.StatusNotFound, "Post not found.", nil)
@@ -122,11 +122,11 @@ func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
 	s.page(w, r, postPage(s.env, p))
 }
 
-func (s *server) handleDocList(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleDocList(w http.ResponseWriter, r *http.Request) {
 	s.page(w, r, docList(s.env, s.site.Load().docs))
 }
 
-func (s *server) handleDoc(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleDoc(w http.ResponseWriter, r *http.Request) {
 	d, ok := s.site.Load().byPath[r.PathValue("path")]
 	if !ok {
 		s.renderError(w, r, http.StatusNotFound, "Document not found.", nil)
@@ -146,7 +146,7 @@ func handleFavicon(w http.ResponseWriter, r *http.Request) {
 }
 
 // page renders n with status 200, or an error page if rendering fails.
-func (s *server) page(w http.ResponseWriter, r *http.Request, n pe.Node) {
+func (s *Server) page(w http.ResponseWriter, r *http.Request, n pe.Node) {
 	if err := render(w, http.StatusOK, n); err != nil {
 		s.renderError(w, r, http.StatusInternalServerError, "Something went wrong.", err)
 	}
@@ -154,7 +154,7 @@ func (s *server) page(w http.ResponseWriter, r *http.Request, n pe.Node) {
 
 // renderError shows message to the user and logs err, which may hold
 // internal details, only on the server.
-func (s *server) renderError(w http.ResponseWriter, r *http.Request, status int, message string, err error) {
+func (s *Server) renderError(w http.ResponseWriter, r *http.Request, status int, message string, err error) {
 	if err != nil {
 		slog.ErrorContext(r.Context(), "request failed", "method", r.Method, "path", r.URL.Path, "status", status, "error", err)
 	}
@@ -166,7 +166,7 @@ func (s *server) renderError(w http.ResponseWriter, r *http.Request, status int,
 
 // recoverer turns a panic in h into a 500 error page. Because pages are
 // rendered into a buffer first, no partial response has been sent yet.
-func (s *server) recoverer(h http.Handler) http.Handler {
+func (s *Server) recoverer(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			v := recover()

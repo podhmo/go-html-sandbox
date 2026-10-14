@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"cmp"
@@ -27,8 +27,8 @@ var frontMatterKeys = []string{"title", "description"}
 
 var postName = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$`)
 
-// loadPosts reads every *.md file at the top of fsys, newest first.
-func loadPosts(fsys fs.FS) ([]Post, error) {
+// LoadPosts reads every *.md file at the top of fsys, newest first.
+func LoadPosts(fsys fs.FS) ([]Post, error) {
 	names, err := fs.Glob(fsys, "*.md")
 	if err != nil {
 		return nil, err

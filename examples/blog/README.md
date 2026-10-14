@@ -52,21 +52,23 @@ the previous content stays. Pages load the small reload script
 
 ## Cloudflare Workers (experimental)
 
-Built for `js/wasm`, the blog serves the embedded posts and documents on
+[`workers/`](workers/) is a separate Go module that serves the same site on
 Cloudflare Workers through
-[syumai/workers-go](https://github.com/syumai/workers-go).
-`main_workers.go` is the entry point for that build; `main.go` (flags,
-`-debug`, `-watch`) and `repo.go` are left out of it by build tags.
+[syumai/workers-go](https://github.com/syumai/workers-go), so only that
+module depends on workers-go. It has no flags; the public origin for OGP
+tags comes from `BASE_URL` in [`workers/wrangler.jsonc`](workers/wrangler.jsonc).
 
 ```sh
-cd examples/blog
+cd examples/blog/workers
 npx wrangler dev   # needs TinyGo 0.42.0 or later on PATH
 ```
 
-The public origin for OGP tags comes from `BASE_URL` in
-[`wrangler.jsonc`](wrangler.jsonc). Building with the standard Go compiler
-also works: replace the build command with
-`go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm .`.
+The site itself lives in `internal/site`, which is tested under TinyGo too:
+
+```sh
+tinygo test ./examples/blog/internal/site
+```
+
 See the [experiment report](../../docs/sketch/ja/blog-tinygo-workers.md).
 
 ## Pages
@@ -117,20 +119,21 @@ title, or an unknown front matter key stop the server at startup.
 
 | File | Contents |
 | --- | --- |
-| `main.go` | Flags and startup (not in the `js/wasm` build) |
-| `main_workers.go` | Startup on Cloudflare Workers (`js/wasm` build only) |
-| `content.go` | Embedded posts and favicon |
-| `posts.go` | Loading posts from an `fs.FS` |
-| `livereload.go` | `-watch`: polling, reloading, and the SSE endpoint |
-| `repo.go` | Finding and opening the module root for `-debug` (not in the `js/wasm` build) |
-| `docs.go` | Loading repository documents (embedded by the root package, [`embed.go`](../../embed.go)) |
-| `server.go` | Routing (by hand, see `route`), rendering, error pages, panic recovery |
-| `views.go` | Pages built from `pkg/picoel`, OGP tags |
+| `main.go` | Flags and startup |
+| `repo.go` | Finding and opening the module root for `-debug` |
+| `posts/embed.go` | Embedding the posts |
+| `internal/site/content.go` | Embedded favicon, posts, and documents |
+| `internal/site/posts.go` | Loading posts from an `fs.FS` |
+| `internal/site/docs.go` | Loading repository documents (embedded by the root package, [`embed.go`](../../embed.go)) |
+| `internal/site/livereload.go` | `-watch`: polling, reloading, and the SSE endpoint |
+| `internal/site/server.go` | Routing (by hand, see `route`), rendering, error pages, panic recovery |
+| `internal/site/views.go` | Pages built from `pkg/picoel`, OGP tags |
+| `workers/` | Cloudflare Workers entry point (a module of its own) |
 
 ## Testing
 
 ```sh
-go test ./examples/blog
+go test ./examples/blog/...
 ```
 
 Tests load posts from a `fstest.MapFS` and exercise the handlers with

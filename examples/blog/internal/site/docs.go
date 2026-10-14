@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"fmt"
@@ -19,13 +19,13 @@ type Doc struct {
 	Doc         tinymarkdown.Document
 }
 
-// docSources are the files and directories of fsys that hold documents.
+// DocSources are the files and directories of fsys that hold documents.
 // Only these are read, so fsys may be the whole repository on disk.
-var docSources = []string{"TODO.md", "docs"}
+var DocSources = []string{"TODO.md", "docs"}
 
-// loadDocs reads every *.md file in docSources, in that order and then in
+// LoadDocs reads every *.md file in docSources, in that order and then in
 // file path order.
-func loadDocs(fsys fs.FS) ([]Doc, error) {
+func LoadDocs(fsys fs.FS) ([]Doc, error) {
 	var docs []Doc
 	seen := map[string]string{} // Path -> Source
 	walk := func(name string, d fs.DirEntry, err error) error {
@@ -50,7 +50,7 @@ func loadDocs(fsys fs.FS) ([]Doc, error) {
 		docs = append(docs, Doc{Path: p, Source: name, Title: title, Description: firstParagraph(doc.Children), Doc: doc})
 		return nil
 	}
-	for _, root := range docSources {
+	for _, root := range DocSources {
 		if err := fs.WalkDir(fsys, root, walk); err != nil {
 			return nil, err
 		}

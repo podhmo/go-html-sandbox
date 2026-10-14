@@ -1,4 +1,4 @@
-// Cloudflare Workers config for the js/wasm build (main_workers.go).
+// Cloudflare Workers config for this module.
 // `npx wrangler dev` builds with TinyGo and serves on http://localhost:8787.
 {
   "name": "go-html-sandbox-blog",

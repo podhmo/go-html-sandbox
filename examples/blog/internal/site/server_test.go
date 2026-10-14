@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"io"
@@ -11,17 +11,17 @@ import (
 	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 )
 
-func newTestServer(t *testing.T, fsys fstest.MapFS) *server {
+func newTestServer(t *testing.T, fsys fstest.MapFS) *Server {
 	t.Helper()
-	posts, err := loadPosts(fsys)
+	posts, err := LoadPosts(fsys)
 	if err != nil {
 		t.Fatal(err)
 	}
-	docs, err := loadDocs(testDocs)
+	docs, err := LoadDocs(testDocs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	h, err := newServer("https://example.com", posts, docs)
+	h, err := NewServer("https://example.com", posts, docs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestPost(t *testing.T) {
 }
 
 func TestPostPageText(t *testing.T) {
-	posts, err := loadPosts(testPosts)
+	posts, err := LoadPosts(testPosts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestNotFoundPages(t *testing.T) {
 }
 
 func TestPanicBecomes500Page(t *testing.T) {
-	s, err := newServer("https://example.com", nil, nil)
+	s, err := NewServer("https://example.com", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,13 +264,13 @@ func TestBaseURL(t *testing.T) {
 		{"https://example.com/?q=1", ""},
 		{"", ""},
 	}
-	posts, err := loadPosts(fstest.MapFS{"2026-10-14-x.md": file("# x")})
+	posts, err := LoadPosts(fstest.MapFS{"2026-10-14-x.md": file("# x")})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, c := range cases {
 		t.Run(c.in, func(t *testing.T) {
-			h, err := newServer(c.in, posts, nil)
+			h, err := NewServer(c.in, posts, nil)
 			if c.wantURL == "" {
 				if err == nil {
 					t.Error("want error")
