@@ -12,18 +12,21 @@ heading sizes and wrapping, list indent and leading, list cards) live in
 [`internal/site/site.css`](internal/site/site.css), which builds on pico's
 variables and is served as `/site.css?v=<hash>` after pico.
 Pages are written with `lang="ja"`, since the posts are in Japanese.
-Posts and the favicon are embedded with `go:embed`, so the binary is all
-you need to run it. The repository's own documents (`TODO.md` and `docs/`)
-are not served for now: they sit above this module (`go/`), out of reach of
-`go:embed`, so `/docs/` lists nothing.
+Posts, the favicon, and the repository's own documents are embedded with
+`go:embed`, so the binary is all you need to run it. The documents
+(`TODO.md` and `docs/`) sit above this module (`go/`), out of reach of
+`go:embed`, so `go generate ./...` copies them into `repodocs/files/` first;
+the copies are not committed. Without them the blog still builds, and
+`/docs/` lists nothing.
 
 See the [sketch](../../../docs/sketch/ja/blog.md) for the design.
 
 ## Running
 
-From the repository root:
+From `go/`:
 
 ```sh
+go generate ./...
 go run ./examples/blog
 ```
 
@@ -33,9 +36,9 @@ Then open <http://localhost:8080>.
 | --- | --- | --- |
 | `-addr` | `localhost:8080` | Address to listen on. |
 | `-base-url` | `http://<addr>` | Public origin used for absolute URLs in OGP tags, e.g. `https://example.com`. Must not contain a path. |
-| `-debug` | off | Read posts and docs from files under `-root` instead of the embedded copies. |
+| `-debug` | off | Read posts from files under `-root`, and docs from its parent directory (the repository root), instead of the embedded copies. |
 | `-watch` | off | Reload posts and docs when they change and refresh open pages. Implies `-debug`. |
-| `-root` | nearest `go.mod` above the current directory | Module root that `-debug` reads from. It must hold `go.mod`; nothing outside it is read, even through symbolic links. |
+| `-root` | nearest `go.mod` above the current directory | Module root that `-debug` reads posts from. It must hold `go.mod`. Nothing outside it, or outside its parent for docs, is read, even through symbolic links. |
 
 To build a single binary:
 
@@ -44,15 +47,17 @@ go build -o blog ./examples/blog
 ./blog -addr :8080 -base-url https://example.com
 ```
 
-Posts are embedded at build time, so rebuild after editing them. While
-writing, run with `-watch` instead:
+Posts and docs are embedded at build time, so rebuild (and rerun
+`go generate ./...` for docs) after editing them. While writing, run with
+`-watch` instead:
 
 ```sh
 go run ./examples/blog -watch
 ```
 
-It reads `examples/blog/posts/` from disk, checks
-their sizes and modification times every 0.5 seconds, and on a change
+It reads `examples/blog/posts/`, and `TODO.md` and `docs/` in the
+repository root, from disk, checks their sizes and modification times
+every 0.5 seconds, and on a change
 reloads them and tells open pages to reload over server-sent events
 (`/_livereload`). If a changed post has an error, the error is logged and
 the previous content stays. Pages load the small reload script
@@ -145,7 +150,8 @@ linked only for `http`, `https`, and `mailto`; others, such as
 | `posts/embed.go` | Embedding the posts |
 | `internal/site/content.go` | Embedded favicon, posts, and documents |
 | `internal/site/posts.go` | Loading posts from an `fs.FS` |
-| `internal/site/docs.go` | Loading repository documents (none are embedded for now) |
+| `internal/site/docs.go` | Loading repository documents |
+| `repodocs/repodocs.go` | Embedding the repository documents, copied in by `go generate` |
 | `internal/site/livereload.go` | `-watch`: polling, reloading, and the SSE endpoint |
 | `internal/site/server.go` | Routing (by hand, see `route`), rendering, error pages, panic recovery |
 | `internal/site/views.go` | Pages built from `pkg/picoel`, OGP tags |

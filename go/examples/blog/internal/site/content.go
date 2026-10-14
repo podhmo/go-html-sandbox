@@ -5,11 +5,12 @@ package site
 
 import (
 	"crypto/sha256"
-	"embed"
+	_ "embed"
 	"encoding/hex"
 	"io/fs"
 
 	"github.com/podhmo/html-sandbox/go/examples/blog/posts"
+	"github.com/podhmo/html-sandbox/go/examples/blog/repodocs"
 )
 
 //go:embed favicon.svg
@@ -28,12 +29,8 @@ var siteCSSPath = func() string {
 	return "/site.css?v=" + hex.EncodeToString(sum[:4])
 }()
 
-// noDocs is empty: TODO.md and docs/ sit above this module (go/), out of
-// reach of go:embed, so no documents are built in for now.
-var noDocs embed.FS
-
 // EmbeddedSources returns the posts and documents built into the binary.
 // Every entry point serves these unless told to read files from disk.
 func EmbeddedSources() (postsFS, docsFS fs.FS) {
-	return posts.FS, noDocs
+	return posts.FS, repodocs.FS
 }

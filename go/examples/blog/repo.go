@@ -40,3 +40,14 @@ func openRepo(dir string) (fs.FS, error) {
 	}
 	return r.FS(), nil
 }
+
+// openDocs opens dir, the repository root holding TODO.md and docs/, for
+// -debug. As with openRepo, nothing outside dir can be read through the
+// result, and only the documents are read from it (see site.DocSources).
+func openDocs(dir string) (fs.FS, error) {
+	r, err := os.OpenRoot(dir)
+	if err != nil {
+		return nil, err
+	}
+	return r.FS(), nil
+}

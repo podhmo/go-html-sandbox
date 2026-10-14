@@ -14,6 +14,7 @@ the commands below from here.
 ## Running the blog
 
 ```sh
+go generate ./...   # copies ../TODO.md and ../docs in, to be embedded
 go run ./examples/blog
 ```
 

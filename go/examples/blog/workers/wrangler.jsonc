@@ -7,7 +7,7 @@
   "main": "./build/worker.mjs",
   "compatibility_date": "2026-10-01",
   "build": {
-    "command": "go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode tinygo && tinygo build -o ./build/app.wasm -target wasm -no-debug ."
+    "command": "(cd .. && go generate ./repodocs) && go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode tinygo && tinygo build -o ./build/app.wasm -target wasm -no-debug ."
   },
   "vars": {
     // Public origin for OGP tags, like -base-url. This is the deployed URL,
@@ -22,7 +22,7 @@
       // Without this, wrangler would name it blog-go.
       "name": "blog",
       "build": {
-        "command": "go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm ."
+        "command": "(cd .. && go generate ./repodocs) && go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm ."
       },
       // vars are not inherited by environments.
       "vars": {

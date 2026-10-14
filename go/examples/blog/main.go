@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/podhmo/html-sandbox/go/examples/blog/internal/site"
@@ -24,7 +25,7 @@ func main() {
 func run() error {
 	addr := flag.String("addr", "localhost:8080", "address to listen on")
 	baseURL := flag.String("base-url", "", "public URL of the site for OGP tags (default: http://<addr>)")
-	debug := flag.Bool("debug", false, "read posts and docs from files under -root instead of the embedded copies")
+	debug := flag.Bool("debug", false, "read posts from files under -root, and docs from its parent directory, instead of the embedded copies")
 	watch := flag.Bool("watch", false, "reload posts and docs when they change and refresh open pages (implies -debug)")
 	root := flag.String("root", "", "module root (holding go.mod) that -debug reads files from; nothing outside it is read (default: nearest go.mod above the current directory)")
 	flag.Parse()
@@ -47,7 +48,10 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		docsFS = repo
+		// TODO.md and docs/ sit in the repository root, above the module.
+		if docsFS, err = openDocs(filepath.Dir(*root)); err != nil {
+			return err
+		}
 		if postsFS, err = fs.Sub(repo, "examples/blog/posts"); err != nil {
 			return err
 		}

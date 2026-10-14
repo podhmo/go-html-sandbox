@@ -1,6 +1,7 @@
 package site
 
 import (
+	"io/fs"
 	"net/http"
 	"reflect"
 	"strings"
@@ -107,11 +108,31 @@ func TestDocMarkdown(t *testing.T) {
 	}
 }
 
-// TestEmbeddedDocs checks that the binary builds in no documents for now,
-// and that sources missing from the FS are skipped.
+// TestEmbeddedDocs checks that the repository's own documents load. They
+// are embedded only after go generate copies them in.
 func TestEmbeddedDocs(t *testing.T) {
 	_, docsFS := EmbeddedSources()
+	if _, err := fs.Stat(docsFS, "TODO.md"); err != nil {
+		t.Skip("documents not copied in; run go generate ./...")
+	}
 	docs, err := LoadDocs(docsFS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths := map[string]bool{}
+	for _, d := range docs {
+		paths[d.Path] = true
+	}
+	for _, p := range []string{"TODO", "ja/design", "sketch/ja/blog"} {
+		if !paths[p] {
+			t.Errorf("missing /docs/%s in %v", p, paths)
+		}
+	}
+}
+
+// TestLoadDocsMissing checks that sources missing from the FS are skipped.
+func TestLoadDocsMissing(t *testing.T) {
+	docs, err := LoadDocs(fstest.MapFS{})
 	if err != nil {
 		t.Fatal(err)
 	}
