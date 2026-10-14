@@ -129,3 +129,21 @@ func TestPanicBecomes500Page(t *testing.T) {
 		t.Error("error page leaks the panic value")
 	}
 }
+
+func TestFavicon(t *testing.T) {
+	res, body := get(t, newTestServer(t, testPosts), "/favicon.svg")
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status %d", res.StatusCode)
+	}
+	for k, want := range map[string]string{
+		"Content-Type":  "image/svg+xml",
+		"Cache-Control": "public, max-age=86400",
+	} {
+		if got := res.Header.Get(k); got != want {
+			t.Errorf("%s: got %q, want %q", k, got, want)
+		}
+	}
+	if !strings.HasPrefix(body, "<svg") {
+		t.Errorf("not an SVG: %.20q", body)
+	}
+}

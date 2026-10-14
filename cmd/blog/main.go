@@ -13,6 +13,9 @@ import (
 //go:embed posts/*.md
 var postsFS embed.FS
 
+//go:embed favicon.svg
+var favicon []byte
+
 func main() {
 	if err := run(); err != nil {
 		slog.Error("blog", "error", err)

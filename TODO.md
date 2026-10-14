@@ -51,7 +51,7 @@ This file tracks actionable tasks only; completed work is swept to
   - [x] **Error pages**: 404 for unknown slugs and unmatched URLs, 500 via
     a `recover` middleware; render into `bytes.Buffer` first. Tests that
     the 500 page leaks no internal details.
-  - [ ] **Favicon**: embedded `favicon.svg` at `GET /favicon.svg` with
+  - [x] **Favicon**: embedded `favicon.svg` at `GET /favicon.svg` with
     `Content-Type` and `Cache-Control`. Test the headers.
   - [ ] **Mobile-first CSS**: inline `<style>` via `Raw`, no build step,
     under ~100 lines (dark mode, 44px tap targets, scrollable `<pre>`).

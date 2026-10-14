@@ -27,6 +27,7 @@ func newServer(posts []Post) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleList)
 	mux.HandleFunc("GET /posts/{slug}", s.handlePost)
+	mux.HandleFunc("GET /favicon.svg", handleFavicon)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		renderError(w, r, http.StatusNotFound, "Page not found.", nil)
 	})
@@ -44,6 +45,16 @@ func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page(w, r, postPage(p))
+}
+
+// handleFavicon serves the embedded icon. Embedded files have no
+// modification time, so it is written directly rather than via ServeContent.
+func handleFavicon(w http.ResponseWriter, r *http.Request) {
+	h := w.Header()
+	h.Set("Content-Type", "image/svg+xml")
+	h.Set("Cache-Control", "public, max-age=86400")
+	h.Set("Content-Length", strconv.Itoa(len(favicon)))
+	w.Write(favicon)
 }
 
 // page renders n with status 200, or an error page if rendering fails.
