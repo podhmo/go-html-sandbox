@@ -59,6 +59,12 @@ This file tracks actionable tasks only; completed work is swept to
   `text/markdown`, and add a download link to each page
   ([#3](https://github.com/podhmo/go-html-sandbox/issues/3)).
 
+- [ ] **tinymarkdown: links**: parse `[text](url)` into a link inline
+  (alongside `` `code` `` spans) and render it as `<a>` in the blog; today
+  it shows as raw text, e.g. the note at the top of `TODO.md`. Decide how
+  relative links between repository files (`docs/...md`, `.claude/...`)
+  map to `/docs/` URLs or elsewhere.
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
