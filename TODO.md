@@ -32,7 +32,7 @@ This file tracks actionable tasks only; completed work is swept to
     `host.header` call), so unknown paths return 404. Done when
     `curl -i` against `wrangler dev` shows 200 / 404 with the right
     `Content-Type`, and `moon test` checks the status `render` picks.
-  - [ ] **Makefile targets**: `moonbit/Makefile` with `build`, `test`,
+  - [x] **Makefile targets**: `moonbit/Makefile` with `build`, `test`,
     `dev`, and `deploy`, like `go/Makefile` (there is no root `Makefile`;
     each implementation is run from its own directory). Done when
     `make test dev` in `moonbit/` works from a fresh checkout.

@@ -22,31 +22,30 @@ compiles imported Wasm modules without the JS string builtins, which
 
 ## Development
 
-From `moonbit/`:
+From `moonbit/` (`make help` lists the targets):
 
 ```sh
-moon test                               # tests of site
-moon build --target wasm-gc --release   # _build/wasm-gc/release/build/worker/worker.wasm
-moon fmt                                # format the sources
+make test     # moon test
+make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm
+make check    # before every commit: moon fmt --check, moon check, moon test
 ```
+
+Needs `moon` on `PATH`, and Node.js for wrangler.
 
 ## Running on Workers locally
 
 ```sh
-cd workers
-npx wrangler dev
+make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 ```
 
-Then open <http://localhost:8787> (pass `--port` if the Go Worker already
-uses it). The build command runs `moon build` and copies the Wasm to
-`workers/build/app.wasm`, ignored by git; `wrangler dev` rebuilds when
-`site/` or `worker/` changes. Needs `moon` on `PATH`.
+Then open <http://localhost:8787>. wrangler's build command runs
+`moon build` and copies the Wasm to `workers/build/app.wasm`, ignored by
+git, and `wrangler dev` rebuilds when `site/` or `worker/` changes.
 
 ## Deploying
 
 ```sh
-cd workers
-npx wrangler deploy
+make deploy
 ```
 
 It deploys as the Worker `blog-moonbit`, apart from the Go `blog`, at
