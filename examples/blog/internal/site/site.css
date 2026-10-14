@@ -28,7 +28,7 @@ nav {
 /* Japanese lines are dense, so pico's 1.5 leading reads as cramped. Set it
    here, not through --pico-line-height, which also sizes form controls. */
 article {
-  line-height: 1.8;
+  line-height: 1.6;
 }
 
 /* pico's headings are sized for Latin text; Japanese titles wrap into
@@ -56,14 +56,14 @@ article :not(:is(h1, h2, h3, h4, h5)) + section > :is(h2, h3, h4, h5):first-chil
 }
 
 /* The browser default of 40px is too deep for a narrow screen. List items
-   are short, so they take less leading than paragraphs: at 1.8 the items
+   are short, so they take less leading than paragraphs: at 1.6 the items
    drift apart instead of reading as one list. pico's small margin between
    items still tells them apart. */
 article :is(ul, ol) {
   padding-inline-start: 1.25rem;
 }
 article li {
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 /* In the list cards, the title is a link already told apart by its color;
