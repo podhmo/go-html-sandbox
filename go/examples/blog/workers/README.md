@@ -107,7 +107,7 @@ Deploy again after editing posts or documents. To remove the Worker, run
 ## Testing
 
 The site itself lives in [`internal/site`](../internal/site), which is
-tested under TinyGo too. From the repository root:
+tested under TinyGo too. From `go/`:
 
 ```sh
 tinygo test ./examples/blog/internal/site

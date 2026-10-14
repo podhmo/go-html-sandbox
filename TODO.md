@@ -33,12 +33,12 @@ This file tracks actionable tasks only; completed work is swept to
     `curl -i` against `wrangler dev` shows 200 / 404 with the right
     `Content-Type`, and `moon test` checks the status `render` picks.
   - [ ] **Makefile targets**: `moonbit/Makefile` with `build`, `test`,
-    `dev`, and `deploy`, and let the root `Makefile` reach them (today it
-    forwards every target to `go/`), e.g. `make moonbit-dev`. Done when
-    `make -C moonbit test dev` works from a fresh checkout and the Go
-    targets still work from the root.
-  - [ ] **Deploy**: deploy as a Worker of its own (e.g. `blog-moonbit`, so
-    the Go `blog` stays), following the steps the Go Worker uses. Done
+    `dev`, and `deploy`, like `go/Makefile` (there is no root `Makefile`;
+    each implementation is run from its own directory). Done when
+    `make test dev` in `moonbit/` works from a fresh checkout.
+  - [ ] **Deploy**: deploy as the Worker `blog-moonbit` for now, so the Go
+    `blog` stays; later whichever implementation wins is deployed as
+    `blog`. Follow the steps the Go Worker uses. Done
     when the workers.dev URL serves the top page and a 404, confirming that
     Workers accepts wasm-gc uploads; record the upload size wrangler
     reports in the research notes.

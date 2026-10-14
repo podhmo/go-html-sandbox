@@ -19,8 +19,7 @@ make run     # or: go generate ./... && go run ./examples/blog
 
 `go generate` copies `../TODO.md` and `../docs` in, to be embedded.
 `make build` builds the binary into `bin/blog`; `make help` lists the
-other targets. The `Makefile` at the repository root runs the same
-targets here.
+other targets.
 
 Then open <http://localhost:8080>. See [examples/blog/README.md](examples/blog/README.md) for flags and how to write posts.
 
