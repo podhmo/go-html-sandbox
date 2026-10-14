@@ -17,6 +17,7 @@ type Doc struct {
 	Title       string // the first "#" heading, or Source
 	Description string // the first paragraph
 	Doc         tinymarkdown.Document
+	Markdown    string // the file as written
 }
 
 // DocSources are the files and directories of fsys that hold documents.
@@ -47,7 +48,7 @@ func LoadDocs(fsys fs.FS) ([]Doc, error) {
 		if !ok {
 			title = name
 		}
-		docs = append(docs, Doc{Path: p, Source: name, Title: title, Description: firstParagraph(doc.Children), Doc: doc})
+		docs = append(docs, Doc{Path: p, Source: name, Title: title, Description: firstParagraph(doc.Children), Doc: doc, Markdown: string(src)})
 		return nil
 	}
 	for _, root := range DocSources {
@@ -60,4 +61,9 @@ func LoadDocs(fsys fs.FS) ([]Doc, error) {
 
 func docPath(d Doc) string {
 	return "/docs/" + d.Path
+}
+
+// docMarkdownPath is where the source of d is served.
+func docMarkdownPath(d Doc) string {
+	return docPath(d) + ".md"
 }

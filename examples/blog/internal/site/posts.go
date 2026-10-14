@@ -16,10 +16,12 @@ import (
 // Post is one blog post loaded from a YYYY-MM-DD-slug.md file.
 type Post struct {
 	Slug        string
+	File        string // file name, e.g. 2026-10-14-hello.md
 	Date        time.Time
 	Title       string // front matter "title", or the first "#" heading
 	Description string // front matter "description", or the first paragraph
 	Doc         tinymarkdown.Document
+	Markdown    string // the file as written, front matter included
 }
 
 // frontMatterKeys are the keys a post may set; others are reported as typos.
@@ -75,7 +77,7 @@ func LoadPosts(fsys fs.FS) ([]Post, error) {
 		if description == "" {
 			description = firstParagraph(doc.Children)
 		}
-		posts = append(posts, Post{Slug: slug, Date: date, Title: title, Description: description, Doc: doc})
+		posts = append(posts, Post{Slug: slug, File: name, Date: date, Title: title, Description: description, Doc: doc, Markdown: string(src)})
 	}
 	slices.SortFunc(posts, func(a, b Post) int {
 		return cmp.Or(b.Date.Compare(a.Date), cmp.Compare(a.Slug, b.Slug))

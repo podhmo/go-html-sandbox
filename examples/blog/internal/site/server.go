@@ -100,9 +100,15 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request) {
 		s.handleLiveReloadScript(w, r)
 	case p == liveReloadEventsPath:
 		s.handleLiveReloadEvents(w, r)
+	case isPost && strings.HasSuffix(slug, ".md") && !strings.Contains(slug, "/"):
+		r.SetPathValue("slug", strings.TrimSuffix(slug, ".md"))
+		s.handlePostMarkdown(w, r)
 	case isPost && slug != "" && !strings.Contains(slug, "/"):
 		r.SetPathValue("slug", slug)
 		s.handlePost(w, r)
+	case strings.HasPrefix(p, "/docs/") && strings.HasSuffix(p, ".md"):
+		r.SetPathValue("path", strings.TrimSuffix(p[len("/docs/"):], ".md"))
+		s.handleDocMarkdown(w, r)
 	case strings.HasPrefix(p, "/docs/"):
 		r.SetPathValue("path", p[len("/docs/"):])
 		s.handleDoc(w, r)
@@ -144,6 +150,36 @@ func (s *Server) handleDoc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.page(w, r, docPage(s.env, d))
+}
+
+// handlePostMarkdown serves the source of a post, as linked from its page.
+func (s *Server) handlePostMarkdown(w http.ResponseWriter, r *http.Request) {
+	p, ok := s.site.Load().bySlug[r.PathValue("slug")]
+	if !ok {
+		s.renderError(w, r, http.StatusNotFound, "Post not found.", nil)
+		return
+	}
+	writeMarkdown(w, p.Markdown)
+}
+
+// handleDocMarkdown serves the source of a document, as linked from its page.
+func (s *Server) handleDocMarkdown(w http.ResponseWriter, r *http.Request) {
+	d, ok := s.site.Load().byPath[r.PathValue("path")]
+	if !ok {
+		s.renderError(w, r, http.StatusNotFound, "Document not found.", nil)
+		return
+	}
+	writeMarkdown(w, d.Markdown)
+}
+
+// writeMarkdown sends src as text. nosniff keeps browsers from guessing that
+// Markdown containing tags is HTML.
+func writeMarkdown(w http.ResponseWriter, src string) {
+	h := w.Header()
+	h.Set("Content-Type", "text/markdown; charset=utf-8")
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("Content-Length", strconv.Itoa(len(src)))
+	io.WriteString(w, src)
 }
 
 // cleanPath is p without "." and ".." elements and repeated slashes. A

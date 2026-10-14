@@ -54,6 +54,11 @@ This file tracks actionable tasks only; completed work is swept to
   prefers-color-scheme, ...), but pages now use pico.css v2 alone in its
   dark theme.
 
+- [x] **blog: download posts and docs as Markdown**: serve the source of
+  `/posts/foo` and `/docs/foo` at `/posts/foo.md` and `/docs/foo.md` as
+  `text/markdown`, and add a download link to each page
+  ([#3](https://github.com/podhmo/go-html-sandbox/issues/3)).
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry

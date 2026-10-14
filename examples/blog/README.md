@@ -50,6 +50,13 @@ reloads them and tells open pages to reload over server-sent events
 the previous content stays. Pages load the small reload script
 (`/_livereload.js`) only in this mode.
 
+## Markdown source
+
+Every post and document can also be fetched as the Markdown it was written
+in: add `.md` to its URL, e.g. `/posts/hello.md` or `/docs/TODO.md`. It is
+served as `text/markdown; charset=utf-8`, and each page links to it with a
+"Download Markdown" button.
+
 ## Cloudflare Workers (experimental)
 
 [`workers/`](workers/) is a separate Go module that serves the same site on

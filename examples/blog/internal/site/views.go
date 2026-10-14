@@ -3,6 +3,7 @@ package site
 import (
 	"cmp"
 	"net/http"
+	"path"
 	"strconv"
 
 	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
@@ -96,6 +97,7 @@ func postPage(env pageEnv, p Post) pe.Node {
 		body = append(body, pe.H1(pe.Text(p.Title)))
 	}
 	body = append(body, renderBlocks(p.Doc.Children)...)
+	body = append(body, downloadFooter(postMarkdownPath(p), p.File))
 	meta := pageMeta{
 		Title:       p.Title,
 		Description: p.Description,
@@ -125,12 +127,23 @@ func docPage(env pageEnv, d Doc) pe.Node {
 		body = append(body, pe.H1(pe.Text(d.Title)))
 	}
 	body = append(body, renderBlocks(d.Doc.Children)...)
+	body = append(body, downloadFooter(docMarkdownPath(d), path.Base(d.Source)))
 	meta := pageMeta{Title: d.Title, Description: d.Description, URL: env.BaseURL + docPath(d), Type: "article"}
 	return layout(env, meta, pe.Article(body...))
 }
 
 func postPath(p Post) string {
 	return "/posts/" + p.Slug
+}
+
+// postMarkdownPath is where the source of p is served.
+func postMarkdownPath(p Post) string {
+	return postPath(p) + ".md"
+}
+
+// downloadFooter closes a page with a link to its Markdown source.
+func downloadFooter(href, filename string) pe.Node {
+	return pe.ArticleFooter(pe.DownloadButton(href, filename, pe.Text("Download Markdown")))
 }
 
 func errorPage(env pageEnv, status int, message string) pe.Node {

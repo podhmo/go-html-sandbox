@@ -107,6 +107,11 @@ func ArticleHeader(children ...Node) Node {
 	return el.El(el.Header, children...)
 }
 
+// ArticleFooter is the banded footer of an Article.
+func ArticleFooter(children ...Node) Node {
+	return el.El(el.Footer, children...)
+}
+
 // Hgroup groups a heading with lines that pico shows in a muted color.
 func Hgroup(children ...Node) Node {
 	return el.El(el.Hgroup, children...)
@@ -159,6 +164,18 @@ func Code(text string) Node {
 // A is a link to href.
 func A(href string, children ...Node) Node {
 	return el.El(el.A, append([]Node{el.Attr(el.Href, href)}, children...)...)
+}
+
+// DownloadButton is a link that downloads href as filename, drawn by pico
+// as an outlined button.
+func DownloadButton(href, filename string, children ...Node) Node {
+	attrs := []Node{
+		el.Attr(el.Href, href),
+		el.Attr(el.Download, filename),
+		el.Attr(el.Role, "button"),
+		el.Attr(el.Class, "outline"),
+	}
+	return el.El(el.A, append(attrs, children...)...)
 }
 
 // Strong is strong importance, e.g. the site name in a Nav.

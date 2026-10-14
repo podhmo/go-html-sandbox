@@ -116,10 +116,35 @@ Points
 one
 two
 x := <1>
+Download Markdown
 Rendered with the Go standard library.
 `
 	if got := b.String(); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestPostMarkdown(t *testing.T) {
+	h := newTestServer(t, testPosts)
+	res, body := get(t, h, "/posts/hello.md")
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status %d", res.StatusCode)
+	}
+	if want := string(testPosts["2026-10-14-hello.md"].Data); body != want {
+		t.Errorf("got %q, want %q", body, want)
+	}
+	for k, want := range map[string]string{
+		"Content-Type":           "text/markdown; charset=utf-8",
+		"X-Content-Type-Options": "nosniff",
+	} {
+		if got := res.Header.Get(k); got != want {
+			t.Errorf("%s %q, want %q", k, got, want)
+		}
+	}
+
+	_, body = get(t, h, "/posts/hello")
+	if want := `<footer><a href="/posts/hello.md" download="2026-10-14-hello.md" role="button" class="outline">Download Markdown</a></footer></article>`; !strings.Contains(body, want) {
+		t.Errorf("body does not contain %q", want)
 	}
 }
 
@@ -129,6 +154,8 @@ func TestNotFoundPages(t *testing.T) {
 		{"/posts/nope", "Post not found."},
 		{"/nope", "Page not found."},
 		{"/posts/hello/extra", "Page not found."},
+		{"/posts/nope.md", "Post not found."},
+		{"/posts/hello/extra.md", "Page not found."},
 	}
 	for _, c := range cases {
 		t.Run(c.path, func(t *testing.T) {

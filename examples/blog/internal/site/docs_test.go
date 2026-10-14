@@ -80,11 +80,32 @@ second line</li>`; !strings.Contains(body, want) {
 		t.Error("notes: want the file path as <h1>")
 	}
 
-	for _, p := range []string{"/docs/nope", "/docs/TODO.md", "/docs/image"} {
+	for _, p := range []string{"/docs/nope", "/docs/nope.md", "/docs/image", "/docs/image.svg"} {
 		res, body := get(t, h, p)
 		if res.StatusCode != http.StatusNotFound || !strings.Contains(body, "Document not found.") {
 			t.Errorf("%s: status %d", p, res.StatusCode)
 		}
+	}
+}
+
+func TestDocMarkdown(t *testing.T) {
+	h := newTestServer(t, testPosts)
+	for _, c := range []struct{ path, want string }{
+		{"/docs/TODO.md", "# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line"},
+		{"/docs/ja/design.md", "# Design <x>\n\nwhy\n## Use `el`\n- run `go test`\n- ``a ` b``"},
+	} {
+		res, body := get(t, h, c.path)
+		if res.StatusCode != http.StatusOK || body != c.want {
+			t.Errorf("%s: status %d, body %q", c.path, res.StatusCode, body)
+		}
+		if ct := res.Header.Get("Content-Type"); ct != "text/markdown; charset=utf-8" {
+			t.Errorf("%s: Content-Type %q", c.path, ct)
+		}
+	}
+
+	_, body := get(t, h, "/docs/ja/design")
+	if want := `<footer><a href="/docs/ja/design.md" download="design.md" role="button" class="outline">Download Markdown</a></footer>`; !strings.Contains(body, want) {
+		t.Errorf("design: body does not contain %q", want)
 	}
 }
 
