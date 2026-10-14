@@ -157,3 +157,27 @@ func TestFavicon(t *testing.T) {
 		t.Errorf("not an SVG: %.20q", body)
 	}
 }
+
+func TestPostPageHeading(t *testing.T) {
+	h := newTestServer(t, fstest.MapFS{
+		"2026-10-14-fm.md":   file("---\ntitle: From <FM>\ndescription: Short & sweet\n---\nbody"),
+		"2026-10-14-both.md": file("---\ntitle: FM title\n---\n# Body heading\nbody"),
+	})
+	_, body := get(t, h, "/posts/fm")
+	for _, want := range []string{
+		`<title>From &lt;FM&gt; - blog</title>`,
+		`<meta name="description" content="Short &amp; sweet">`,
+		`<h1>From &lt;FM&gt;</h1><p>body</p>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("fm: body does not contain %q", want)
+		}
+	}
+	_, body = get(t, h, "/posts/both")
+	if !strings.Contains(body, "<title>FM title - blog</title>") {
+		t.Error("both: title should come from front matter")
+	}
+	if strings.Count(body, "<h1>") != 1 || !strings.Contains(body, "<h1>Body heading</h1>") {
+		t.Error("both: want exactly the body heading as <h1>")
+	}
+}

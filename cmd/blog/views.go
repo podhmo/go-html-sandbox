@@ -9,16 +9,26 @@ import (
 	"github.com/podhmo/go-html-sandbox/pkg/tinymarkdown"
 )
 
-const siteName = "blog"
+const (
+	siteName        = "blog"
+	siteDescription = "Notes rendered with the Go standard library only."
+)
+
+// pageMeta describes a page for <head>.
+type pageMeta struct {
+	Title       string
+	Description string
+}
 
 // layout is the frame shared by every page. The doctype is written by render.
-func layout(title string, body ...el.Node) el.Node {
+func layout(meta pageMeta, body ...el.Node) el.Node {
 	return el.El(el.HTML, el.Attr(el.Lang, "en"),
 		el.El(el.Head,
 			el.El(el.Meta, el.Attr(el.Charset, "utf-8")),
 			el.El(el.Meta, el.Attr(el.Name, "viewport"), el.Attr(el.Content, "width=device-width, initial-scale=1")),
 			el.El(el.Meta, el.Attr(el.Name, "color-scheme"), el.Attr(el.Content, "light dark")),
-			el.El(el.Title, el.Text(title)),
+			el.El(el.Title, el.Text(meta.Title)),
+			el.El(el.Meta, el.Attr(el.Name, "description"), el.Attr(el.Content, meta.Description)),
 			el.El(el.Link, el.Attr(el.Rel, "icon"), el.Attr(el.Href, "/favicon.svg"), el.Attr(el.Type, "image/svg+xml")),
 			el.El(el.Style, el.Raw(css)),
 		),
@@ -40,20 +50,25 @@ func postList(posts []Post) el.Node {
 			),
 		))
 	}
-	return layout(siteName,
+	return layout(pageMeta{Title: siteName, Description: siteDescription},
 		el.El(el.H1, el.Text("Posts")),
 		el.El(el.Ul, append([]el.Node{el.Attr(el.Class, "posts")}, items...)...),
 	)
 }
 
 func postPage(p Post) el.Node {
-	body := append([]el.Node{dateNode(p.Date)}, renderBlocks(p.Doc.Children)...)
-	return layout(p.Title+" - "+siteName, el.El(el.Article, body...))
+	body := []el.Node{dateNode(p.Date)}
+	if _, ok := firstTitle(p.Doc); !ok {
+		// The title came from front matter only, so the body has no heading.
+		body = append(body, el.El(el.H1, el.Text(p.Title)))
+	}
+	body = append(body, renderBlocks(p.Doc.Children)...)
+	return layout(pageMeta{Title: p.Title + " - " + siteName, Description: p.Description}, el.El(el.Article, body...))
 }
 
 func errorPage(status int, message string) el.Node {
 	title := strconv.Itoa(status) + " " + http.StatusText(status)
-	return layout(title+" - "+siteName,
+	return layout(pageMeta{Title: title + " - " + siteName, Description: message},
 		el.El(el.H1, el.Text(title)),
 		el.El(el.P, el.Text(message)),
 		el.El(el.P, el.El(el.A, el.Attr(el.Href, "/"), el.Text("Back to all posts"))),

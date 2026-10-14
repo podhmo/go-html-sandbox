@@ -26,7 +26,7 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### cmd/blog
 
-- [ ] **Front matter in posts**: `title` and `description` from
+- [x] **Front matter in posts**: `title` and `description` from
   `pkg/tinyfrontmatter`, falling back to the first `#` heading and the
   first paragraph; `description` also feeds `<meta name="description">`
   and OGP.

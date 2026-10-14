@@ -6,18 +6,24 @@ import (
 	"io/fs"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
+	"github.com/podhmo/go-html-sandbox/pkg/tinyfrontmatter"
 	"github.com/podhmo/go-html-sandbox/pkg/tinymarkdown"
 )
 
 // Post is one blog post loaded from a YYYY-MM-DD-slug.md file.
 type Post struct {
-	Slug  string
-	Date  time.Time
-	Title string // text of the first "#" heading
-	Doc   tinymarkdown.Document
+	Slug        string
+	Date        time.Time
+	Title       string // front matter "title", or the first "#" heading
+	Description string // front matter "description", or the first paragraph
+	Doc         tinymarkdown.Document
 }
+
+// frontMatterKeys are the keys a post may set; others are reported as typos.
+var frontMatterKeys = []string{"title", "description"}
 
 var postName = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$`)
 
@@ -48,12 +54,28 @@ func loadPosts(fsys fs.FS) ([]Post, error) {
 		if err != nil {
 			return nil, err
 		}
-		doc := tinymarkdown.Parse(string(src))
-		title, ok := firstTitle(doc)
-		if !ok {
-			return nil, fmt.Errorf("%s: no \"# title\" heading", name)
+		meta, body, err := tinyfrontmatter.Split(string(src))
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
 		}
-		posts = append(posts, Post{Slug: slug, Date: date, Title: title, Doc: doc})
+		for k := range meta {
+			if !slices.Contains(frontMatterKeys, k) {
+				return nil, fmt.Errorf("%s: unknown front matter key %q (want one of %v)", name, k, frontMatterKeys)
+			}
+		}
+		doc := tinymarkdown.Parse(body)
+		title := meta["title"]
+		if title == "" {
+			title, _ = firstTitle(doc)
+		}
+		if title == "" {
+			return nil, fmt.Errorf("%s: no title (set \"title\" in front matter or start with a \"# title\" heading)", name)
+		}
+		description := meta["description"]
+		if description == "" {
+			description = firstParagraph(doc.Children)
+		}
+		posts = append(posts, Post{Slug: slug, Date: date, Title: title, Description: description, Doc: doc})
 	}
 	slices.SortFunc(posts, func(a, b Post) int {
 		return cmp.Or(b.Date.Compare(a.Date), cmp.Compare(a.Slug, b.Slug))
@@ -69,4 +91,20 @@ func firstTitle(doc tinymarkdown.Document) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// firstParagraph returns the first paragraph in document order, with line
+// breaks turned into spaces.
+func firstParagraph(bs []tinymarkdown.Block) string {
+	for _, b := range bs {
+		switch b := b.(type) {
+		case tinymarkdown.Paragraph:
+			return strings.ReplaceAll(b.Text, "\n", " ")
+		case tinymarkdown.Section:
+			if s := firstParagraph(b.Children); s != "" {
+				return s
+			}
+		}
+	}
+	return ""
 }

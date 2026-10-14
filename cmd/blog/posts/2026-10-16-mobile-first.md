@@ -1,5 +1,7 @@
-# Mobile-first without a build step
-
+---
+title: Mobile-first without a build step
+description: How the stylesheet stays small, readable on phones, and free of any build step.
+---
 The stylesheet is a Go string constant inlined into every page.
 It is written for narrow screens first and only adds room on wider ones.
 
