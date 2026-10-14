@@ -44,7 +44,7 @@ func layout(env pageEnv, meta pageMeta, body ...pe.Node) pe.Node {
 	if env.LiveReload {
 		head = append(head, pe.Script(liveReloadScriptPath))
 	}
-	return pe.Document("en", head,
+	return pe.Document("ja", head,
 		pe.Header(pe.Nav(
 			pe.A("/", pe.Strong(pe.Text(siteName))),
 			pe.A("/docs/", pe.Text("docs")),
