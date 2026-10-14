@@ -83,7 +83,16 @@ TinyGo の `net/http` は標準ライブラリの複製に手を入れたもの�
 | 標準 Go（`GOOS=js GOARCH=wasm`） | 8,560,688 B（8.2 MiB） | 2,327,300 B |
 | 標準 Go（`-ldflags='-s -w'`） | 8,324,183 B | 2,269,595 B |
 
-2026-09-04 の [changelog](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/) で、Workers のサイズ制限は「非圧縮で 64 MiB（全プラン共通）、圧縮後のサイズは無制限」になった（以前は圧縮後で Free 3 MB、Paid 10 MB）。標準 Go のビルドも十分に収まるので、**サイズはもう TinyGo を選ぶ決め手にならない**。標準 Go の wasm も `wrangler dev` で同じように動いた。
+2026-09-04 の [changelog](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/) で、Workers のサイズ制限は「非圧縮で 64 MiB（全プラン共通）、圧縮後のサイズは無制限」になった（以前は圧縮後で Free 3 MB、Paid 10 MB）。標準 Go のビルドも十分に収まるので、**サイズ制限はもう TinyGo を選ぶ決め手にならない**。標準 Go の wasm も `wrangler dev` で同じように動いた。
+
+なお、この wasm がブラウザに送られることはない。wasm は Cloudflare のエッジ（サーバー側）で動き、ブラウザが受け取るのは SSR された HTML だけ（一覧 `/` は 1,464 B、記事 `/posts/hello` は 1,682 B、最大の `/docs/sketch/ja/blog` でも 18,005 B）。wasm がアップロードされるのは `wrangler deploy` のときだけ。
+
+サイズが効くのはサーバー側のコストのほう:
+
+- コールドスタート: エッジが Worker を読み込むときに wasm をコンパイルする。ここは wasm が大きいほど遅くなるはずなので、標準 Go（8.2 MiB）より TinyGo（2.0 MiB）が有利。サイズ制限がなくなっても、TinyGo を選ぶ理由はここに残る。
+- リクエストごと: コンパイル済みのモジュールは使い回されるが、インスタンスの生成、Go ランタイムの初期化、`main`（全記事のパース）は毎回走る（「workers-go の実行モデル」を参照）。
+
+どちらも本番での計測はしていない。
 
 このため、ビルドタグは `tinygo` ではなく `js && wasm` にした。TinyGo の `-target wasm` は `GOOS=js GOARCH=wasm` になるので、どちらのコンパイラでも同じファイルが選ばれる。
 
@@ -169,6 +178,7 @@ examples/blog/
 ## 未確認・残課題
 
 - 本番の Cloudflare へのデプロイ（`wrangler deploy`）。リクエストごとに全記事をパースする実行モデルで、CPU 時間の上限に収まるか。
+- コールドスタートの時間を、TinyGo と標準 Go のビルドで比べること。
 - 記事が増えたときのリクエストごとのコスト。必要なら、パース結果をビルド時に生成する、ルートに必要な記事だけを読む、などを考える。
 - `tinygo test -target wasm`（node が必要）での実行。
 - `HEAD` には GET と同じ本文を返している（以前の ServeMux 経由の挙動と同じで、`net/http` のサーバーが本文を捨てる）。Workers 上で HEAD がどう扱われるかは未確認。
