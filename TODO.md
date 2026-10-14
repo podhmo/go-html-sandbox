@@ -21,6 +21,11 @@ This file tracks actionable tasks only; completed work is swept to
 - [x] **Dark mode for the blog**: render every page in pico's dark theme
   (`data-theme="dark"` on `<html>`) instead of following the OS setting.
 
+- [ ] **`examples/parse-markdown`: dump the tinymarkdown tree**: a small
+  CLI that parses Markdown files (or stdin) with `pkg/tinymarkdown` and
+  prints the resulting tree, to check how documents such as `TODO.md` and
+  `docs/**/*.md` are understood before embedding them in the blog.
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
