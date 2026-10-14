@@ -26,7 +26,7 @@ This file tracks actionable tasks only; completed work is swept to
   prints the resulting tree, to check how documents such as `TODO.md` and
   `docs/**/*.md` are understood before embedding them in the blog.
 
-- [ ] **tinymarkdown: list items spanning several lines**: indented lines
+- [x] **tinymarkdown: list items spanning several lines**: indented lines
   after a `- ` item should continue that item instead of starting a
   paragraph. Today every multi-line entry in `TODO.md` splits into a
   one-line list plus a paragraph (check with `examples/parse-markdown`).

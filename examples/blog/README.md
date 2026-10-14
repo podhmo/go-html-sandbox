@@ -64,7 +64,7 @@ description is the first paragraph.
 The body supports a tiny subset of Markdown:
 
 - `#` to `###` headings, which open nested sections
-- `- ` list items (no nesting)
+- `- ` list items (no nesting); indented lines continue the item above
 - paragraphs
 - code blocks fenced by exactly three backquotes (no highlighting)
 

@@ -1,8 +1,9 @@
 // Package tinymarkdown parses a tiny subset of Markdown into a pure-data tree.
 //
 // Supported: headings "#" to "###" (which open nested sections), "- " list
-// items, paragraphs, and code blocks fenced by exactly "```". Anything else is treated as paragraph text. Inline syntax is
-// not interpreted. See docs/sketch/ja/blog.md.
+// items (which may continue on indented lines), paragraphs, and code blocks
+// fenced by exactly "```". Anything else is treated as paragraph text.
+// Inline syntax is not interpreted. See docs/sketch/ja/blog.md.
 package tinymarkdown
 
 import "strings"
@@ -32,6 +33,7 @@ type Paragraph struct {
 }
 
 // List is a run of consecutive "- " lines. Items hold the text after "- ".
+// Indented lines that follow an item continue it, joined with "\n".
 type List struct {
 	Items []string
 }
@@ -109,6 +111,9 @@ func scan(src string) []Block {
 				flush()
 			}
 			items = append(items, strings.TrimSpace(trimmed[2:]))
+		case len(items) > 0 && line != trimmed && (line[0] == ' ' || line[0] == '\t'):
+			// An indented line continues the item above it.
+			items[len(items)-1] += "\n" + trimmed
 		default:
 			if len(items) > 0 {
 				flush()
