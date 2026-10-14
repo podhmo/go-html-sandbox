@@ -5,6 +5,8 @@
 
 - docs/*/ja/**/*.md は日本語で出力 (/ja/ が含まれているもの)
 - docs/**/*.md は英語で出力
+- TODO.md は日本語で出力（見出しの `## To Be Implemented` と `### Future work` は、運用ルールが名前で参照しているので英語のまま）
+- TODO-archive.md は、GC で移す項目を TODO.md の文面のまま追記する（それ以前の英語の項目は書き換えない）
 
 # TODO.md
 
