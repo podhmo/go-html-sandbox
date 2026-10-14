@@ -39,7 +39,7 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### cmd/blog (application)
 
-- [-] **Mobile-first blog** ([sketch](docs/sketch/ja/blog.md)): handlers
+- [x] **Mobile-first blog** ([sketch](docs/sketch/ja/blog.md)): handlers
   tested with `httptest` over a `fstest.MapFS`, body checks via
   `PlainRenderer`.
   - [x] **Post loading**: `loadPosts(fs.FS)` over `//go:embed posts/*.md`;
@@ -55,5 +55,5 @@ This file tracks actionable tasks only; completed work is swept to
     `Content-Type` and `Cache-Control`. Test the headers.
   - [x] **Mobile-first CSS**: inline `<style>` via `Raw`, no build step,
     under ~100 lines (dark mode, 44px tap targets, scrollable `<pre>`).
-  - [ ] **Sample posts**: a few posts in `cmd/blog/posts/` that exercise
+  - [x] **Sample posts**: a few posts in `cmd/blog/posts/` that exercise
     every supported Markdown construct.
