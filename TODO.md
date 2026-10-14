@@ -11,10 +11,15 @@ This file tracks actionable tasks only; completed work is swept to
 
 ## To Be Implemented
 
-- [ ] **blog: rewrite the stale sample post `2026-10-16-mobile-first.md`**:
+- [x] **blog: rewrite the stale sample post `2026-10-16-mobile-first.md`**:
   it still describes the old inline stylesheet (custom properties, clamp(),
   prefers-color-scheme, ...), but pages now use pico.css v2 in its dark
   theme, plus a small `site.css` for what pico cannot express.
+
+- [ ] **blog: update the stale sample post `2026-10-15-tinymarkdown.md`**:
+  it says headings stop at `###` and shows `####` as unsupported, and
+  does not mention links or pipe tables, all of which tinymarkdown now
+  supports.
 
 - [x] **tinymarkdown: links**: parse `[text](url)` into a link inline
   (alongside `` `code` `` spans) and render it as `<a>` in the blog; today

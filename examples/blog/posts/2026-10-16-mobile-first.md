@@ -1,15 +1,27 @@
 ---
-title: Mobile-first without a build step
-description: How the stylesheet stays small, readable on phones, and free of any build step.
+title: ビルドなしのモバイルファースト
+description: pico.css と小さな site.css だけで、ビルドなしにスマートフォンでも読みやすくする方法。
 ---
-The stylesheet is a Go string constant inlined into every page.
-It is written for narrow screens first and only adds room on wider ones.
+見た目のほとんどは pico.css v2 に任せている。
+CDN から読み込むだけなので、CSS のビルドは要らない。
+pico は狭い画面を前提に作られていて、広い画面でだけ余白や幅を足していく。
 
-## Techniques used
+## pico.css に任せていること
 
-- A single min-width media query instead of max-width overrides.
-- Custom properties for colors and spacing.
-- clamp() for heading sizes.
-- prefers-color-scheme for dark mode.
-- env(safe-area-inset-*) to keep clear of notches.
-- Tap targets of at least 44px in the post list.
+- `<html data-theme="dark">` と `color-scheme: dark` で、ダークテーマに固定する。
+- viewport の meta タグで、端末の幅に合わせて表示する。
+- `header` / `main` / `footer` を素直に並べれば、pico がコンテナの幅と余白を決める。
+- 投稿一覧の各投稿は `<article>` で、pico がカードとして表示する。
+- 見出しや本文の文字サイズ、リンクやボタンの色も pico の既定のまま。
+
+## site.css で足していること
+
+pico で表現できないものだけを、埋め込みの `site.css` に書いている。
+値は pico の CSS 変数から取るので、テーマを変えてもそのまま追従する。
+
+- サイトのナビゲーションを `position: sticky` で画面上部に固定する。下をスクロールする本文が透けないよう、背景色を付けている。
+- `header` と `main` の上下の余白を半分にする。pico はどちらにも同じ余白を付けるので、そのままだと間が空きすぎる。
+- ナビゲーション項目の上下の余白を詰める。
+
+`site.css` は `/site.css?v=<ハッシュ>` で配信している。
+内容が変わるとハッシュも変わるので、長期間キャッシュさせても問題ない。
