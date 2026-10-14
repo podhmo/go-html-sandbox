@@ -92,3 +92,33 @@ func TestLists(t *testing.T) {
 			}}},
 	})
 }
+
+func TestCodeBlocks(t *testing.T) {
+	run(t, []testCase{
+		{"code block", "```\nfmt.Println(1)\n```",
+			Document{Children: []Block{CodeBlock{Code: "fmt.Println(1)"}}}},
+		{"language name is ignored", "```go\nx := 1\n```",
+			Document{Children: []Block{CodeBlock{Code: "x := 1"}}}},
+		{"contents are kept verbatim", "```\n# not a heading\n- not a list\n\n\tindented  \n```",
+			Document{Children: []Block{CodeBlock{Code: "# not a heading\n- not a list\n\n\tindented  "}}}},
+		{"empty code block", "```\n```",
+			Document{Children: []Block{CodeBlock{Code: ""}}}},
+		{"closing fence may have surrounding spaces", "```\na\n  ```  \nafter",
+			Document{Children: []Block{CodeBlock{Code: "a"}, Paragraph{Text: "after"}}}},
+		{"closing fence must be bare", "```\n```go\n```",
+			Document{Children: []Block{CodeBlock{Code: "```go"}}}},
+		{"CRLF line endings", "```\r\na\r\n```\r\n",
+			Document{Children: []Block{CodeBlock{Code: "a"}}}},
+		{"unclosed fence runs to EOF", "```\na\n\n# b",
+			Document{Children: []Block{CodeBlock{Code: "a\n\n# b"}}}},
+		{"fence ends a paragraph and a list", "p\n```\nc\n```\n- a\n```\nd\n```",
+			Document{Children: []Block{
+				Paragraph{Text: "p"}, CodeBlock{Code: "c"},
+				List{Items: []string{"a"}}, CodeBlock{Code: "d"},
+			}}},
+		{"code block inside a section", "# A\n```\n## x\n```",
+			Document{Children: []Block{
+				Section{Level: 1, Title: "A", Children: []Block{CodeBlock{Code: "## x"}}},
+			}}},
+	})
+}

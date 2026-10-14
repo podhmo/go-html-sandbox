@@ -1,7 +1,7 @@
 // Package tinymarkdown parses a tiny subset of Markdown into a pure-data tree.
 //
 // Supported: headings "#" to "###" (which open nested sections), "- " list
-// items, and paragraphs. Anything else is treated as paragraph text. Inline syntax is
+// items, paragraphs, and code blocks fenced by exactly "```". Anything else is treated as paragraph text. Inline syntax is
 // not interpreted. See docs/sketch/ja/blog.md.
 package tinymarkdown
 
@@ -36,9 +36,18 @@ type List struct {
 	Items []string
 }
 
+// CodeBlock is the verbatim content between "```" fences, lines joined with
+// "\n". Text after the opening fence (a language name) is ignored.
+type CodeBlock struct {
+	Code string
+}
+
 func (Section) block()   {}
 func (Paragraph) block() {}
 func (List) block()      {}
+func (CodeBlock) block() {}
+
+const fence = "```"
 
 // maxLevel is the deepest heading level recognized.
 const maxLevel = 3
@@ -72,10 +81,24 @@ func scan(src string) []Block {
 			items = nil
 		}
 	}
+	var code []string
+	inCode := false
 	for line := range strings.SplitSeq(src, "\n") {
-		line = strings.TrimRight(line, " \t\r")
-		trimmed := strings.TrimLeft(line, " \t")
+		line = strings.TrimSuffix(line, "\r")
+		trimmed := strings.TrimSpace(line)
+		if inCode {
+			if trimmed == fence {
+				out = append(out, CodeBlock{Code: strings.Join(code, "\n")})
+				code, inCode = nil, false
+			} else {
+				code = append(code, line)
+			}
+			continue
+		}
 		switch {
+		case strings.HasPrefix(trimmed, fence):
+			flush()
+			inCode = true
 		case trimmed == "":
 			flush()
 		case isHeading(trimmed):
@@ -92,6 +115,10 @@ func scan(src string) []Block {
 			}
 			para = append(para, trimmed)
 		}
+	}
+	if inCode {
+		// An unclosed fence runs to the end of the document.
+		out = append(out, CodeBlock{Code: strings.Join(code, "\n")})
 	}
 	flush()
 	return out

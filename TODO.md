@@ -25,7 +25,7 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### pkg/tinymarkdown (tiny Markdown parser)
 
-- [-] **`Parse(src) Document`** ([sketch](docs/sketch/ja/blog.md)): pure-data
+- [x] **`Parse(src) Document`** ([sketch](docs/sketch/ja/blog.md)): pure-data
   AST with no dependency on `pkg/el`. Table tests compare ASTs with
   `reflect.DeepEqual`.
   - [x] **Sections**: `#`–`###` nest into `Section`; content before the
@@ -33,7 +33,7 @@ This file tracks actionable tasks only; completed work is swept to
     level jumps.
   - [x] **Lists and paragraphs**: consecutive `- ` lines form one `List`;
     other non-empty lines join into a `Paragraph`; blank lines separate.
-  - [ ] **Code blocks**: ```` ``` ```` fences only; the info string is
+  - [x] **Code blocks**: ```` ``` ```` fences only; the info string is
     ignored and contents are kept verbatim (including `#`, `- `, blank
     lines). Tests for an unclosed fence running to EOF.
 
