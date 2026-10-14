@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	sandbox "github.com/podhmo/go-html-sandbox"
 )
 
 //go:embed posts/*.md
@@ -39,10 +41,14 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	h, err := newServer(*baseURL, posts)
+	docs, err := loadDocs(sandbox.Docs)
 	if err != nil {
 		return err
 	}
-	slog.Info("listening", "addr", "http://"+*addr, "base-url", *baseURL, "posts", len(posts))
+	h, err := newServer(*baseURL, posts, docs)
+	if err != nil {
+		return err
+	}
+	slog.Info("listening", "addr", "http://"+*addr, "base-url", *baseURL, "posts", len(posts), "docs", len(docs))
 	return http.ListenAndServe(*addr, h)
 }

@@ -17,7 +17,11 @@ func newTestServer(t *testing.T, fsys fstest.MapFS) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h, err := newServer("https://example.com", posts)
+	docs, err := loadDocs(testDocs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, err := newServer("https://example.com", posts, docs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,6 +108,7 @@ func TestPostPageText(t *testing.T) {
 	}
 	want := `Hello <script> - blog
 blog
+docs
 2026-10-14
 Hello <script>
 first
@@ -261,7 +266,7 @@ func TestBaseURL(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.in, func(t *testing.T) {
-			h, err := newServer(c.in, posts)
+			h, err := newServer(c.in, posts, nil)
 			if c.wantURL == "" {
 				if err == nil {
 					t.Error("want error")

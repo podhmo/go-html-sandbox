@@ -5,8 +5,8 @@ A mobile-first, server-side rendered blog built on `pkg/picoel`,
 library: there is no template engine, no JavaScript, and no CSS of its own.
 Styling is [pico.css v2](https://picocss.com/docs) alone, loaded from a CDN;
 pages are made of semantic elements and pico's `container` class.
-Posts and the favicon are embedded with `go:embed`, so the binary is all you
-need to run it.
+Posts, the favicon, and the repository's own documents are embedded with
+`go:embed`, so the binary is all you need to run it.
 
 See the [sketch](../../docs/sketch/ja/blog.md) for the design.
 
@@ -40,6 +40,8 @@ Posts are embedded at build time, so rebuild after editing them.
 | --- | --- |
 | `/` | Post list, newest first |
 | `/posts/{slug}` | A post |
+| `/docs/` | Repository documents: `TODO.md` and `docs/**/*.md` |
+| `/docs/{path}` | A document; `TODO.md` is `/docs/TODO`, `docs/ja/design.md` is `/docs/ja/design` |
 | `/favicon.svg` | The embedded favicon |
 | anything else | 404 error page |
 
@@ -78,6 +80,7 @@ title, or an unknown front matter key stop the server at startup.
 | --- | --- |
 | `main.go` | Flags, embedding, startup |
 | `posts.go` | Loading posts from an `fs.FS` |
+| `docs.go` | Loading repository documents (embedded by the root package, [`embed.go`](../../embed.go)) |
 | `server.go` | Routing, rendering, error pages, panic recovery |
 | `views.go` | Pages built from `pkg/picoel`, OGP tags |
 

@@ -20,24 +20,37 @@ type server struct {
 	baseURL string // absolute, without a trailing slash
 	posts   []Post
 	bySlug  map[string]Post
+	docs    []Doc
+	byPath  map[string]Doc
 }
 
-// newServer serves posts. baseURL is the public origin used for absolute
+// newServer serves posts and docs. baseURL is the public origin used for absolute
 // URLs in OGP tags, e.g. "https://example.com". Path prefixes are rejected
 // because links inside the site are root-relative.
-func newServer(baseURL string, posts []Post) (http.Handler, error) {
+func newServer(baseURL string, posts []Post, docs []Doc) (http.Handler, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
 		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
 		return nil, fmt.Errorf("base URL must be an http(s) origin such as https://example.com, got %q", baseURL)
 	}
-	s := &server{baseURL: strings.TrimSuffix(u.String(), "/"), posts: posts, bySlug: make(map[string]Post, len(posts))}
+	s := &server{
+		baseURL: strings.TrimSuffix(u.String(), "/"),
+		posts:   posts,
+		bySlug:  make(map[string]Post, len(posts)),
+		docs:    docs,
+		byPath:  make(map[string]Doc, len(docs)),
+	}
 	for _, p := range posts {
 		s.bySlug[p.Slug] = p
+	}
+	for _, d := range docs {
+		s.byPath[d.Path] = d
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleList)
 	mux.HandleFunc("GET /posts/{slug}", s.handlePost)
+	mux.HandleFunc("GET /docs/{$}", s.handleDocList)
+	mux.HandleFunc("GET /docs/{path...}", s.handleDoc)
 	mux.HandleFunc("GET /favicon.svg", handleFavicon)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		renderError(w, r, http.StatusNotFound, "Page not found.", nil)
@@ -56,6 +69,19 @@ func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page(w, r, postPage(s.baseURL, p))
+}
+
+func (s *server) handleDocList(w http.ResponseWriter, r *http.Request) {
+	page(w, r, docList(s.baseURL, s.docs))
+}
+
+func (s *server) handleDoc(w http.ResponseWriter, r *http.Request) {
+	d, ok := s.byPath[r.PathValue("path")]
+	if !ok {
+		renderError(w, r, http.StatusNotFound, "Document not found.", nil)
+		return
+	}
+	page(w, r, docPage(s.baseURL, d))
 }
 
 // handleFavicon serves the embedded icon. Embedded files have no

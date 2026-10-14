@@ -33,7 +33,10 @@ func layout(meta pageMeta, body ...pe.Node) pe.Node {
 	head = append(head, ogp(meta)...)
 	head = append(head, pe.Icon("/favicon.svg", "image/svg+xml"))
 	return pe.Document("en", head,
-		pe.Header(pe.Nav(pe.A("/", pe.Strong(pe.Text(siteName))))),
+		pe.Header(pe.Nav(
+			pe.A("/", pe.Strong(pe.Text(siteName))),
+			pe.A("/docs/", pe.Text("docs")),
+		)),
 		pe.Main(body...),
 		pe.Footer(pe.Small(pe.Text("Rendered with the Go standard library."))),
 	)
@@ -88,6 +91,30 @@ func postPage(baseURL string, p Post) pe.Node {
 		URL:         baseURL + postPath(p),
 		Type:        "article",
 	}
+	return layout(meta, pe.Article(body...))
+}
+
+// docList links to every repository document, showing its file path below
+// the title.
+func docList(baseURL string, docs []Doc) pe.Node {
+	body := []pe.Node{pe.H1(pe.Text("Docs"))}
+	for _, d := range docs {
+		body = append(body, pe.Article(pe.Hgroup(
+			pe.H2(pe.A(docPath(d), pe.Text(d.Title))),
+			pe.P(pe.Text(d.Source)),
+		)))
+	}
+	meta := pageMeta{Title: "Docs", Description: "Documents of this repository.", URL: baseURL + "/docs/", Type: "website"}
+	return layout(meta, body...)
+}
+
+func docPage(baseURL string, d Doc) pe.Node {
+	body := []pe.Node{pe.ArticleHeader(pe.Small(pe.Text(d.Source)))}
+	if _, ok := firstTitle(d.Doc); !ok {
+		body = append(body, pe.H1(pe.Text(d.Title)))
+	}
+	body = append(body, renderBlocks(d.Doc.Children)...)
+	meta := pageMeta{Title: d.Title, Description: d.Description, URL: baseURL + docPath(d), Type: "article"}
 	return layout(meta, pe.Article(body...))
 }
 

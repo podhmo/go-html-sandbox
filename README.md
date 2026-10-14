@@ -2,6 +2,7 @@
 
 Classic server-side rendered HTML with the Go standard library only.
 
+- `embed.go` — embeds `TODO.md` and `docs/` so the blog can serve them
 - `pkg/el` — HTML as plain data, rendered by a `Renderer` ([design](docs/ja/design.md))
 - `pkg/picoel` — the [pico.css v2](https://picocss.com/docs) building blocks the blog needs, on top of `pkg/el`
 - `pkg/tinymarkdown` — a tiny Markdown parser (sections, lists, paragraphs, code blocks)
