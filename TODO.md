@@ -25,10 +25,10 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### pkg/markdown (tiny Markdown parser)
 
-- [ ] **`Parse(src) Document`** ([sketch](docs/sketch/ja/blog.md)): pure-data
+- [-] **`Parse(src) Document`** ([sketch](docs/sketch/ja/blog.md)): pure-data
   AST with no dependency on `pkg/el`. Table tests compare ASTs with
   `reflect.DeepEqual`.
-  - [ ] **Sections**: `#`–`###` nest into `Section`; content before the
+  - [x] **Sections**: `#`–`###` nest into `Section`; content before the
     first heading goes to `Document.Children`. Tests for nesting and
     level jumps.
   - [ ] **Lists and paragraphs**: consecutive `- ` lines form one `List`;
