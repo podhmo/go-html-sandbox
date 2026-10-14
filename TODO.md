@@ -36,7 +36,7 @@ This file tracks actionable tasks only; completed work is swept to
     `dev`, and `deploy`, like `go/Makefile` (there is no root `Makefile`;
     each implementation is run from its own directory). Done when
     `make test dev` in `moonbit/` works from a fresh checkout.
-  - [ ] **Deploy**: deploy as the Worker `blog-moonbit` for now, so the Go
+  - [x] **Deploy**: deploy as the Worker `blog-moonbit` for now, so the Go
     `blog` stays; later whichever implementation wins is deployed as
     `blog`. Follow the steps the Go Worker uses. Done
     when the workers.dev URL serves the top page and a 404, confirming that

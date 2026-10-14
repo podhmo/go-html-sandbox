@@ -38,3 +38,13 @@ Then open <http://localhost:8787> (pass `--port` if the Go Worker already
 uses it). The build command runs `moon build` and copies the Wasm to
 `workers/build/app.wasm`, ignored by git; `wrangler dev` rebuilds when
 `site/` or `worker/` changes. Needs `moon` on `PATH`.
+
+## Deploying
+
+```sh
+cd workers
+npx wrangler deploy
+```
+
+It deploys as the Worker `blog-moonbit`, apart from the Go `blog`, at
+<https://blog-moonbit.ababjam61.workers.dev>.

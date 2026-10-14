@@ -12,6 +12,7 @@ spike はリポジトリには入れておらず、要点のコードを末尾�
   - しかし Workers では `import` した Wasm はコンパイル済みの `WebAssembly.Module` として渡され、コンパイルのオプションを指定できない。`wrangler dev` で試すと、import（`_` と `wasm:js-string`）が解決されないまま残っていた。
   - JS で polyfill しようにも、`wasm:js-string.fromCharCodeArray` は wasm-gc の配列を受け取り、JS からその中身は読めないので、書けない。
 - **文字列を UTF-16 のコード単位ごとに受け渡す小さな ABI なら、`wasm-gc`（builtin string なし）でも `wasm`（線形メモリ）でも、`wrangler dev` 上で動いた。** wasm-gc が workerd で動くことも、これで確認できた。
+- **本番の Workers にもデプロイでき、wasm-gc の Wasm がそのまま動いた**（「デプロイ」の節）。アップロードは 5.85 KiB（gzip 後 3.17 KiB）、起動時間は 2 ms。
 - サイズは、ルーティングと HTML の組み立てだけの小さな関数で wasm-gc が 4.8 KB（gzip 後 2.4 KB）、wasm が 8.2 KB（同 4.2 KB）。Go 版（TinyGo で約 2 MiB）とは桁が違うが、ブログ全体を移植してから比べないと公平な比較にはならない。
 - 移植は **wasm-gc（builtin string なし）+ コード単位の ABI** から始めるのがよい。サイズが小さく、GC を Wasm 側で持たずに済む。
 
@@ -22,7 +23,7 @@ spike はリポジトリには入れておらず、要点のコードを末尾�
 | moon | 0.1.20260920（`moon new` は新しい `moon.pkg` / `moon.mod` 形式を生成する） |
 | moonc | v0.10.14（2026-09-18） |
 | Node.js | 24.21.0（V8 での動作確認用） |
-| wrangler | 4.147.0（`npx wrangler@4`）。ローカルの `wrangler dev` だけで確認し、デプロイはしていない |
+| wrangler | 4.147.0（`npx wrangler@4`）。spike はローカルの `wrangler dev` だけで確認した。`moonbit/` のものは後日デプロイした（「デプロイ」の節） |
 
 ## 調べたこと
 
@@ -134,9 +135,37 @@ TODO.md の「Experiment with MoonBit's Wasm backends on Cloudflare Workers」�
 
 `moonbit/` のビルド（`render` は spike より少し大きい）は 4,906 B、gzip -9 で 2,524 B。spike の 4,807 B とほぼ同じ。
 
+## デプロイ
+
+`moonbit/workers` で `npx wrangler deploy` を実行し、`blog-moonbit` という Worker として公開した。Go 版の `blog` とは別の Worker なので、そちらはそのまま残っている。この時点の `render` はトップページと Not found ページだけで、Go 版のブログの再現はまだしていない。目的は疎通の確認。
+
+wrangler の出力（抜粋）:
+
+```
+[custom build] Running: cd .. && moon build --target wasm-gc --release && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm
+Total Upload: 5.85 KiB / gzip: 3.17 KiB
+Worker Startup Time: 2 ms
+Uploaded blog-moonbit (1.06 sec)
+Deployed blog-moonbit triggers (0.84 sec)
+  https://blog-moonbit.ababjam61.workers.dev
+```
+
+- アップロード時に wasm-gc が拒否されることはなく、追加の設定（互換性フラグなど）も要らなかった。
+- アップロードの 5.85 KiB は、Wasm（4,906 B）と `worker.mjs` を合わせたもの。
+
+公開 URL に対して確認したこと:
+
+| リクエスト | 結果 |
+| --- | --- |
+| `/` | 200、`content-type: text/html; charset=utf-8`、トップページ |
+| `/a%3Cb%3E` | Not found ページに `/a&lt;b&gt;` と表示される（ステータスはまだ 200） |
+| `/%E6%97%A5%E6%9C%AC` | `/日本` と表示される |
+| `/%E0%A4%A` | 400 |
+
+`wrangler dev` と同じ結果になった。手元（日本）から `curl` で `/` を 5 回取ったときの所要時間は 0.38〜0.44 秒だったが、TLS の接続を含む往復の時間で、Worker の処理時間ではない。
+
 ## 未確認のこと
 
-- **デプロイ**：wasm-gc の Wasm を本番の Workers がアップロード時に受け付けるか。`wrangler dev` の workerd では動いたが、本番では試していない。
 - **性能**：コード単位ごとに Wasm と JS を行き来するコスト。数十 KB のページなら問題ないと思うが測っていない。重ければ、線形メモリの wasm で UTF-8 のバイト列をメモリ越しにまとめて渡す ABI に切り替える。
 - **`wasm-opt`** をかけたときのサイズ（手元に入っていなかった）。
 - **ステータスコードとヘッダー**：spike は常に 200 の HTML を返す。404 や `text/markdown`、`Cache-Control` を返すには、ABI に「ステータス」と「ヘッダー」を足す必要がある。
@@ -147,7 +176,7 @@ TODO.md の「Experiment with MoonBit's Wasm backends on Cloudflare Workers」�
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。
 2. ステータスとヘッダーを返せるように ABI を広げ、存在しないパスに 404 を返す。
 3. `moonbit/Makefile` に `build`、`test`、`dev`、`deploy` を用意する。
-4. 本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。
+4. （済み）本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。「デプロイ」の節を参照。
 5. `wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。
 6. `pkg/el`（HTML ビルダー）と `pkg/tinymarkdown`（Markdown パーサー）を移植し、記事 1 本を表示するところまで作る。Go 版とサイズを比べて、このレポートに追記する。
 
