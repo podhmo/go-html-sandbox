@@ -31,7 +31,7 @@ This file tracks actionable tasks only; completed work is swept to
   - [x] **Sections**: `#`–`###` nest into `Section`; content before the
     first heading goes to `Document.Children`. Tests for nesting and
     level jumps.
-  - [ ] **Lists and paragraphs**: consecutive `- ` lines form one `List`;
+  - [x] **Lists and paragraphs**: consecutive `- ` lines form one `List`;
     other non-empty lines join into a `Paragraph`; blank lines separate.
   - [ ] **Code blocks**: ```` ``` ```` fences only; the info string is
     ignored and contents are kept verbatim (including `#`, `- `, blank

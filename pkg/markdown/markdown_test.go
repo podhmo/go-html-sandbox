@@ -70,3 +70,25 @@ func TestSectionsAndParagraphs(t *testing.T) {
 			Document{Children: []Block{Paragraph{Text: "**bold** [link](/x)"}}}},
 	})
 }
+
+func TestLists(t *testing.T) {
+	run(t, []testCase{
+		{"list", "- a\n-   b  \n  - c",
+			Document{Children: []Block{List{Items: []string{"a", "b", "c"}}}}},
+		{"blank line splits lists", "- a\n\n- b",
+			Document{Children: []Block{List{Items: []string{"a"}}, List{Items: []string{"b"}}}}},
+		{"list after paragraph without a blank line", "intro\n- a\n- b",
+			Document{Children: []Block{Paragraph{Text: "intro"}, List{Items: []string{"a", "b"}}}}},
+		{"paragraph after list without a blank line", "- a\nafter",
+			Document{Children: []Block{List{Items: []string{"a"}}, Paragraph{Text: "after"}}}},
+		{"dash without a space is paragraph text", "-a\n--",
+			Document{Children: []Block{Paragraph{Text: "-a\n--"}}}},
+		{"list inside a section", "# A\n- x\n## B\n- y",
+			Document{Children: []Block{
+				Section{Level: 1, Title: "A", Children: []Block{
+					List{Items: []string{"x"}},
+					Section{Level: 2, Title: "B", Children: []Block{List{Items: []string{"y"}}}},
+				}},
+			}}},
+	})
+}

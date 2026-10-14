@@ -1,7 +1,7 @@
 // Package markdown parses a tiny subset of Markdown into a pure-data tree.
 //
-// Supported: headings "#" to "###" (which open nested sections) and
-// paragraphs. Anything else is treated as paragraph text. Inline syntax is
+// Supported: headings "#" to "###" (which open nested sections), "- " list
+// items, and paragraphs. Anything else is treated as paragraph text. Inline syntax is
 // not interpreted. See docs/sketch/ja/blog.md.
 package markdown
 
@@ -31,8 +31,14 @@ type Paragraph struct {
 	Text string
 }
 
+// List is a run of consecutive "- " lines. Items hold the text after "- ".
+type List struct {
+	Items []string
+}
+
 func (Section) block()   {}
 func (Paragraph) block() {}
+func (List) block()      {}
 
 // maxLevel is the deepest heading level recognized.
 const maxLevel = 3
@@ -55,11 +61,15 @@ func Parse(src string) Document {
 // scan splits src into a flat list of blocks, with headings as markers.
 func scan(src string) []Block {
 	var out []Block
-	var para []string
+	var para, items []string
 	flush := func() {
 		if len(para) > 0 {
 			out = append(out, Paragraph{Text: strings.Join(para, "\n")})
 			para = nil
+		}
+		if len(items) > 0 {
+			out = append(out, List{Items: items})
+			items = nil
 		}
 	}
 	for line := range strings.SplitSeq(src, "\n") {
@@ -71,7 +81,15 @@ func scan(src string) []Block {
 		case isHeading(trimmed):
 			flush()
 			out = append(out, parseHeading(trimmed))
+		case strings.HasPrefix(trimmed, "- "):
+			if len(para) > 0 {
+				flush()
+			}
+			items = append(items, strings.TrimSpace(trimmed[2:]))
 		default:
+			if len(items) > 0 {
+				flush()
+			}
 			para = append(para, trimmed)
 		}
 	}
