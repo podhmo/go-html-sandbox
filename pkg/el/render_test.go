@@ -78,9 +78,20 @@ func TestPlainRenderer(t *testing.T) {
 		{"text is not escaped", Text("a < b & c"), "a < b & c"},
 		{"raw is dropped", El(Style, Raw("p{color:red}")), ""},
 		{"tags and attributes are dropped",
-			El(Div, Attr(Class, "x"), BoolAttrNode("hidden"),
-				El(P, Text("one ")), El(P, El(A, Attr(Href, "/"), Text("two")))),
+			El(Span, Attr(Class, "x"), BoolAttrNode("hidden"),
+				Text("one "), El(A, Attr(Href, "/"), Text("two"))),
 			"one two"},
+		{"block elements go on their own lines",
+			El(Div, El(H1, Text("Title")), El(P, Text("a "), El(A, Text("link"))), El(P, Text("b"))),
+			"Title\na link\nb\n"},
+		{"nested blocks do not make blank lines",
+			El(Section, El(Section, El(Ul, El(Li, Text("x")), El(Li, Text("y"))))),
+			"x\ny\n"},
+		{"text around a block", El(Span, Text("before"), El(P, Text("in")), Text("after")),
+			"before\nin\nafter"},
+		{"pre keeps its newlines", El(Pre, Text("a\n  b")), "a\n  b\n"},
+		{"br breaks a line", El(P, Text("a"), El(Br), Text("b")), "a\nb\n"},
+		{"empty blocks write nothing", El(Div, El(P), El(P)), ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

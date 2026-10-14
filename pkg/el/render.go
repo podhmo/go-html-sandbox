@@ -106,8 +106,10 @@ func (HTMLRenderer) BoolAttr(w io.Writer, n BoolAttrNode) error {
 }
 
 // PlainRenderer writes only text content, dropping tags, attributes, and raw
-// markup. Text is not escaped. Useful for debugging and for tests that check
-// what a page says. The zero value is ready to use.
+// markup. Text is not escaped. Block-level elements (paragraphs, headings,
+// list items, ...) start and end on their own line, so the output reads like
+// the page. Useful for debugging and for tests that check what a page says.
+// The zero value is ready to use.
 type PlainRenderer struct{}
 
 func (PlainRenderer) Text(w io.Writer, n TextNode) error {
@@ -118,10 +120,23 @@ func (PlainRenderer) Text(w io.Writer, n TextNode) error {
 func (PlainRenderer) Raw(io.Writer, RawNode) error { return nil }
 
 func (r PlainRenderer) Element(w io.Writer, n ElementNode) error {
-	for _, c := range n.Children {
-		if err := Render(w, c, r); err != nil {
+	lw, ok := w.(*lineWriter)
+	if !ok {
+		lw = &lineWriter{w: w}
+	}
+	block := blockElements[n.Name]
+	if block {
+		if err := lw.breakLine(); err != nil {
 			return err
 		}
+	}
+	for _, c := range n.Children {
+		if err := Render(lw, c, r); err != nil {
+			return err
+		}
+	}
+	if block {
+		return lw.breakLine()
 	}
 	return nil
 }
@@ -129,3 +144,38 @@ func (r PlainRenderer) Element(w io.Writer, n ElementNode) error {
 func (PlainRenderer) Attr(io.Writer, AttrNode) error { return nil }
 
 func (PlainRenderer) BoolAttr(io.Writer, BoolAttrNode) error { return nil }
+
+// blockElements are put on their own lines by PlainRenderer.
+var blockElements = map[Tag]bool{
+	"address": true, "article": true, "aside": true, "blockquote": true,
+	"body": true, "br": true, "dd": true, "details": true, "div": true,
+	"dl": true, "dt": true, "figcaption": true, "figure": true,
+	"footer": true, "form": true, "h1": true, "h2": true, "h3": true,
+	"h4": true, "h5": true, "h6": true, "head": true, "header": true,
+	"hr": true, "html": true, "li": true, "main": true, "nav": true,
+	"ol": true, "p": true, "pre": true, "section": true, "summary": true,
+	"table": true, "title": true, "tr": true, "ul": true,
+}
+
+// lineWriter remembers the last byte written so that breakLine never emits
+// a blank line or a leading newline.
+type lineWriter struct {
+	w    io.Writer
+	last byte // 0 until something is written
+}
+
+func (lw *lineWriter) Write(p []byte) (int, error) {
+	n, err := lw.w.Write(p)
+	if n > 0 {
+		lw.last = p[n-1]
+	}
+	return n, err
+}
+
+func (lw *lineWriter) breakLine() error {
+	if lw.last == 0 || lw.last == '\n' {
+		return nil
+	}
+	_, err := lw.Write([]byte{'\n'})
+	return err
+}

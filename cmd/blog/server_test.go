@@ -83,9 +83,19 @@ func TestPostPageText(t *testing.T) {
 	if err := el.Render(&b, postPage(posts[0]), el.PlainRenderer{}); err != nil {
 		t.Fatal(err)
 	}
-	want := "blog2026-10-14Hello <script>firstPointsonetwox := <1>Rendered with the Go standard library."
-	if !strings.Contains(b.String(), want) {
-		t.Errorf("got  %q\nwant it to contain %q", b.String(), want)
+	want := `Hello <script> - blog
+blog
+2026-10-14
+Hello <script>
+first
+Points
+one
+two
+x := <1>
+Rendered with the Go standard library.
+`
+	if got := b.String(); got != want {
+		t.Errorf("got\n%s\nwant\n%s", got, want)
 	}
 }
 
