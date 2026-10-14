@@ -83,9 +83,44 @@ limit:
 npx wrangler dev --env go
 ```
 
-Note that `wrangler deploy --env go` deploys a Worker named
-`blog` (set by `env.go.name`), and its `BASE_URL` is set separately under
-`env.go.vars`.
+### Deploying
+
+Deploying needs a Cloudflare account. The steps below use the `go`
+environment; drop `--env go` to deploy the TinyGo build, which is named
+`go-html-sandbox-blog` and reads the top-level `vars` instead.
+
+1. Log in once:
+
+   ```sh
+   cd examples/blog/workers
+   npx wrangler login
+   ```
+
+2. Set the public origin. `BASE_URL` in `wrangler.jsonc` is
+   `http://localhost:8787` for `wrangler dev`, so change `env.go.vars.BASE_URL`
+   to the URL the Worker is served at, e.g.
+   `https://blog.<your-subdomain>.workers.dev` (the Worker is named `blog` by
+   `env.go.name`). If you do not know your `workers.dev` subdomain yet, deploy
+   once; wrangler prints the URL at the end. Alternatively, leave the file
+   as it is and override the value on the command line with
+   `--var BASE_URL:https://...`.
+
+3. Build and deploy:
+
+   ```sh
+   npx wrangler deploy --env go
+   ```
+
+   The build command in `wrangler.jsonc` runs first, so there is nothing to
+   build by hand. Try `--dry-run` to build and check the upload size
+   without deploying.
+
+4. Check the site at the printed URL, e.g. that `og:url` on a post page
+   starts with your `BASE_URL`. `npx wrangler tail --env go` streams the
+   Worker's logs.
+
+Posts and documents are embedded in the Wasm binary, so deploy again after
+editing them. To remove the Worker, run `npx wrangler delete --env go`.
 
 The site itself lives in `internal/site`, which is tested under TinyGo too:
 
