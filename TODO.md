@@ -11,6 +11,14 @@ This file tracks actionable tasks only; completed work is swept to
 
 ## To Be Implemented
 
+- [ ] **Experiment with MoonBit's Wasm backends on Cloudflare Workers**:
+  before porting the blog, put a spike under `moonbit/` that serves pages
+  from `wasm-gc` (without `use-js-builtin-string`, which Workers cannot
+  compile for) through the code-unit ABI, extend the ABI with status and
+  headers, deploy it to check that Workers accepts wasm-gc, and measure
+  `wasm-opt` and the cost of the per-code-unit calls. See
+  [the research notes](docs/sketch/ja/moonbit-workers-wasm.md).
+
 - [ ] **Reimplement the blog in MoonBit**: build the same site under a
   top-level `moonbit/` directory, run it on Cloudflare Workers as Wasm, and
   compare the Wasm size with the Go builds (TinyGo about 2 MiB / 760 KiB
