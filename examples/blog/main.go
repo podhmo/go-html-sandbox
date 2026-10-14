@@ -1,9 +1,10 @@
+//go:build !(js && wasm)
+
 // Command blog serves a mobile-first blog from embedded Markdown posts.
 package main
 
 import (
 	"context"
-	"embed"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -11,15 +12,7 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	sandbox "github.com/podhmo/go-html-sandbox"
 )
-
-//go:embed posts/*.md
-var embeddedPosts embed.FS
-
-//go:embed favicon.svg
-var favicon []byte
 
 func main() {
 	if err := run(); err != nil {
@@ -42,11 +35,10 @@ func run() error {
 		*debug = true
 	}
 
-	postsFS, err := fs.Sub(embeddedPosts, "posts")
+	postsFS, docsFS, err := embeddedSources()
 	if err != nil {
 		return err
 	}
-	docsFS := fs.FS(sandbox.Docs)
 	if *debug {
 		if *root == "" {
 			if *root, err = findModuleRoot("."); err != nil {

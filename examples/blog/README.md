@@ -50,6 +50,25 @@ reloads them and tells open pages to reload over server-sent events
 the previous content stays. Pages load the small reload script
 (`/_livereload.js`) only in this mode.
 
+## Cloudflare Workers (experimental)
+
+Built for `js/wasm`, the blog serves the embedded posts and documents on
+Cloudflare Workers through
+[syumai/workers-go](https://github.com/syumai/workers-go).
+`main_workers.go` is the entry point for that build; `main.go` (flags,
+`-debug`, `-watch`) and `repo.go` are left out of it by build tags.
+
+```sh
+cd examples/blog
+npx wrangler dev   # needs TinyGo 0.42.0 or later on PATH
+```
+
+The public origin for OGP tags comes from `BASE_URL` in
+[`wrangler.jsonc`](wrangler.jsonc). Building with the standard Go compiler
+also works: replace the build command with
+`go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm .`.
+See the [experiment report](../../docs/sketch/ja/blog-tinygo-workers.md).
+
 ## Pages
 
 | Path | Page |
@@ -98,12 +117,14 @@ title, or an unknown front matter key stop the server at startup.
 
 | File | Contents |
 | --- | --- |
-| `main.go` | Flags, embedding, startup |
+| `main.go` | Flags and startup (not in the `js/wasm` build) |
+| `main_workers.go` | Startup on Cloudflare Workers (`js/wasm` build only) |
+| `content.go` | Embedded posts and favicon |
 | `posts.go` | Loading posts from an `fs.FS` |
 | `livereload.go` | `-watch`: polling, reloading, and the SSE endpoint |
-| `repo.go` | Finding and opening the module root for `-debug` |
+| `repo.go` | Finding and opening the module root for `-debug` (not in the `js/wasm` build) |
 | `docs.go` | Loading repository documents (embedded by the root package, [`embed.go`](../../embed.go)) |
-| `server.go` | Routing, rendering, error pages, panic recovery |
+| `server.go` | Routing (by hand, see `route`), rendering, error pages, panic recovery |
 | `views.go` | Pages built from `pkg/picoel`, OGP tags |
 
 ## Testing

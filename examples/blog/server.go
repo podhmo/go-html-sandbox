@@ -60,19 +60,44 @@ func newServer(baseURL string, posts []Post, docs []Doc) (*server, error) {
 	}
 	s := &server{env: pageEnv{BaseURL: strings.TrimSuffix(u.String(), "/")}}
 	s.update(posts, docs)
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", s.handleList)
-	mux.HandleFunc("GET /posts/{slug}", s.handlePost)
-	mux.HandleFunc("GET /docs/{$}", s.handleDocList)
-	mux.HandleFunc("GET /docs/{path...}", s.handleDoc)
-	mux.HandleFunc("GET /favicon.svg", handleFavicon)
-	mux.HandleFunc("GET "+liveReloadScriptPath, s.handleLiveReloadScript)
-	mux.HandleFunc("GET "+liveReloadEventsPath, s.handleLiveReloadEvents)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		s.renderError(w, r, http.StatusNotFound, "Page not found.", nil)
-	})
-	s.handler = s.recoverer(mux)
+	s.handler = s.recoverer(http.HandlerFunc(s.route))
 	return s, nil
+}
+
+// route dispatches by hand instead of with http.ServeMux patterns, because
+// TinyGo's net/http still has the pre-Go 1.22 ServeMux, which ignores
+// methods, {$}, and {name...}. Path values are set with SetPathValue so the
+// handlers read them as if a ServeMux had matched.
+func (s *server) route(w http.ResponseWriter, r *http.Request) {
+	notFound := func(w http.ResponseWriter, r *http.Request) {
+		s.renderError(w, r, http.StatusNotFound, "Page not found.", nil)
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		notFound(w, r)
+		return
+	}
+	p := r.URL.Path
+	slug, isPost := strings.CutPrefix(p, "/posts/")
+	switch {
+	case p == "/":
+		s.handleList(w, r)
+	case p == "/docs/":
+		s.handleDocList(w, r)
+	case p == "/favicon.svg":
+		handleFavicon(w, r)
+	case p == liveReloadScriptPath:
+		s.handleLiveReloadScript(w, r)
+	case p == liveReloadEventsPath:
+		s.handleLiveReloadEvents(w, r)
+	case isPost && slug != "" && !strings.Contains(slug, "/"):
+		r.SetPathValue("slug", slug)
+		s.handlePost(w, r)
+	case strings.HasPrefix(p, "/docs/"):
+		r.SetPathValue("path", p[len("/docs/"):])
+		s.handleDoc(w, r)
+	default:
+		notFound(w, r)
+	}
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
