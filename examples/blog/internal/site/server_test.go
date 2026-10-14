@@ -143,7 +143,7 @@ func TestPostMarkdown(t *testing.T) {
 	}
 
 	_, body = get(t, h, "/posts/hello")
-	if want := `<header><nav><ul><li><time datetime="2026-10-14">2026-10-14</time></li></ul><ul><li><small><a href="/posts/hello.md" download="2026-10-14-hello.md" class="secondary">Download .md</a></small></li></ul></nav></header>`; !strings.Contains(body, want) {
+	if want := `<header><nav><ul><li><time datetime="2026-10-14">2026-10-14</time></li></ul><ul><li><small><a href="/posts/hello.md" download="2026-10-14-hello.md" class="secondary">Download .md</a></small></li></ul></nav></header><article>`; !strings.Contains(body, want) {
 		t.Errorf("body does not contain %q", want)
 	}
 }

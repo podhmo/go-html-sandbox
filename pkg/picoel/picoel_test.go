@@ -37,7 +37,7 @@ func TestElements(t *testing.T) {
 	}{
 		{Header(Text("h")), `<header class="container">h</header>`},
 		{Footer(Text("f")), `<footer class="container">f</footer>`},
-		{ArticleHeader(Text("h")), `<header>h</header>`},
+		{InnerHeader(Text("h")), `<header>h</header>`},
 		{Nav(A("/", Strong(Text("s")))), `<nav><ul><li><a href="/"><strong>s</strong></a></li></ul></nav>`},
 		{List(Li(Text("a")), Li(Text("b"), Code("c"))), `<ul><li>a</li><li>b<code>c</code></li></ul>`},
 		{Article(Hgroup(H2(Text("t")), P(Date(d)))), `<article><hgroup><h2>t</h2><p><time datetime="2026-10-14">2026-10-14</time></p></hgroup></article>`},

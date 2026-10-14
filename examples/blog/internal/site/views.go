@@ -91,7 +91,7 @@ func postList(env pageEnv, posts []Post) pe.Node {
 }
 
 func postPage(env pageEnv, p Post) pe.Node {
-	body := []pe.Node{articleHeader(pe.Date(p.Date), postMarkdownPath(p), p.File)}
+	var body []pe.Node
 	if _, ok := firstTitle(p.Doc); !ok {
 		// The title came from front matter only, so the body has no heading.
 		body = append(body, pe.H1(pe.Text(p.Title)))
@@ -103,7 +103,7 @@ func postPage(env pageEnv, p Post) pe.Node {
 		URL:         env.BaseURL + postPath(p),
 		Type:        "article",
 	}
-	return layout(env, meta, pe.Article(body...))
+	return layout(env, meta, pageHeader(pe.Date(p.Date), postMarkdownPath(p), p.File), pe.Article(body...))
 }
 
 // docList links to every repository document, showing its file path below
@@ -121,13 +121,13 @@ func docList(env pageEnv, docs []Doc) pe.Node {
 }
 
 func docPage(env pageEnv, d Doc) pe.Node {
-	body := []pe.Node{articleHeader(pe.Small(pe.Text(d.Source)), docMarkdownPath(d), path.Base(d.Source))}
+	var body []pe.Node
 	if _, ok := firstTitle(d.Doc); !ok {
 		body = append(body, pe.H1(pe.Text(d.Title)))
 	}
 	body = append(body, renderBlocks(d.Doc.Children)...)
 	meta := pageMeta{Title: d.Title, Description: d.Description, URL: env.BaseURL + docPath(d), Type: "article"}
-	return layout(env, meta, pe.Article(body...))
+	return layout(env, meta, pageHeader(pe.Small(pe.Text(d.Source)), docMarkdownPath(d), path.Base(d.Source)), pe.Article(body...))
 }
 
 func postPath(p Post) string {
@@ -139,11 +139,12 @@ func postMarkdownPath(p Post) string {
 	return postPath(p) + ".md"
 }
 
-// articleHeader shows info on the left and, on the right, a small link
-// that downloads the page's Markdown source.
-func articleHeader(info pe.Node, href, filename string) pe.Node {
+// pageHeader is the row above the article: info on the left and, on the
+// right, a small link that downloads the page's Markdown source. It sits in
+// main rather than in the article, where pico would pad it into a band.
+func pageHeader(info pe.Node, href, filename string) pe.Node {
 	download := pe.Small(pe.DownloadLink(href, filename, pe.Text("Download .md")))
-	return pe.ArticleHeader(pe.Spread([]pe.Node{info}, []pe.Node{download}))
+	return pe.InnerHeader(pe.Spread([]pe.Node{info}, []pe.Node{download}))
 }
 
 func errorPage(env pageEnv, status int, message string) pe.Node {

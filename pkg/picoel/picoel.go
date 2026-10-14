@@ -108,9 +108,10 @@ func Article(children ...Node) Node {
 	return el.El(el.Article, children...)
 }
 
-// ArticleHeader is the banded header of an Article. Unlike Header it has no
-// .container: it belongs inside a card, not at the top of the page.
-func ArticleHeader(children ...Node) Node {
+// InnerHeader is a header without .container, for use inside Main or an
+// Article rather than at the top of the page. Inside an Article pico draws
+// it as a band.
+func InnerHeader(children ...Node) Node {
 	return el.El(el.Header, children...)
 }
 
