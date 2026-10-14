@@ -141,6 +141,12 @@ func H2(children ...Node) Node { return el.El(el.H2, children...) }
 // H3 is a level 3 heading.
 func H3(children ...Node) Node { return el.El(el.H3, children...) }
 
+// H4 is a level 4 heading.
+func H4(children ...Node) Node { return el.El(el.H4, children...) }
+
+// H5 is a level 5 heading.
+func H5(children ...Node) Node { return el.El(el.H5, children...) }
+
 // P is a paragraph.
 func P(children ...Node) Node {
 	return el.El(el.P, children...)
@@ -159,6 +165,28 @@ func Li(children ...Node) Node {
 // Blockquote is a quotation; pico draws a bar on its leading edge.
 func Blockquote(children ...Node) Node {
 	return el.El(el.Blockquote, children...)
+}
+
+// Table is a table with a header row and body rows; each cell is a list of
+// nodes. It is wrapped in pico's overflow-auto div so that a wide table
+// scrolls sideways instead of widening the page on small screens.
+func Table(header [][]Node, rows [][][]Node) Node {
+	row := func(tag el.Tag, cells [][]Node) Node {
+		tr := make([]Node, 0, len(cells))
+		for _, c := range cells {
+			tr = append(tr, el.El(tag, c...))
+		}
+		return el.El(el.Tr, tr...)
+	}
+	parts := []Node{el.El(el.Thead, row(el.Th, header))}
+	if len(rows) > 0 {
+		body := make([]Node, 0, len(rows))
+		for _, r := range rows {
+			body = append(body, row(el.Td, r))
+		}
+		parts = append(parts, el.El(el.Tbody, body...))
+	}
+	return el.El(el.Div, el.Attr(el.Class, "overflow-auto"), el.El(el.Table, parts...))
 }
 
 // Pre is preformatted text such as a code block.

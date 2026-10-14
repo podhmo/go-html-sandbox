@@ -60,8 +60,16 @@ func TestSectionsAndParagraphs(t *testing.T) {
 			}}},
 		{"heading title is trimmed", "#   spaced   ",
 			Document{Children: []Block{Section{Level: 1, Title: "spaced"}}}},
-		{"#### is not a heading", "#### deep",
-			Document{Children: []Block{Paragraph{Text: "#### deep"}}}},
+		{"#### and ##### nest", "#### D\nd\n##### E\ne\n#### F",
+			Document{Children: []Block{
+				Section{Level: 4, Title: "D", Children: []Block{
+					Paragraph{Text: "d"},
+					Section{Level: 5, Title: "E", Children: []Block{Paragraph{Text: "e"}}},
+				}},
+				Section{Level: 4, Title: "F"},
+			}}},
+		{"###### is not a heading", "###### deep",
+			Document{Children: []Block{Paragraph{Text: "###### deep"}}}},
 		{"# without a space is not a heading", "#tag",
 			Document{Children: []Block{Paragraph{Text: "#tag"}}}},
 		{"bare # is not a heading", "#",
@@ -161,5 +169,51 @@ func TestQuotes(t *testing.T) {
 			}}},
 		{"> inside a code block is code", "```\n> x\n```",
 			Document{Children: []Block{CodeBlock{Code: "> x"}}}},
+	})
+}
+
+func TestTables(t *testing.T) {
+	run(t, []testCase{
+		{"table", "| a | b |\n| --- | --- |\n| 1 | `2` |\n| 3 | 4 |",
+			Document{Children: []Block{Table{
+				Header: []string{"a", "b"},
+				Rows:   [][]string{{"1", "`2`"}, {"3", "4"}},
+			}}}},
+		{"header only", "| a |\n|---|",
+			Document{Children: []Block{Table{Header: []string{"a"}}}}},
+		{"trailing pipe is optional", "| a | b\n| --- | ---\n| 1 | 2",
+			Document{Children: []Block{Table{Header: []string{"a", "b"}, Rows: [][]string{{"1", "2"}}}}}},
+		{"alignment is accepted and ignored", "| a | b | c |\n| :-- | :-: | --: |",
+			Document{Children: []Block{Table{Header: []string{"a", "b", "c"}}}}},
+		{"rows are padded and cut to the header", "| a | b |\n| - | - |\n| 1 |\n| 1 | 2 | 3 |\n| | x |",
+			Document{Children: []Block{Table{
+				Header: []string{"a", "b"},
+				Rows:   [][]string{{"1", ""}, {"1", "2"}, {"", "x"}},
+			}}}},
+		{"escaped pipe", "| a \\| b |\n| --- |\n| `x \\| y` |",
+			Document{Children: []Block{Table{Header: []string{"a | b"}, Rows: [][]string{{"`x | y`"}}}}}},
+		{"no delimiter row is a paragraph", "| a |\n| b |",
+			Document{Children: []Block{Paragraph{Text: "| a |\n| b |"}}}},
+		{"delimiter count must match", "| a | b |\n| --- |",
+			Document{Children: []Block{Paragraph{Text: "| a | b |\n| --- |"}}}},
+		{"single line is a paragraph", "| a |",
+			Document{Children: []Block{Paragraph{Text: "| a |"}}}},
+		{"table between paragraphs", "intro\n| a |\n| - |\n| 1 |\nafter",
+			Document{Children: []Block{
+				Paragraph{Text: "intro"},
+				Table{Header: []string{"a"}, Rows: [][]string{{"1"}}},
+				Paragraph{Text: "after"},
+			}}},
+		{"blank line splits tables", "| a |\n| - |\n\n| b |\n| - |",
+			Document{Children: []Block{Table{Header: []string{"a"}}, Table{Header: []string{"b"}}}}},
+		{"indented rows", "  | a |\n  | - |\n  | 1 |",
+			Document{Children: []Block{Table{Header: []string{"a"}, Rows: [][]string{{"1"}}}}}},
+		{"table in a section and a quote", "# T\n| a |\n| - |\n> | b |\n> | - |",
+			Document{Children: []Block{Section{Level: 1, Title: "T", Children: []Block{
+				Table{Header: []string{"a"}},
+				Quote{Children: []Block{Table{Header: []string{"b"}}}},
+			}}}}},
+		{"list ends at a table", "- x\n| a |\n| - |",
+			Document{Children: []Block{List{Items: []string{"x"}}, Table{Header: []string{"a"}}}}},
 	})
 }

@@ -18,6 +18,7 @@ const (
 	H2         Tag = "h2"
 	H3         Tag = "h3"
 	H4         Tag = "h4"
+	H5         Tag = "h5"
 	Head       Tag = "head"
 	Header     Tag = "header"
 	Hgroup     Tag = "hgroup"
@@ -38,8 +39,14 @@ const (
 	Span       Tag = "span"
 	Strong     Tag = "strong"
 	Style      Tag = "style"
+	Table      Tag = "table"
+	Tbody      Tag = "tbody"
+	Td         Tag = "td"
+	Th         Tag = "th"
+	Thead      Tag = "thead"
 	Time       Tag = "time"
 	Title      Tag = "title"
+	Tr         Tag = "tr"
 	Ul         Tag = "ul"
 )
 

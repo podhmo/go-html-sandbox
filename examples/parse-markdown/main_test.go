@@ -17,7 +17,7 @@ section h1 "Title"
   quote
     paragraph "q"
   section h2 "Sub"
-    paragraph "| x | y |\n| - | - |"
+    table ["x" "y"]
     code "x := 1"
 `
 

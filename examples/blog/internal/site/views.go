@@ -156,7 +156,7 @@ func errorPage(env pageEnv, status int, message string) pe.Node {
 	)
 }
 
-var headings = [...]func(...pe.Node) pe.Node{1: pe.H1, 2: pe.H2, 3: pe.H3}
+var headings = [...]func(...pe.Node) pe.Node{1: pe.H1, 2: pe.H2, 3: pe.H3, 4: pe.H4, 5: pe.H5}
 
 // renderBlocks converts the Markdown tree into nodes. Every piece of text
 // goes through pe.Text, so HTML in posts is escaped. link resolves the URLs
@@ -178,6 +178,19 @@ func renderBlocks(bs []tinymarkdown.Block, link linker) []pe.Node {
 			out = append(out, pe.List(items...))
 		case tinymarkdown.Quote:
 			out = append(out, pe.Blockquote(renderBlocks(b.Children, link)...))
+		case tinymarkdown.Table:
+			cells := func(row []string) [][]pe.Node {
+				out := make([][]pe.Node, 0, len(row))
+				for _, c := range row {
+					out = append(out, renderInlines(tinymarkdown.Inlines(c), link))
+				}
+				return out
+			}
+			rows := make([][][]pe.Node, 0, len(b.Rows))
+			for _, r := range b.Rows {
+				rows = append(rows, cells(r))
+			}
+			out = append(out, pe.Table(cells(b.Header), rows))
 		case tinymarkdown.CodeBlock:
 			out = append(out, pe.Pre(b.Code))
 		}

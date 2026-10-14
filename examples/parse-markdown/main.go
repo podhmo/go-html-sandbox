@@ -60,8 +60,8 @@ func run(w io.Writer, stdin io.Reader, paths []string) error {
 }
 
 // dump writes one block per line, indented by depth. Text is quoted with %q
-// so that newlines inside a paragraph (a sign of an unsupported construct
-// such as a table) stay visible.
+// so that newlines inside a paragraph (a sign of an unsupported construct)
+// stay visible.
 func dump(w io.Writer, bs []tinymarkdown.Block, depth int) error {
 	indent := strings.Repeat("  ", depth)
 	for _, b := range bs {
@@ -84,6 +84,14 @@ func dump(w io.Writer, bs []tinymarkdown.Block, depth int) error {
 		case tinymarkdown.Quote:
 			if _, err = fmt.Fprintf(w, "%squote\n", indent); err == nil {
 				err = dump(w, b.Children, depth+1)
+			}
+		case tinymarkdown.Table:
+			if _, err = fmt.Fprintf(w, "%stable %q\n", indent, b.Header); err == nil {
+				for _, r := range b.Rows {
+					if _, err = fmt.Fprintf(w, "%s  row %q\n", indent, r); err != nil {
+						break
+					}
+				}
 			}
 		case tinymarkdown.CodeBlock:
 			_, err = fmt.Fprintf(w, "%scode %q\n", indent, b.Code)

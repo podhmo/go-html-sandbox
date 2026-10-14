@@ -173,12 +173,14 @@ from front matter and the body has no `#` heading, the post page adds one.
 
 The body supports a tiny subset of Markdown:
 
-- `#` to `###` headings, which open nested sections
+- `#` to `#####` headings, which open nested sections
 - `- ` list items (no nesting); indented lines continue the item above
 - paragraphs
 - `>` quotes, whose content is Markdown again
-- `` `code` `` spans and `[text](url)` links in headings, paragraphs, and
-  list items (see [Links](#links))
+- tables of `|` rows with a `| --- |` delimiter row as the second line
+  (no column alignment); wide tables scroll sideways
+- `` `code` `` spans and `[text](url)` links in headings, paragraphs,
+  list items, and table cells (see [Links](#links))
 - code blocks fenced by exactly three backquotes (no highlighting)
 
 Everything else, including other inline syntax and HTML, is shown as plain,

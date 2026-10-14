@@ -355,3 +355,16 @@ func TestRedirects(t *testing.T) {
 		})
 	}
 }
+
+func TestTablesAndDeepHeadings(t *testing.T) {
+	h := newTestServer(t, fstest.MapFS{
+		"2026-10-14-hello.md": file("# Hello\n#### Four\n##### Five\n| a | `b` |\n| --- | --- |\n| [x](#x) | <i> |"),
+	})
+	_, body := get(t, h, "/posts/hello")
+	want := `<section><h4>Four</h4><section><h5>Five</h5>` +
+		`<div class="overflow-auto"><table><thead><tr><th>a</th><th><code>b</code></th></tr></thead>` +
+		`<tbody><tr><td><a href="#x">x</a></td><td>&lt;i&gt;</td></tr></tbody></table></div></section></section>`
+	if !strings.Contains(body, want) {
+		t.Errorf("body does not contain %q", want)
+	}
+}
