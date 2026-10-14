@@ -68,11 +68,16 @@ func TestList(t *testing.T) {
 
 func TestPicoOnly(t *testing.T) {
 	_, body := get(t, newTestServer(t, testPosts), "/posts/hello")
-	if !strings.Contains(body, `<link rel="stylesheet" href="`+pe.StylesheetURL+`">`) {
-		t.Error("missing pico stylesheet")
+	pico := strings.Index(body, `<link rel="stylesheet" href="`+pe.StylesheetURL+`">`)
+	site := strings.Index(body, `<link rel="stylesheet" href="`+siteCSSPath+`">`)
+	if pico < 0 || site < pico {
+		t.Errorf("want pico, then site.css; got indexes %d, %d", pico, site)
+	}
+	if n := strings.Count(body, `rel="stylesheet"`); n != 2 {
+		t.Errorf("want only pico and site.css, got %d stylesheets", n)
 	}
 	if strings.Contains(body, "<style") || strings.Contains(body, " style=") {
-		t.Error("want no custom CSS")
+		t.Error("want no inline CSS")
 	}
 	for _, want := range []string{`<header class="container">`, `<main class="container">`, `<footer class="container">`} {
 		if !strings.Contains(body, want) {
@@ -121,6 +126,19 @@ Rendered with the Go standard library.
 `
 	if got := b.String(); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestSiteCSS(t *testing.T) {
+	if !strings.HasPrefix(siteCSSPath, "/site.css?v=") {
+		t.Fatalf("siteCSSPath %q", siteCSSPath)
+	}
+	res, body := get(t, newTestServer(t, testPosts), siteCSSPath)
+	if res.StatusCode != http.StatusOK || body != string(siteCSS) {
+		t.Errorf("status %d, body %.40q", res.StatusCode, body)
+	}
+	if ct := res.Header.Get("Content-Type"); ct != "text/css; charset=utf-8" {
+		t.Errorf("Content-Type %q", ct)
 	}
 }
 

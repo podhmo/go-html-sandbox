@@ -96,6 +96,8 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request) {
 		s.handleDocList(w, r)
 	case p == "/favicon.svg":
 		handleFavicon(w, r)
+	case p == "/site.css":
+		handleSiteCSS(w, r)
 	case p == liveReloadScriptPath:
 		s.handleLiveReloadScript(w, r)
 	case p == liveReloadEventsPath:
@@ -200,6 +202,16 @@ func handleFavicon(w http.ResponseWriter, r *http.Request) {
 	h.Set("Cache-Control", "public, max-age=86400")
 	h.Set("Content-Length", strconv.Itoa(len(favicon)))
 	w.Write(favicon)
+}
+
+// handleSiteCSS serves the embedded stylesheet. Pages link to it with a
+// version in the query, so it can be cached for long.
+func handleSiteCSS(w http.ResponseWriter, r *http.Request) {
+	h := w.Header()
+	h.Set("Content-Type", "text/css; charset=utf-8")
+	h.Set("Cache-Control", "public, max-age=31536000, immutable")
+	h.Set("Content-Length", strconv.Itoa(len(siteCSS)))
+	w.Write(siteCSS)
 }
 
 // page renders n with status 200, or an error page if rendering fails.

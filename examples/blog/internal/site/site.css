@@ -1,0 +1,23 @@
+/* The few rules pico cannot express. Keep this file small and build on
+   pico's variables so the theme still applies. */
+
+/* Keep the site navigation in view. It needs a background, or the page
+   scrolling under it would show through. */
+body > header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--pico-background-color);
+}
+
+/* pico pads both with a full block spacing, so their gaps add up. Set the
+   padding itself: overriding the variable would also shrink the article
+   cards inside main. */
+body > header,
+body > main {
+  padding-block: calc(var(--pico-block-spacing-vertical) / 2);
+}
+
+nav {
+  --pico-nav-element-spacing-vertical: 0.5rem;
+}

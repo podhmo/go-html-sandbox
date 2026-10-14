@@ -3,9 +3,13 @@
 A mobile-first, server-side rendered blog built on `pkg/picoel`,
 `pkg/tinymarkdown`, and `pkg/tinyfrontmatter`. It uses only the Go standard
 library: there is no template engine, no JavaScript (except the `-watch`
-reload script), and no CSS of its own.
-Styling is [pico.css v2](https://picocss.com/docs) alone, loaded from a CDN;
+reload script), and no CSS classes of its own.
+Styling is [pico.css v2](https://picocss.com/docs), loaded from a CDN;
 pages are made of semantic elements and pico's `container` class.
+The few rules pico cannot express (a sticky site header and tighter spacing
+around `header` and `main`) live in
+[`internal/site/site.css`](internal/site/site.css), which builds on pico's
+variables and is served as `/site.css?v=<hash>` after pico.
 Posts, the favicon, and the repository's own documents are embedded with
 `go:embed`, so the binary is all you need to run it.
 

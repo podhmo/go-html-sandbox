@@ -40,7 +40,7 @@ func layout(env pageEnv, meta pageMeta, body ...pe.Node) pe.Node {
 		pe.MetaName("description", meta.Description),
 	}
 	head = append(head, ogp(meta)...)
-	head = append(head, pe.Icon("/favicon.svg", "image/svg+xml"))
+	head = append(head, pe.Stylesheet(siteCSSPath), pe.Icon("/favicon.svg", "image/svg+xml"))
 	if env.LiveReload {
 		head = append(head, pe.Script(liveReloadScriptPath))
 	}
