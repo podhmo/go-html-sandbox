@@ -39,10 +39,10 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### cmd/blog (application)
 
-- [ ] **Mobile-first blog** ([sketch](docs/sketch/ja/blog.md)): handlers
+- [-] **Mobile-first blog** ([sketch](docs/sketch/ja/blog.md)): handlers
   tested with `httptest` over a `fstest.MapFS`, body checks via
   `PlainRenderer`.
-  - [ ] **Post loading**: `loadPosts(fs.FS)` over `//go:embed posts/*.md`;
+  - [x] **Post loading**: `loadPosts(fs.FS)` over `//go:embed posts/*.md`;
     date and slug from `YYYY-MM-DD-slug.md`, title from the first `#`.
     Tests for bad file names and duplicate slugs (startup error).
   - [ ] **Post list and post page**: `GET /{$}` (newest first) and
