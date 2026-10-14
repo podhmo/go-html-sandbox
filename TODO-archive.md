@@ -76,3 +76,42 @@
   `og:url`, `og:description` (the post's description), `og:site_name`.
   Needs a base URL flag for absolute URLs and a `property` attribute
   const in `pkg/el`; `og:image` is out of scope for now.
+- [x] **`pkg/picoel`: pico.css v2 building blocks for the blog**: add a
+  package with only the elements the blog needs, built on `pkg/el` and
+  following the rules in `../podhmo.github.io/ui/pico/README.md` (no custom
+  classes or CSS, semantic elements first, `.container` on
+  `header`/`main`/`footer`, pico v2 from the CDN). Rewrite `examples/blog` to
+  import only `picoel` (no direct `pkg/el`) and drop `style.go`.
+- [x] **Dark mode for the blog**: render every page in pico's dark theme
+  (`data-theme="dark"` on `<html>`) instead of following the OS setting.
+- [x] **`examples/parse-markdown`: dump the tinymarkdown tree**: a small
+  CLI that parses Markdown files (or stdin) with `pkg/tinymarkdown` and
+  prints the resulting tree, to check how documents such as `TODO.md` and
+  `docs/**/*.md` are understood before embedding them in the blog.
+- [x] **tinymarkdown: list items spanning several lines**: indented lines
+  after a `- ` item should continue that item instead of starting a
+  paragraph. Today every multi-line entry in `TODO.md` splits into a
+  one-line list plus a paragraph (check with `examples/parse-markdown`).
+- [x] **Serve `TODO.md` and `docs/` in the blog**: embed them with
+  `go:embed` from a package at the repository root (embed cannot reach
+  `..`), parse them with tinymarkdown at startup, and serve them under
+  `/docs/` with an index page and a nav link.
+- [x] **tinymarkdown: blockquotes**: consecutive `>` lines become a `Quote`
+  whose content is parsed as Markdown again; render it as `<blockquote>`
+  in the blog (the note at the top of `TODO.md` is one).
+- [x] **tinymarkdown: inline code**: split text into plain runs and
+  `` `code` `` spans (CommonMark-style backtick runs) and render the spans
+  as `<code>` in headings, paragraphs, and list items.
+- [x] **blog: `-debug` and `-watch` for writing**: `-debug` reads posts and
+  docs from files on disk instead of the embedded copies; `-watch` implies
+  `-debug`, polls those files for changes, reloads them, and tells open
+  pages to reload over SSE. Deploys keep serving the embedded files.
+- [x] **blog: download posts and docs as Markdown**: serve the source of
+  `/posts/foo` and `/docs/foo` at `/posts/foo.md` and `/docs/foo.md` as
+  `text/markdown`, and add a download link to each page
+  ([#3](https://github.com/podhmo/go-html-sandbox/issues/3)).
+- [x] **blog: sticky site header and tighter spacing with a small
+  `site.css`**: pico has no utility for either, so allow one embedded
+  stylesheet served after pico that only overrides pico variables and adds
+  minimal layout rules (sticky `body > header`, smaller block spacing for
+  `header`/`main`).
