@@ -1,0 +1,3 @@
+# moon's build output and downloaded dependencies.
+_build/
+.mooncakes/

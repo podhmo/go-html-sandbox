@@ -11,13 +11,13 @@ This file tracks actionable tasks only; completed work is swept to
 
 ## To Be Implemented
 
-- [ ] **Experiment with MoonBit's Wasm backends on Cloudflare Workers**:
+- [-] **Experiment with MoonBit's Wasm backends on Cloudflare Workers**:
   before porting the blog, get a MoonBit Worker under `moonbit/` that can
   be checked locally and deployed, serving pages from `wasm-gc` (without
   `use-js-builtin-string`, which Workers cannot compile for) through the
   code-unit ABI. See
   [the research notes](docs/sketch/ja/moonbit-workers-wasm.md).
-  - [ ] **Scaffold `moonbit/`**: a MoonBit module (`moon.mod`, `moon.pkg`)
+  - [x] **Scaffold `moonbit/`**: a MoonBit module (`moon.mod`, `moon.pkg`)
     whose `render` builds the top page and a 404 page, with `moon test`
     covering both. Done when `moon test` passes and
     `moon build --target wasm-gc --release` writes a Wasm exporting only

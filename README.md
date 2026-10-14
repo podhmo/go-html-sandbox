@@ -5,6 +5,8 @@ than one language.
 
 - [`go/`](go/README.md) — the Go standard library only: an HTML builder,
   a tiny Markdown parser, and a blog built on them
+- [`moonbit/`](moonbit/README.md) — the blog in MoonBit, as Wasm for
+  Cloudflare Workers (an experiment in progress)
 
 Shared across implementations:
 

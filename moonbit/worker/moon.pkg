@@ -1,0 +1,7 @@
+import {
+  "podhmo/blog/site",
+}
+
+options(
+  link: { "wasm-gc": { "exports": [ "path_push", "serve" ] } },
+)
