@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"net/http"
@@ -20,7 +20,7 @@ var testDocs = fstest.MapFS{
 }
 
 func TestLoadDocs(t *testing.T) {
-	docs, err := loadDocs(testDocs)
+	docs, err := LoadDocs(testDocs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +38,7 @@ func TestLoadDocs(t *testing.T) {
 		t.Errorf("got %v\nwant %v", got, want)
 	}
 
-	if _, err := loadDocs(fstest.MapFS{"TODO.md": file("a"), "docs/TODO.md": file("b")}); err == nil {
+	if _, err := LoadDocs(fstest.MapFS{"TODO.md": file("a"), "docs/TODO.md": file("b")}); err == nil {
 		t.Error("want error for two files mapped to /docs/TODO")
 	}
 }
@@ -90,7 +90,7 @@ second line</li>`; !strings.Contains(body, want) {
 
 // TestEmbeddedDocs checks that the repository's own documents load.
 func TestEmbeddedDocs(t *testing.T) {
-	docs, err := loadDocs(sandbox.Docs)
+	docs, err := LoadDocs(sandbox.Docs)
 	if err != nil {
 		t.Fatal(err)
 	}

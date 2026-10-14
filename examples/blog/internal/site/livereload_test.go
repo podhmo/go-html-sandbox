@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"bufio"
@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -27,7 +28,7 @@ func TestLiveReloadOff(t *testing.T) {
 
 func TestLiveReloadOn(t *testing.T) {
 	s := newTestServer(t, testPosts)
-	s.enableLiveReload()
+	s.EnableLiveReload()
 	for _, p := range []string{"/", "/posts/hello", "/docs/", "/nope"} {
 		_, body := get(t, s, p)
 		if !strings.Contains(body, `<script src="/_livereload.js" defer></script>`) {
@@ -41,8 +42,13 @@ func TestLiveReloadOn(t *testing.T) {
 }
 
 func TestLiveReloadEvents(t *testing.T) {
+	if runtime.Compiler == "tinygo" {
+		// httptest.Server cannot accept connections under TinyGo, and
+		// -watch is never used there.
+		t.Skip("needs a real listener")
+	}
 	s := newTestServer(t, testPosts)
-	s.enableLiveReload()
+	s.EnableLiveReload()
 	ts := httptest.NewServer(s)
 	defer ts.Close()
 
@@ -95,23 +101,23 @@ func TestWatch(t *testing.T) {
 	write("2026-10-14-a.md", "# First")
 	fsys := os.DirFS(dir)
 	load := func() ([]Post, []Doc, error) {
-		posts, err := loadPosts(fsys)
+		posts, err := LoadPosts(fsys)
 		return posts, nil, err
 	}
 	posts, _, err := load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := newServer("https://example.com", posts, nil)
+	s, err := NewServer("https://example.com", posts, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.enableLiveReload()
+	s.EnableLiveReload()
 	events, unsubscribe := s.reload.subscribe()
 	defer unsubscribe()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err := s.watch(ctx, 10*time.Millisecond, load, source{fsys, []string{"."}}); err != nil {
+	if err := s.Watch(ctx, 10*time.Millisecond, load, Source{fsys, []string{"."}}); err != nil {
 		t.Fatal(err)
 	}
 

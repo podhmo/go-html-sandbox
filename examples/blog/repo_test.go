@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/podhmo/go-html-sandbox/examples/blog/internal/site"
 )
 
 func TestFindModuleRoot(t *testing.T) {
@@ -56,7 +58,7 @@ func TestOpenRepo(t *testing.T) {
 			t.Errorf("%s: read a file outside the root", name)
 		}
 	}
-	if _, err := loadDocs(repo); err == nil {
+	if _, err := site.LoadDocs(repo); err == nil {
 		t.Error("loadDocs: want error for docs/ linking outside the root")
 	}
 }

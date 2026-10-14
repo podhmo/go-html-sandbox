@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"embed"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -12,14 +11,8 @@ import (
 	"os"
 	"time"
 
-	sandbox "github.com/podhmo/go-html-sandbox"
+	"github.com/podhmo/go-html-sandbox/examples/blog/internal/site"
 )
-
-//go:embed posts/*.md
-var embeddedPosts embed.FS
-
-//go:embed favicon.svg
-var favicon []byte
 
 func main() {
 	if err := run(); err != nil {
@@ -42,11 +35,8 @@ func run() error {
 		*debug = true
 	}
 
-	postsFS, err := fs.Sub(embeddedPosts, "posts")
-	if err != nil {
-		return err
-	}
-	docsFS := fs.FS(sandbox.Docs)
+	postsFS, docsFS := site.EmbeddedSources()
+	var err error
 	if *debug {
 		if *root == "" {
 			if *root, err = findModuleRoot("."); err != nil {
@@ -66,12 +56,12 @@ func run() error {
 			return fmt.Errorf("-debug reads posts from <root>/examples/blog/posts: %w", err)
 		}
 	}
-	load := func() ([]Post, []Doc, error) {
-		posts, err := loadPosts(postsFS)
+	load := func() ([]site.Post, []site.Doc, error) {
+		posts, err := site.LoadPosts(postsFS)
 		if err != nil {
 			return nil, nil, err
 		}
-		docs, err := loadDocs(docsFS)
+		docs, err := site.LoadDocs(docsFS)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -82,15 +72,15 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	s, err := newServer(*baseURL, posts, docs)
+	s, err := site.NewServer(*baseURL, posts, docs)
 	if err != nil {
 		return err
 	}
 	if *watch {
-		s.enableLiveReload()
-		err := s.watch(context.Background(), 500*time.Millisecond, load,
-			source{postsFS, []string{"."}},
-			source{docsFS, docSources},
+		s.EnableLiveReload()
+		err := s.Watch(context.Background(), 500*time.Millisecond, load,
+			site.Source{FS: postsFS, Paths: []string{"."}},
+			site.Source{FS: docsFS, Paths: site.DocSources},
 		)
 		if err != nil {
 			return err

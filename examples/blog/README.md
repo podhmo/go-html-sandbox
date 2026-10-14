@@ -50,6 +50,27 @@ reloads them and tells open pages to reload over server-sent events
 the previous content stays. Pages load the small reload script
 (`/_livereload.js`) only in this mode.
 
+## Cloudflare Workers (experimental)
+
+[`workers/`](workers/) is a separate Go module that serves the same site on
+Cloudflare Workers through
+[syumai/workers-go](https://github.com/syumai/workers-go), so only that
+module depends on workers-go. It has no flags; the public origin for OGP
+tags comes from `BASE_URL` in [`workers/wrangler.jsonc`](workers/wrangler.jsonc).
+
+```sh
+cd examples/blog/workers
+npx wrangler dev   # needs TinyGo 0.42.0 or later on PATH
+```
+
+The site itself lives in `internal/site`, which is tested under TinyGo too:
+
+```sh
+tinygo test ./examples/blog/internal/site
+```
+
+See the [experiment report](../../docs/sketch/ja/blog-tinygo-workers.md).
+
 ## Pages
 
 | Path | Page |
@@ -98,18 +119,21 @@ title, or an unknown front matter key stop the server at startup.
 
 | File | Contents |
 | --- | --- |
-| `main.go` | Flags, embedding, startup |
-| `posts.go` | Loading posts from an `fs.FS` |
-| `livereload.go` | `-watch`: polling, reloading, and the SSE endpoint |
+| `main.go` | Flags and startup |
 | `repo.go` | Finding and opening the module root for `-debug` |
-| `docs.go` | Loading repository documents (embedded by the root package, [`embed.go`](../../embed.go)) |
-| `server.go` | Routing, rendering, error pages, panic recovery |
-| `views.go` | Pages built from `pkg/picoel`, OGP tags |
+| `posts/embed.go` | Embedding the posts |
+| `internal/site/content.go` | Embedded favicon, posts, and documents |
+| `internal/site/posts.go` | Loading posts from an `fs.FS` |
+| `internal/site/docs.go` | Loading repository documents (embedded by the root package, [`embed.go`](../../embed.go)) |
+| `internal/site/livereload.go` | `-watch`: polling, reloading, and the SSE endpoint |
+| `internal/site/server.go` | Routing (by hand, see `route`), rendering, error pages, panic recovery |
+| `internal/site/views.go` | Pages built from `pkg/picoel`, OGP tags |
+| `workers/` | Cloudflare Workers entry point (a module of its own) |
 
 ## Testing
 
 ```sh
-go test ./examples/blog
+go test ./examples/blog/...
 ```
 
 Tests load posts from a `fstest.MapFS` and exercise the handlers with

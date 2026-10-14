@@ -1,0 +1,14 @@
+// Cloudflare Workers config for this module.
+// `npx wrangler dev` builds with TinyGo and serves on http://localhost:8787.
+{
+  "name": "go-html-sandbox-blog",
+  "main": "./build/worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "build": {
+    "command": "go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode tinygo && tinygo build -o ./build/app.wasm -target wasm -no-debug ."
+  },
+  "vars": {
+    // Public origin for OGP tags, like -base-url.
+    "BASE_URL": "http://localhost:8787"
+  }
+}

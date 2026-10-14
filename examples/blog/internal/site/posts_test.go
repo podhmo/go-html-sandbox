@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"strings"
@@ -17,7 +17,7 @@ func TestLoadPosts(t *testing.T) {
 		"README.txt":             file("ignored: not *.md"),
 		"drafts/2026-10-15-x.md": file("ignored: not at the top level"),
 	}
-	posts, err := loadPosts(fsys)
+	posts, err := LoadPosts(fsys)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestLoadPostsErrors(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := loadPosts(c.fsys)
+			_, err := LoadPosts(c.fsys)
 			if err == nil || !strings.Contains(err.Error(), c.wantErr) {
 				t.Errorf("got error %v, want it to contain %q", err, c.wantErr)
 			}
@@ -77,7 +77,7 @@ func TestLoadPostsFrontMatter(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			posts, err := loadPosts(fstest.MapFS{"2026-10-14-x.md": file(c.src)})
+			posts, err := LoadPosts(fstest.MapFS{"2026-10-14-x.md": file(c.src)})
 			if err != nil {
 				t.Fatal(err)
 			}

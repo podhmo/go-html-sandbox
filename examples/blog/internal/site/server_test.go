@@ -1,4 +1,4 @@
-package main
+package site
 
 import (
 	"io"
@@ -11,17 +11,17 @@ import (
 	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 )
 
-func newTestServer(t *testing.T, fsys fstest.MapFS) *server {
+func newTestServer(t *testing.T, fsys fstest.MapFS) *Server {
 	t.Helper()
-	posts, err := loadPosts(fsys)
+	posts, err := LoadPosts(fsys)
 	if err != nil {
 		t.Fatal(err)
 	}
-	docs, err := loadDocs(testDocs)
+	docs, err := LoadDocs(testDocs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	h, err := newServer("https://example.com", posts, docs)
+	h, err := NewServer("https://example.com", posts, docs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestPost(t *testing.T) {
 }
 
 func TestPostPageText(t *testing.T) {
-	posts, err := loadPosts(testPosts)
+	posts, err := LoadPosts(testPosts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestNotFoundPages(t *testing.T) {
 }
 
 func TestPanicBecomes500Page(t *testing.T) {
-	s, err := newServer("https://example.com", nil, nil)
+	s, err := NewServer("https://example.com", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,13 +264,13 @@ func TestBaseURL(t *testing.T) {
 		{"https://example.com/?q=1", ""},
 		{"", ""},
 	}
-	posts, err := loadPosts(fstest.MapFS{"2026-10-14-x.md": file("# x")})
+	posts, err := LoadPosts(fstest.MapFS{"2026-10-14-x.md": file("# x")})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, c := range cases {
 		t.Run(c.in, func(t *testing.T) {
-			h, err := newServer(c.in, posts, nil)
+			h, err := NewServer(c.in, posts, nil)
 			if c.wantURL == "" {
 				if err == nil {
 					t.Error("want error")
@@ -283,6 +283,29 @@ func TestBaseURL(t *testing.T) {
 			_, body := get(t, h, "/posts/x")
 			if want := `<meta property="og:url" content="` + c.wantURL + `">`; !strings.Contains(body, want) {
 				t.Errorf("body does not contain %q", want)
+			}
+		})
+	}
+}
+
+func TestRedirects(t *testing.T) {
+	h := newTestServer(t, testPosts)
+	cases := []struct{ path, location string }{
+		{"/docs", "/docs/"},
+		{"/docs?x=1", "/docs/?x=1"},
+		{"//posts/hello", "/posts/hello"},
+		{"/posts/../docs/", "/docs/"},
+		{"/docs/ja/../TODO", "/docs/TODO"},
+	}
+	for _, c := range cases {
+		t.Run(c.path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, c.path, nil))
+			if rec.Code != http.StatusTemporaryRedirect {
+				t.Errorf("status %d", rec.Code)
+			}
+			if got := rec.Header().Get("Location"); got != c.location {
+				t.Errorf("Location %q, want %q", got, c.location)
 			}
 		})
 	}
