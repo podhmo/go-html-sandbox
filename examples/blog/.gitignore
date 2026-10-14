@@ -1,0 +1,3 @@
+# Output of the Workers builds (see workers/) and wrangler's local state.
+/build/
+/.wrangler/
