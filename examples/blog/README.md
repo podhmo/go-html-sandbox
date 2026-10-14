@@ -76,8 +76,10 @@ description: Shown in <meta name="description"> and OGP.
 ---
 ```
 
-Without front matter, the title is the first `#` heading and the
-description is the first paragraph.
+Each key falls back on its own: without `title`, the title is the first
+top-level `#` heading (a post with neither is an error at startup); without
+`description`, the description is the first paragraph. When the title comes
+from front matter and the body has no `#` heading, the post page adds one.
 
 The body supports a tiny subset of Markdown:
 

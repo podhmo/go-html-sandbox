@@ -49,6 +49,11 @@ This file tracks actionable tasks only; completed work is swept to
   `-debug`, polls those files for changes, reloads them, and tells open
   pages to reload over SSE. Deploys keep serving the embedded files.
 
+- [ ] **blog: rewrite the stale sample post `2026-10-16-mobile-first.md`**:
+  it still describes the old inline stylesheet (custom properties, clamp(),
+  prefers-color-scheme, ...), but pages now use pico.css v2 alone in its
+  dark theme.
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
