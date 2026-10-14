@@ -21,6 +21,17 @@ This file tracks actionable tasks only; completed work is swept to
   it shows as raw text, e.g. the note at the top of `TODO.md`. Decide how
   relative links between repository files (`docs/...md`, `.claude/...`)
   map to `/docs/` URLs or elsewhere.
+- [ ] **tinymarkdown: headings up to `#####`**: raise `maxLevel` from 3
+  to 5 so `####` and `#####` open nested sections (rendered as `<h4>` and
+  `<h5>` in the blog); today they are shown as paragraph text. See
+  [the sketch](docs/sketch/ja/blog.md).
+
+- [ ] **tinymarkdown: tables**: parse GitHub-style pipe tables (header
+  row, `| --- |` delimiter row, body rows) into a table block, with
+  inline syntax in cells, and render them as `<table>` in the blog.
+  `docs/sketch/ja/blog.md` and `docs/sketch/ja/blog-tinygo-workers.md`
+  use tables, which are shown as raw `|` text today. Decide whether to
+  honor column alignment (`:---:`).
 
 ### Future work
 
