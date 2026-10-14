@@ -104,3 +104,28 @@ func (HTMLRenderer) BoolAttr(w io.Writer, n BoolAttrNode) error {
 	_, err := io.WriteString(w, " "+string(n))
 	return err
 }
+
+// PlainRenderer writes only text content, dropping tags, attributes, and raw
+// markup. Text is not escaped. Useful for debugging and for tests that check
+// what a page says. The zero value is ready to use.
+type PlainRenderer struct{}
+
+func (PlainRenderer) Text(w io.Writer, n TextNode) error {
+	_, err := io.WriteString(w, string(n))
+	return err
+}
+
+func (PlainRenderer) Raw(io.Writer, RawNode) error { return nil }
+
+func (r PlainRenderer) Element(w io.Writer, n ElementNode) error {
+	for _, c := range n.Children {
+		if err := Render(w, c, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (PlainRenderer) Attr(io.Writer, AttrNode) error { return nil }
+
+func (PlainRenderer) BoolAttr(io.Writer, BoolAttrNode) error { return nil }

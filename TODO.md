@@ -13,14 +13,14 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### pkg/el (HTML library)
 
-- [-] **Core `pkg/el`** ([design](docs/ja/design.md)): the scope the blog
+- [x] **Core `pkg/el`** ([design](docs/ja/design.md)): the scope the blog
   needs first; more elements/attributes are added as const lines later.
   - [x] **Node types and constructors**: `Node`, `Tag` / `AttrName` consts,
     `El`, `Attr`, `Text`, `Raw`. Tests compare trees with
     `reflect.DeepEqual`.
   - [x] **`HTMLRenderer`**: escaping in `Text`, void elements, attributes
     vs. children. Table tests on rendered strings, including an XSS case.
-  - [ ] **`PlainRenderer`**: text-only output. Tests for nested elements
+  - [x] **`PlainRenderer`**: text-only output. Tests for nested elements
     and dropped attributes.
 
 ### pkg/markdown (tiny Markdown parser)

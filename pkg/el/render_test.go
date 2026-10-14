@@ -68,3 +68,25 @@ func TestRenderPropagatesWriteError(t *testing.T) {
 		t.Fatal("want write error")
 	}
 }
+
+func TestPlainRenderer(t *testing.T) {
+	cases := []struct {
+		name string
+		in   Node
+		want string
+	}{
+		{"text is not escaped", Text("a < b & c"), "a < b & c"},
+		{"raw is dropped", El(Style, Raw("p{color:red}")), ""},
+		{"tags and attributes are dropped",
+			El(Div, Attr(Class, "x"), BoolAttrNode("hidden"),
+				El(P, Text("one ")), El(P, El(A, Attr(Href, "/"), Text("two")))),
+			"one two"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := render(t, c.in, PlainRenderer{}); got != c.want {
+				t.Errorf("got  %q\nwant %q", got, c.want)
+			}
+		})
+	}
+}
