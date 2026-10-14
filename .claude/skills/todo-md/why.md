@@ -16,7 +16,7 @@ schemes were implemented and compared (PRs
 [#385](https://github.com/podhmo/minigo/pull/385),
 [#387](https://github.com/podhmo/minigo/pull/387)); the comparison report is
 attached to the issue comments. The single-archive scheme (TODO.md +
-TODO-archive.md) won, and go-html-sandbox adopts it from the start so the
+TODO-archive.md) won, and html-sandbox adopts it from the start so the
 same failure never happens here.
 
 The principle that survives every scheme: **the tracker holds actionable
