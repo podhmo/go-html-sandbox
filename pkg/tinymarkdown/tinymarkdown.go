@@ -1,9 +1,9 @@
-// Package markdown parses a tiny subset of Markdown into a pure-data tree.
+// Package tinymarkdown parses a tiny subset of Markdown into a pure-data tree.
 //
 // Supported: headings "#" to "###" (which open nested sections), "- " list
 // items, and paragraphs. Anything else is treated as paragraph text. Inline syntax is
 // not interpreted. See docs/sketch/ja/blog.md.
-package markdown
+package tinymarkdown
 
 import "strings"
 

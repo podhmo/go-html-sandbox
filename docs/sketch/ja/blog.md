@@ -18,14 +18,14 @@
 | | 置き場所 | 責務 |
 | --- | --- | --- |
 | ライブラリ: HTML | `pkg/el` | [設計方針](../../ja/design.md)の内容。Node、Renderer、要素名・属性名の const |
-| ライブラリ: Markdown | `pkg/markdown` | ごく簡単な Markdown を構文木（純粋なデータ）に変換する。`pkg/el` には依存しない |
+| ライブラリ: Markdown | `pkg/tinymarkdown` | ごく簡単な Markdown を構文木（純粋なデータ）に変換する。`pkg/el` には依存しない |
 | アプリケーション | `cmd/blog/main.go` | 記事の読み込み、ルーティング、レイアウト、構文木から Node への変換、CSS、favicon の配信 |
 
-- 依存の向きは `cmd/blog` → `pkg/el` と `cmd/blog` → `pkg/markdown` だけにする。ライブラリ同士は依存させない。
+- 依存の向きは `cmd/blog` → `pkg/el` と `cmd/blog` → `pkg/tinymarkdown` だけにする。ライブラリ同士は依存させない。
 - 構文木を Node に変換する処理は、HTML の出し方（`<section>` を使うか、見出しに id を付けるか など）を決める部分なので、アプリケーション側に置く。数十行で済む見込み。
 - `pkg/el` に足りない要素名・属性名が見つかったら、ライブラリへの追加として扱う。今だけ必要なものは `el.AttrName("...")` でキャストして使える。
 
-## `pkg/markdown`: ごく簡単な Markdown パーサー
+## `pkg/tinymarkdown`: ごく簡単な Markdown パーサー
 
 ### 対応する書き方
 
@@ -56,7 +56,7 @@
 設計方針の「Node は純粋なデータ」にならい、構文木も描画ロジックを持たない値にする。
 
 ```go
-package markdown
+package tinymarkdown
 
 // Document is the root of a parsed document.
 type Document struct {
@@ -123,7 +123,7 @@ var postsFS embed.FS
 func layout(title string, body ...el.Node) el.Node // <!doctype>、<head>、<header>、<main>、<footer>
 func postList(posts []Post) el.Node
 func postPage(p Post) el.Node
-func renderBlocks(bs []markdown.Block) []el.Node    // 構文木を Node に変換する
+func renderBlocks(bs []tinymarkdown.Block) []el.Node    // 構文木を Node に変換する
 ```
 
 - `<head>` には次を入れる。
@@ -183,7 +183,7 @@ var favicon []byte
 
 ### テスト
 
-- `pkg/markdown`: 入力と構文木の組を並べたテーブルテスト。
+- `pkg/tinymarkdown`: 入力と構文木の組を並べたテーブルテスト。
 - `cmd/blog`: `fstest.MapFS` に記事を入れてハンドラを作り、`httptest` で一覧・記事・favicon を確認する。エラーは、存在しない記事と存在しない URL が 404 のエラーページになること、panic するハンドラが 500 のエラーページになり、本文に内部の情報が出ないことを確認する。本文の確認には `PlainRenderer` を使う。
 
 ## ディレクトリ構成の案
@@ -195,9 +195,9 @@ cmd/blog/
   main_test.go
   posts/            // 記事。go:embed で埋め込む（例: 2026-10-14-hello.md）
 pkg/el/             // HTML ライブラリ（設計方針の内容）
-pkg/markdown/
-  markdown.go
-  markdown_test.go
+pkg/tinymarkdown/
+  tinymarkdown.go
+  tinymarkdown_test.go
 ```
 
 最初は `main.go` 1 ファイルに収め、長くなったら `layout.go` などに分ける。
@@ -205,7 +205,7 @@ pkg/markdown/
 ## 進める順序
 
 1. `pkg/el`（設計方針の内容。ブログで使う範囲から）
-2. `pkg/markdown`（セクション、箇条書き、段落、コードブロック）とテスト
+2. `pkg/tinymarkdown`（セクション、箇条書き、段落、コードブロック）とテスト
 3. `cmd/blog`: 記事一覧と記事ページ。CSS は最低限
 4. `cmd/blog`: エラーページ（404 と 500）
 5. `cmd/blog`: favicon、モバイル向けの CSS の仕上げ、テスト

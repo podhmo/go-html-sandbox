@@ -23,7 +23,7 @@ This file tracks actionable tasks only; completed work is swept to
   - [x] **`PlainRenderer`**: text-only output. Tests for nested elements
     and dropped attributes.
 
-### pkg/markdown (tiny Markdown parser)
+### pkg/tinymarkdown (tiny Markdown parser)
 
 - [-] **`Parse(src) Document`** ([sketch](docs/sketch/ja/blog.md)): pure-data
   AST with no dependency on `pkg/el`. Table tests compare ASTs with
