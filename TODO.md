@@ -18,7 +18,7 @@ This file tracks actionable tasks only; completed work is swept to
   - [x] **Node types and constructors**: `Node`, `Tag` / `AttrName` consts,
     `El`, `Attr`, `Text`, `Raw`. Tests compare trees with
     `reflect.DeepEqual`.
-  - [ ] **`HTMLRenderer`**: escaping in `Text`, void elements, attributes
+  - [x] **`HTMLRenderer`**: escaping in `Text`, void elements, attributes
     vs. children. Table tests on rendered strings, including an XSS case.
   - [ ] **`PlainRenderer`**: text-only output. Tests for nested elements
     and dropped attributes.
