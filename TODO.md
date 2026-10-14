@@ -53,7 +53,7 @@ This file tracks actionable tasks only; completed work is swept to
     the 500 page leaks no internal details.
   - [x] **Favicon**: embedded `favicon.svg` at `GET /favicon.svg` with
     `Content-Type` and `Cache-Control`. Test the headers.
-  - [ ] **Mobile-first CSS**: inline `<style>` via `Raw`, no build step,
+  - [x] **Mobile-first CSS**: inline `<style>` via `Raw`, no build step,
     under ~100 lines (dark mode, 44px tap targets, scrollable `<pre>`).
   - [ ] **Sample posts**: a few posts in `cmd/blog/posts/` that exercise
     every supported Markdown construct.
