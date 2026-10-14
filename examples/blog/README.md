@@ -67,80 +67,9 @@ served as `text/markdown; charset=utf-8`, and each page links to it with a small
 
 [`workers/`](workers/) is a separate Go module that serves the same site on
 Cloudflare Workers through
-[syumai/workers-go](https://github.com/syumai/workers-go), so only that
-module depends on workers-go. It has no flags; the public origin for OGP
-tags comes from `BASE_URL` in [`workers/wrangler.jsonc`](workers/wrangler.jsonc).
-
-```sh
-cd examples/blog/workers
-npx wrangler dev   # needs TinyGo 0.42.0 or later on PATH
-```
-
-Without TinyGo, build with the standard Go toolchain (`GOOS=js
-GOARCH=wasm`) through the `go` environment in `wrangler.jsonc`. The Wasm
-binary is about 8 MiB instead of 2 MiB, which still fits the Workers size
-limit:
-
-```sh
-npx wrangler dev --env go
-```
-
-### Deploying
-
-Deploying needs a Cloudflare account. The steps below use the `go`
-environment; drop `--env go` to deploy the TinyGo build, which is named
-`go-html-sandbox-blog` and reads the top-level `vars` instead.
-
-1. Log in once:
-
-   ```sh
-   cd examples/blog/workers
-   npx wrangler login
-   ```
-
-2. Set the public origin. `env.go.vars.BASE_URL` in `wrangler.jsonc` must
-   be the URL the Worker is served at,
-   `https://blog.<your-subdomain>.workers.dev` (the Worker is named `blog` by
-   `env.go.name`). It holds the repository owner's URL; for your own
-   account, change it or override it with `--var BASE_URL:https://...` on
-   the command line. An empty or invalid `BASE_URL` makes every page a 500
-   error.
-   Your `workers.dev` subdomain is shown in the Cloudflare dashboard under
-   Workers & Pages, and wrangler prints the full URL at the end of a deploy.
-   It can also be fetched from the API with the account ID that
-   `npx wrangler whoami` prints and the token wrangler stored at login
-   (the path below is for macOS):
-
-   ```sh
-   TOKEN=$(sed -n 's/^oauth_token = "\(.*\)"/\1/p' ~/Library/Preferences/.wrangler/config/default.toml)
-   curl -s -H "Authorization: Bearer $TOKEN" \
-     https://api.cloudflare.com/client/v4/accounts/<account-id>/workers/subdomain
-   ```
-
-3. Build and deploy:
-
-   ```sh
-   npx wrangler deploy --env go
-   ```
-
-   The build command in `wrangler.jsonc` runs first, so there is nothing to
-   build by hand. Try `--dry-run` to build and check the upload size
-   without deploying.
-
-4. Check the site at the printed URL, e.g. that `og:url` on a post page
-   starts with your `BASE_URL`. `npx wrangler tail --env go` streams the
-   Worker's logs.
-
-Posts and documents are embedded in the Wasm binary, so deploy again after
-editing them. To remove the Worker, run `npx wrangler delete --env go`.
-
-The site itself lives in `internal/site`, which is tested under TinyGo too:
-
-```sh
-tinygo test ./examples/blog/internal/site
-```
-
-See the [experiment report](../../docs/sketch/ja/blog-tinygo-workers.md).
+[syumai/workers-go](https://github.com/syumai/workers-go), built with
+TinyGo (also through Docker) or the standard Go toolchain. See
+[`workers/README.md`](workers/README.md) for running and deploying it.
 
 ## Pages
 

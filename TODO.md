@@ -46,7 +46,7 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### Future work
 
-- [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
+- [x] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
   point by build tag so the default build stays standard-library only,
   and serve the same `http.Handler` via
   [syumai/workers-go](https://github.com/syumai/workers-go) under TinyGo.

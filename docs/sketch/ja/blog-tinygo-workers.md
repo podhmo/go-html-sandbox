@@ -25,7 +25,7 @@ TODO.md の「Run `examples/blog` on Cloudflare Workers with TinyGo」の spike�
 | Go | 1.27.1（ホスト） |
 | TinyGo | 0.43.0（Docker イメージ `tinygo/tinygo:0.43.0`。中の Go は 1.27.2、LLVM 22.1.4） |
 | workers-go | v0.36.0。v0.35.0 で `github.com/syumai/workers` から `github.com/syumai/workers-go` に改名された（旧パスは deprecated な転送モジュール） |
-| wrangler | 4.147.0（`npx wrangler@4`）。ローカルの `wrangler dev` だけで確認し、デプロイはしていない |
+| wrangler | 4.147.0（`npx wrangler@4`）。実験時はローカルの `wrangler dev` だけで確認した。デプロイは後日（「デプロイ」の節） |
 
 TinyGo はホストに入れず、リポジトリをマウントして Docker で動かすシム（`tinygo` という名前のシェルスクリプト）を `PATH` に置いて使った。`wrangler.jsonc` のビルドコマンドも、このシム経由で動くことを確認した。
 
@@ -205,10 +205,18 @@ examples/blog/
 
 両案に共通の変更: ルーティングの手書き化（とリダイレクトの再実装）、`BASE_URL` を `wrangler.jsonc` から読むこと。
 
+## デプロイ
+
+2026-10-14 に、TinyGo のビルドを `https://blog.ababjam61.workers.dev`（Worker 名 `blog`）へデプロイした。それまでは同じ名前で標準 Go のビルドが動いていた。
+
+- TinyGo は、上のシムを `examples/blog/workers/bin/tinygo` としてリポジトリに入れたものを使った。`PATH="$PWD/bin:$PATH" npx wrangler deploy --env=""` で、`wrangler.jsonc` のビルドコマンドがそのまま通る。
+- アップロードは 2117.89 KiB（gzip 後 757.41 KiB）、wrangler が表示した Worker Startup Time は 8 ms。
+- `/`、記事、`/docs/` 以下、`.md`、favicon は 200、存在しないパスは 404 を返し、`og:url` は `BASE_URL` から作られていた。
+- `HEAD` は 200 で本文は空になった（Workers 側で本文が捨てられる）。
+
 ## 未確認・残課題
 
-- 本番の Cloudflare へのデプロイ（`wrangler deploy`）と、そこでの CPU 時間。
+- 本番での CPU 時間。
 - コールドスタートの時間を、TinyGo と標準 Go のビルドで比べること。
 - 記事が増えたときのリクエストごとのコスト（「リクエストごとに全記事をパースしている理由」の対策の候補を参照）。
 - `tinygo test -target wasm`（node が必要）での実行。
-- `HEAD` には GET と同じ本文を返している（以前の ServeMux 経由の挙動と同じで、`net/http` のサーバーが本文を捨てる）。Workers 上で HEAD がどう扱われるかは未確認。
