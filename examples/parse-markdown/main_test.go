@@ -7,13 +7,15 @@ import (
 	"testing"
 )
 
-const src = "intro\n# Title\n- a\n- b\n## Sub\n| x | y |\n| - | - |\n```go\nx := 1\n```\n"
+const src = "intro\n# Title\n- a\n- b\n> q\n## Sub\n| x | y |\n| - | - |\n```go\nx := 1\n```\n"
 
 const want = `paragraph "intro"
 section h1 "Title"
   list
     item "a"
     item "b"
+  quote
+    paragraph "q"
   section h2 "Sub"
     paragraph "| x | y |\n| - | - |"
     code "x := 1"

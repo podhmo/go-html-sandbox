@@ -130,6 +130,11 @@ func List(items ...Node) Node {
 	return el.El(el.Ul, listItems(items)...)
 }
 
+// Blockquote is a quotation; pico draws a bar on its leading edge.
+func Blockquote(children ...Node) Node {
+	return el.El(el.Blockquote, children...)
+}
+
 // Pre is preformatted text such as a code block.
 func Pre(text string) Node {
 	return el.El(el.Pre, el.Text(text))

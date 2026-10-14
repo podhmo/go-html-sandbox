@@ -42,6 +42,7 @@ func TestElements(t *testing.T) {
 		{List(Text("a"), Text("b")), `<ul><li>a</li><li>b</li></ul>`},
 		{Article(Hgroup(H2(Text("t")), P(Date(d)))), `<article><hgroup><h2>t</h2><p><time datetime="2026-10-14">2026-10-14</time></p></hgroup></article>`},
 		{Section(H1(Text("a")), H3(Text("b"))), `<section><h1>a</h1><h3>b</h3></section>`},
+		{Blockquote(P(Text("q"))), `<blockquote><p>q</p></blockquote>`},
 		{Pre("x := <1>"), `<pre>x := &lt;1&gt;</pre>`},
 		{Small(Text("<s>")), `<small>&lt;s&gt;</small>`},
 		{A(`/?a="b"`, Text("x")), `<a href="/?a=&#34;b&#34;">x</a>`},

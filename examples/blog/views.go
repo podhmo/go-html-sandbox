@@ -150,6 +150,8 @@ func renderBlocks(bs []tinymarkdown.Block) []pe.Node {
 				items = append(items, pe.Text(it))
 			}
 			out = append(out, pe.List(items...))
+		case tinymarkdown.Quote:
+			out = append(out, pe.Blockquote(renderBlocks(b.Children)...))
 		case tinymarkdown.CodeBlock:
 			out = append(out, pe.Pre(b.Code))
 		}

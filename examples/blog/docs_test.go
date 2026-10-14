@@ -11,7 +11,7 @@ import (
 )
 
 var testDocs = fstest.MapFS{
-	"TODO.md":           file("# TODO\n\n- [ ] **task**: first line\n  second line"),
+	"TODO.md":           file("# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line"),
 	"docs/ja/design.md": file("# Design <x>\n\nwhy"),
 	"docs/notes.md":     file("no heading"),
 	"docs/image.svg":    file("<svg/>"),
@@ -61,6 +61,10 @@ func TestDocPages(t *testing.T) {
 	_, body = get(t, h, "/docs/TODO")
 	if want := `<li>[ ] **task**: first line
 second line</li>`; !strings.Contains(body, want) {
+		t.Errorf("TODO: body does not contain %q", want)
+	}
+
+	if want := `<blockquote><p>note</p></blockquote>`; !strings.Contains(body, want) {
 		t.Errorf("TODO: body does not contain %q", want)
 	}
 

@@ -1,8 +1,9 @@
 // Package tinymarkdown parses a tiny subset of Markdown into a pure-data tree.
 //
 // Supported: headings "#" to "###" (which open nested sections), "- " list
-// items (which may continue on indented lines), paragraphs, and code blocks
-// fenced by exactly "```". Anything else is treated as paragraph text.
+// items (which may continue on indented lines), paragraphs, "> " quotes, and
+// code blocks fenced by exactly "```". Anything else is treated as paragraph
+// text.
 // Inline syntax is not interpreted. See docs/sketch/ja/blog.md.
 package tinymarkdown
 
@@ -38,6 +39,13 @@ type List struct {
 	Items []string
 }
 
+// Quote is a run of consecutive lines starting with ">". The text after ">"
+// and one optional space is parsed again as a document, so a quote may hold
+// paragraphs, lists, code blocks, and nested quotes.
+type Quote struct {
+	Children []Block
+}
+
 // CodeBlock is the verbatim content between "```" fences, lines joined with
 // "\n". Text after the opening fence (a language name) is ignored.
 type CodeBlock struct {
@@ -47,6 +55,7 @@ type CodeBlock struct {
 func (Section) block()   {}
 func (Paragraph) block() {}
 func (List) block()      {}
+func (Quote) block()     {}
 func (CodeBlock) block() {}
 
 const fence = "```"
@@ -72,7 +81,7 @@ func Parse(src string) Document {
 // scan splits src into a flat list of blocks, with headings as markers.
 func scan(src string) []Block {
 	var out []Block
-	var para, items []string
+	var para, items, quote []string
 	flush := func() {
 		if len(para) > 0 {
 			out = append(out, Paragraph{Text: strings.Join(para, "\n")})
@@ -81,6 +90,10 @@ func scan(src string) []Block {
 		if len(items) > 0 {
 			out = append(out, List{Items: items})
 			items = nil
+		}
+		if len(quote) > 0 {
+			out = append(out, Quote{Children: Parse(strings.Join(quote, "\n")).Children})
+			quote = nil
 		}
 	}
 	var code []string
@@ -106,8 +119,14 @@ func scan(src string) []Block {
 		case isHeading(trimmed):
 			flush()
 			out = append(out, parseHeading(trimmed))
+		case strings.HasPrefix(trimmed, ">"):
+			if len(para) > 0 || len(items) > 0 {
+				flush()
+			}
+			rest := line[strings.IndexByte(line, '>')+1:]
+			quote = append(quote, strings.TrimPrefix(rest, " "))
 		case strings.HasPrefix(trimmed, "- "):
-			if len(para) > 0 {
+			if len(para) > 0 || len(quote) > 0 {
 				flush()
 			}
 			items = append(items, strings.TrimSpace(trimmed[2:]))
@@ -115,7 +134,7 @@ func scan(src string) []Block {
 			// An indented line continues the item above it.
 			items[len(items)-1] += "\n" + trimmed
 		default:
-			if len(items) > 0 {
+			if len(items) > 0 || len(quote) > 0 {
 				flush()
 			}
 			para = append(para, trimmed)

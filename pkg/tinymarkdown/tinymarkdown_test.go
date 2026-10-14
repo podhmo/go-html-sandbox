@@ -128,3 +128,38 @@ func TestCodeBlocks(t *testing.T) {
 			}}},
 	})
 }
+
+func TestQuotes(t *testing.T) {
+	run(t, []testCase{
+		{"quote", "> a\n> b",
+			Document{Children: []Block{Quote{Children: []Block{Paragraph{Text: "a\nb"}}}}}},
+		{"space after > is optional", ">a\n  >  b",
+			Document{Children: []Block{Quote{Children: []Block{Paragraph{Text: "a\nb"}}}}}},
+		{"bare > separates paragraphs", "> a\n>\n> b",
+			Document{Children: []Block{Quote{Children: []Block{Paragraph{Text: "a"}, Paragraph{Text: "b"}}}}}},
+		{"blocks inside a quote", "> - x\n>   y\n> ```\n>   code\n> ```",
+			Document{Children: []Block{Quote{Children: []Block{
+				List{Items: []string{"x\ny"}}, CodeBlock{Code: "  code"},
+			}}}}},
+		{"nested quote", "> a\n>\n> > b",
+			Document{Children: []Block{Quote{Children: []Block{
+				Paragraph{Text: "a"}, Quote{Children: []Block{Paragraph{Text: "b"}}},
+			}}}}},
+		{"quote ends a paragraph and a list", "p\n> q\n- a\n> r",
+			Document{Children: []Block{
+				Paragraph{Text: "p"}, Quote{Children: []Block{Paragraph{Text: "q"}}},
+				List{Items: []string{"a"}}, Quote{Children: []Block{Paragraph{Text: "r"}}},
+			}}},
+		{"a line without > ends the quote", "> q\np\n> r\n\n> s",
+			Document{Children: []Block{
+				Quote{Children: []Block{Paragraph{Text: "q"}}}, Paragraph{Text: "p"},
+				Quote{Children: []Block{Paragraph{Text: "r"}}}, Quote{Children: []Block{Paragraph{Text: "s"}}},
+			}}},
+		{"quote inside a section", "# A\n> q",
+			Document{Children: []Block{
+				Section{Level: 1, Title: "A", Children: []Block{Quote{Children: []Block{Paragraph{Text: "q"}}}}},
+			}}},
+		{"> inside a code block is code", "```\n> x\n```",
+			Document{Children: []Block{CodeBlock{Code: "> x"}}}},
+	})
+}

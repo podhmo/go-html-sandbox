@@ -81,6 +81,10 @@ func dump(w io.Writer, bs []tinymarkdown.Block, depth int) error {
 					}
 				}
 			}
+		case tinymarkdown.Quote:
+			if _, err = fmt.Fprintf(w, "%squote\n", indent); err == nil {
+				err = dump(w, b.Children, depth+1)
+			}
 		case tinymarkdown.CodeBlock:
 			_, err = fmt.Fprintf(w, "%scode %q\n", indent, b.Code)
 		default:

@@ -68,6 +68,7 @@ The body supports a tiny subset of Markdown:
 - `#` to `###` headings, which open nested sections
 - `- ` list items (no nesting); indented lines continue the item above
 - paragraphs
+- `>` quotes, whose content is Markdown again
 - code blocks fenced by exactly three backquotes (no highlighting)
 
 Everything else, including inline syntax and HTML, is shown as plain,
