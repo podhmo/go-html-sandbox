@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/podhmo/go-html-sandbox/pkg/el"
@@ -47,6 +49,15 @@ func postList(posts []Post) el.Node {
 func postPage(p Post) el.Node {
 	body := append([]el.Node{dateNode(p.Date)}, renderBlocks(p.Doc.Children)...)
 	return layout(p.Title+" - "+siteName, el.El(el.Article, body...))
+}
+
+func errorPage(status int, message string) el.Node {
+	title := strconv.Itoa(status) + " " + http.StatusText(status)
+	return layout(title+" - "+siteName,
+		el.El(el.H1, el.Text(title)),
+		el.El(el.P, el.Text(message)),
+		el.El(el.P, el.El(el.A, el.Attr(el.Href, "/"), el.Text("Back to all posts"))),
+	)
 }
 
 func dateNode(d time.Time) el.Node {

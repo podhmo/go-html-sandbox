@@ -74,13 +74,6 @@ func TestPost(t *testing.T) {
 	}
 }
 
-func TestUnknownPost(t *testing.T) {
-	res, _ := get(t, newTestServer(t, testPosts), "/posts/nope")
-	if res.StatusCode != http.StatusNotFound {
-		t.Errorf("status %d", res.StatusCode)
-	}
-}
-
 func TestPostPageText(t *testing.T) {
 	posts, err := loadPosts(testPosts)
 	if err != nil {
@@ -93,5 +86,46 @@ func TestPostPageText(t *testing.T) {
 	want := "blog2026-10-14Hello <script>firstPointsonetwox := <1>Rendered with the Go standard library."
 	if !strings.Contains(b.String(), want) {
 		t.Errorf("got  %q\nwant it to contain %q", b.String(), want)
+	}
+}
+
+func TestNotFoundPages(t *testing.T) {
+	h := newTestServer(t, testPosts)
+	cases := []struct{ path, message string }{
+		{"/posts/nope", "Post not found."},
+		{"/nope", "Page not found."},
+		{"/posts/hello/extra", "Page not found."},
+	}
+	for _, c := range cases {
+		t.Run(c.path, func(t *testing.T) {
+			res, body := get(t, h, c.path)
+			if res.StatusCode != http.StatusNotFound {
+				t.Errorf("status %d", res.StatusCode)
+			}
+			if ct := res.Header.Get("Content-Type"); ct != "text/html; charset=utf-8" {
+				t.Errorf("Content-Type %q", ct)
+			}
+			for _, want := range []string{"<h1>404 Not Found</h1>", c.message, `<a href="/">Back to all posts</a>`} {
+				if !strings.Contains(body, want) {
+					t.Errorf("body does not contain %q", want)
+				}
+			}
+		})
+	}
+}
+
+func TestPanicBecomes500Page(t *testing.T) {
+	h := recoverer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic("secret: /etc/internal/path")
+	}))
+	res, body := get(t, h, "/")
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status %d", res.StatusCode)
+	}
+	if !strings.Contains(body, "<h1>500 Internal Server Error</h1>") || !strings.Contains(body, "Something went wrong.") {
+		t.Errorf("not an error page: %s", body)
+	}
+	if strings.Contains(body, "secret") {
+		t.Error("error page leaks the panic value")
 	}
 }

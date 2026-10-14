@@ -48,7 +48,7 @@ This file tracks actionable tasks only; completed work is swept to
   - [x] **Post list and post page**: `GET /{$}` (newest first) and
     `GET /posts/{slug}`, built by `layout` / `postList` / `postPage` and
     `renderBlocks` (AST → `el.Node`, code blocks as `<pre>`).
-  - [ ] **Error pages**: 404 for unknown slugs and unmatched URLs, 500 via
+  - [x] **Error pages**: 404 for unknown slugs and unmatched URLs, 500 via
     a `recover` middleware; render into `bytes.Buffer` first. Tests that
     the 500 page leaks no internal details.
   - [ ] **Favicon**: embedded `favicon.svg` at `GET /favicon.svg` with

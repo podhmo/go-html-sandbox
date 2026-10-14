@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -25,20 +27,60 @@ func newServer(posts []Post) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleList)
 	mux.HandleFunc("GET /posts/{slug}", s.handlePost)
-	return mux
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		renderError(w, r, http.StatusNotFound, "Page not found.", nil)
+	})
+	return recoverer(mux)
 }
 
 func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
-	render(w, http.StatusOK, postList(s.posts))
+	page(w, r, postList(s.posts))
 }
 
 func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
 	p, ok := s.bySlug[r.PathValue("slug")]
 	if !ok {
-		http.NotFound(w, r)
+		renderError(w, r, http.StatusNotFound, "Post not found.", nil)
 		return
 	}
-	render(w, http.StatusOK, postPage(p))
+	page(w, r, postPage(p))
+}
+
+// page renders n with status 200, or an error page if rendering fails.
+func page(w http.ResponseWriter, r *http.Request, n el.Node) {
+	if err := render(w, http.StatusOK, n); err != nil {
+		renderError(w, r, http.StatusInternalServerError, "Something went wrong.", err)
+	}
+}
+
+// renderError shows message to the user and logs err, which may hold
+// internal details, only on the server.
+func renderError(w http.ResponseWriter, r *http.Request, status int, message string, err error) {
+	if err != nil {
+		slog.ErrorContext(r.Context(), "request failed", "method", r.Method, "path", r.URL.Path, "status", status, "error", err)
+	}
+	if rerr := render(w, status, errorPage(status, message)); rerr != nil {
+		slog.ErrorContext(r.Context(), "render error page", "error", rerr)
+		http.Error(w, message, status)
+	}
+}
+
+// recoverer turns a panic in h into a 500 error page. Because pages are
+// rendered into a buffer first, no partial response has been sent yet.
+func recoverer(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			v := recover()
+			if v == nil {
+				return
+			}
+			if v == http.ErrAbortHandler {
+				panic(v)
+			}
+			renderError(w, r, http.StatusInternalServerError, "Something went wrong.", fmt.Errorf("panic: %v", v))
+		}()
+		h.ServeHTTP(w, r)
+	})
 }
 
 // render writes a full HTML document. It renders into a buffer first so that
