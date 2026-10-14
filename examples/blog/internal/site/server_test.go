@@ -368,3 +368,38 @@ func TestTablesAndDeepHeadings(t *testing.T) {
 		t.Errorf("body does not contain %q", want)
 	}
 }
+
+func TestMarkdownInTitles(t *testing.T) {
+	h := newTestServer(t, fstest.MapFS{
+		"2026-10-14-t.md":  file("# Put `x` on [Workers](https://example.com/)\nUse `go` and [docs](https://example.com/docs)."),
+		"2026-10-13-fm.md": file("---\ntitle: Run `go test`\n---\nbody"),
+	})
+	_, body := get(t, h, "/")
+	for _, want := range []string{
+		`<a href="/posts/t">Put <code>x</code> on Workers</a>`,
+		`<a href="/posts/fm">Run <code>go test</code></a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("list: body does not contain %q", want)
+		}
+	}
+	_, body = get(t, h, "/posts/t")
+	for _, want := range []string{
+		`<title>Put x on Workers - blog</title>`,
+		`<meta property="og:title" content="Put x on Workers">`,
+		`<meta name="description" content="Use go and docs.">`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("post: body does not contain %q", want)
+		}
+	}
+	_, body = get(t, h, "/posts/fm")
+	for _, want := range []string{
+		`<title>Run go test - blog</title>`,
+		`<h1>Run <code>go test</code></h1>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("fm: body does not contain %q", want)
+		}
+	}
+}

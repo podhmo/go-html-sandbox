@@ -37,7 +37,7 @@ This file tracks actionable tasks only; completed work is swept to
   `docs/sketch/ja/blog.md` and `docs/sketch/ja/blog-tinygo-workers.md`
   use tables, which are shown as raw `|` text today. Decide whether to
   honor column alignment (`:---:`).
-- [ ] **blog: render inline Markdown in titles of the post and doc lists**:
+- [x] **blog: render inline Markdown in titles of the post and doc lists**:
   `postList` and `docList` write the title with `pe.Text`, so a title such
   as ``実験レポート: `examples/blog` を …`` shows its backticks literally.
   Render it with `renderInlines` like the page heading (dropping links,

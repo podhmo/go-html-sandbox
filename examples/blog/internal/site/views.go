@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path"
 	"strconv"
+	"strings"
 
 	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 	"github.com/podhmo/go-html-sandbox/pkg/tinymarkdown"
@@ -15,7 +16,8 @@ const (
 	siteDescription = "Notes rendered with the Go standard library only."
 )
 
-// pageMeta describes a page for <head>.
+// pageMeta describes a page for <head>. Title and Description may hold
+// inline Markdown, which layout reduces to plain text.
 type pageMeta struct {
 	Title       string // page title without the site name; empty for the top page
 	Description string
@@ -35,6 +37,8 @@ type pageEnv struct {
 
 // layout is the frame shared by every page. The doctype is written by render.
 func layout(env pageEnv, meta pageMeta, body ...pe.Node) pe.Node {
+	meta.Title = plainText(meta.Title)
+	meta.Description = plainText(meta.Description)
 	head := []pe.Node{
 		pe.Title(documentTitle(meta.Title)),
 		pe.MetaName("description", meta.Description),
@@ -83,7 +87,7 @@ func postList(env pageEnv, posts []Post) pe.Node {
 	body := []pe.Node{pe.H1(pe.Text("Posts"))}
 	for _, p := range posts {
 		body = append(body, pe.Article(pe.Hgroup(
-			pe.H2(pe.A(postPath(p), pe.Text(p.Title))),
+			pe.H2(pe.A(postPath(p), linkedTitle(p.Title)...)),
 			pe.P(pe.Date(p.Date)),
 		)))
 	}
@@ -94,7 +98,7 @@ func postPage(env pageEnv, link linker, p Post) pe.Node {
 	var body []pe.Node
 	if _, ok := firstTitle(p.Doc); !ok {
 		// The title came from front matter only, so the body has no heading.
-		body = append(body, pe.H1(pe.Text(p.Title)))
+		body = append(body, pe.H1(renderInlines(tinymarkdown.Inlines(p.Title), link)...))
 	}
 	body = append(body, renderBlocks(p.Doc.Children, link)...)
 	meta := pageMeta{
@@ -112,7 +116,7 @@ func docList(env pageEnv, docs []Doc) pe.Node {
 	body := []pe.Node{pe.H1(pe.Text("Docs"))}
 	for _, d := range docs {
 		body = append(body, pe.Article(pe.Hgroup(
-			pe.H2(pe.A(docPath(d), pe.Text(d.Title))),
+			pe.H2(pe.A(docPath(d), linkedTitle(d.Title)...)),
 			pe.P(pe.Text(d.Source)),
 		)))
 	}
@@ -123,7 +127,7 @@ func docList(env pageEnv, docs []Doc) pe.Node {
 func docPage(env pageEnv, link linker, d Doc) pe.Node {
 	var body []pe.Node
 	if _, ok := firstTitle(d.Doc); !ok {
-		body = append(body, pe.H1(pe.Text(d.Title)))
+		body = append(body, pe.H1(renderInlines(tinymarkdown.Inlines(d.Title), link)...))
 	}
 	body = append(body, renderBlocks(d.Doc.Children, link)...)
 	meta := pageMeta{Title: d.Title, Description: d.Description, URL: env.BaseURL + docPath(d), Type: "article"}
@@ -196,6 +200,33 @@ func renderBlocks(bs []tinymarkdown.Block, link linker) []pe.Node {
 		}
 	}
 	return out
+}
+
+// linkedTitle renders a title written in Markdown inside the link to its
+// page. Links in the title show only their text, as links cannot nest.
+func linkedTitle(title string) []pe.Node {
+	return renderInlines(tinymarkdown.Inlines(title), func(string) (string, bool) { return "", false })
+}
+
+// plainText drops the markup of inline Markdown: code spans and links keep
+// only their text. It is for places that hold no HTML, such as <title>.
+func plainText(s string) string {
+	var b strings.Builder
+	var walk func([]tinymarkdown.Inline)
+	walk = func(ins []tinymarkdown.Inline) {
+		for _, in := range ins {
+			switch in := in.(type) {
+			case tinymarkdown.Text:
+				b.WriteString(string(in))
+			case tinymarkdown.Code:
+				b.WriteString(string(in))
+			case tinymarkdown.Link:
+				walk(in.Children)
+			}
+		}
+	}
+	walk(tinymarkdown.Inlines(s))
+	return b.String()
 }
 
 // renderInlines turns code spans into <code> and links into <a>; the rest
