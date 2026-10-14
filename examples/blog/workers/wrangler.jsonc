@@ -22,9 +22,10 @@
       "build": {
         "command": "go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm ."
       },
-      // vars are not inherited by environments.
+      // vars are not inherited by environments. This is the deployed URL,
+      // so `wrangler dev --env go` also writes it into OGP tags.
       "vars": {
-        "BASE_URL": "http://localhost:8787"
+        "BASE_URL": "https://blog.ababjam61.workers.dev"
       }
     }
   }

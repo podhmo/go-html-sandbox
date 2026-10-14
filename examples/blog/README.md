@@ -96,14 +96,24 @@ environment; drop `--env go` to deploy the TinyGo build, which is named
    npx wrangler login
    ```
 
-2. Set the public origin. `BASE_URL` in `wrangler.jsonc` is
-   `http://localhost:8787` for `wrangler dev`, so change `env.go.vars.BASE_URL`
-   to the URL the Worker is served at, e.g.
+2. Set the public origin. `env.go.vars.BASE_URL` in `wrangler.jsonc` must
+   be the URL the Worker is served at,
    `https://blog.<your-subdomain>.workers.dev` (the Worker is named `blog` by
-   `env.go.name`). If you do not know your `workers.dev` subdomain yet, deploy
-   once; wrangler prints the URL at the end. Alternatively, leave the file
-   as it is and override the value on the command line with
-   `--var BASE_URL:https://...`.
+   `env.go.name`). It holds the repository owner's URL; for your own
+   account, change it or override it with `--var BASE_URL:https://...` on
+   the command line. An empty or invalid `BASE_URL` makes every page a 500
+   error.
+   Your `workers.dev` subdomain is shown in the Cloudflare dashboard under
+   Workers & Pages, and wrangler prints the full URL at the end of a deploy.
+   It can also be fetched from the API with the account ID that
+   `npx wrangler whoami` prints and the token wrangler stored at login
+   (the path below is for macOS):
+
+   ```sh
+   TOKEN=$(sed -n 's/^oauth_token = "\(.*\)"/\1/p' ~/Library/Preferences/.wrangler/config/default.toml)
+   curl -s -H "Authorization: Bearer $TOKEN" \
+     https://api.cloudflare.com/client/v4/accounts/<account-id>/workers/subdomain
+   ```
 
 3. Build and deploy:
 
