@@ -3,8 +3,10 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"io/fs"
 	"log/slog"
+	"net/http"
 	"os"
 )
 
@@ -19,6 +21,9 @@ func main() {
 }
 
 func run() error {
+	addr := flag.String("addr", "localhost:8080", "address to listen on")
+	flag.Parse()
+
 	sub, err := fs.Sub(postsFS, "posts")
 	if err != nil {
 		return err
@@ -27,6 +32,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	slog.Info("loaded posts", "count", len(posts))
-	return nil
+	slog.Info("listening", "addr", "http://"+*addr, "posts", len(posts))
+	return http.ListenAndServe(*addr, newServer(posts))
 }
