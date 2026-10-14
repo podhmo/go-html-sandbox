@@ -8,7 +8,7 @@ Styling is [pico.css v2](https://picocss.com/docs), loaded from a CDN;
 pages are made of semantic elements and pico's `container` class.
 The few rules pico cannot express (a sticky site header and tighter spacing
 around `header` and `main`) and typography tuned for Japanese (leading,
-heading sizes and wrapping, list indent, list cards) live in
+heading sizes and wrapping, list indent and leading, list cards) live in
 [`internal/site/site.css`](internal/site/site.css), which builds on pico's
 variables and is served as `/site.css?v=<hash>` after pico.
 Pages are written with `lang="ja"`, since the posts are in Japanese.

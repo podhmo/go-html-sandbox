@@ -55,9 +55,15 @@ article :not(:is(h1, h2, h3, h4, h5)) + section > :is(h2, h3, h4, h5):first-chil
   margin-top: calc(var(--pico-typography-spacing-vertical) * 2);
 }
 
-/* The browser default of 40px is too deep for a narrow screen. */
+/* The browser default of 40px is too deep for a narrow screen. List items
+   are short, so they take less leading than paragraphs: at 1.8 the items
+   drift apart instead of reading as one list. pico's small margin between
+   items still tells them apart. */
 article :is(ul, ol) {
   padding-inline-start: 1.25rem;
+}
+article li {
+  line-height: 1.6;
 }
 
 /* In the list cards, the title is a link already told apart by its color;
