@@ -30,7 +30,7 @@ This file tracks actionable tasks only; completed work is swept to
   `pkg/tinyfrontmatter`, falling back to the first `#` heading and the
   first paragraph; `description` also feeds `<meta name="description">`
   and OGP.
-- [ ] **OGP support**: `og:title`, `og:type` (`website` / `article`),
+- [x] **OGP support**: `og:title`, `og:type` (`website` / `article`),
   `og:url`, `og:description` (the post's description), `og:site_name`.
   Needs a base URL flag for absolute URLs and a `property` attribute
   const in `pkg/el`; `og:image` is out of scope for now.

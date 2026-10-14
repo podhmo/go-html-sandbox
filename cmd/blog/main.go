@@ -25,7 +25,11 @@ func main() {
 
 func run() error {
 	addr := flag.String("addr", "localhost:8080", "address to listen on")
+	baseURL := flag.String("base-url", "", "public URL of the site for OGP tags (default: http://<addr>)")
 	flag.Parse()
+	if *baseURL == "" {
+		*baseURL = "http://" + *addr
+	}
 
 	sub, err := fs.Sub(postsFS, "posts")
 	if err != nil {
@@ -35,6 +39,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	slog.Info("listening", "addr", "http://"+*addr, "posts", len(posts))
-	return http.ListenAndServe(*addr, newServer(posts))
+	h, err := newServer(*baseURL, posts)
+	if err != nil {
+		return err
+	}
+	slog.Info("listening", "addr", "http://"+*addr, "base-url", *baseURL, "posts", len(posts))
+	return http.ListenAndServe(*addr, h)
 }

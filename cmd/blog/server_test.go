@@ -17,7 +17,11 @@ func newTestServer(t *testing.T, fsys fstest.MapFS) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return newServer(posts)
+	h, err := newServer("https://example.com", posts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return h
 }
 
 func get(t *testing.T, h http.Handler, path string) (*http.Response, string) {
@@ -80,7 +84,7 @@ func TestPostPageText(t *testing.T) {
 		t.Fatal(err)
 	}
 	var b strings.Builder
-	if err := el.Render(&b, postPage(posts[0]), el.PlainRenderer{}); err != nil {
+	if err := el.Render(&b, postPage("https://example.com", posts[0]), el.PlainRenderer{}); err != nil {
 		t.Fatal(err)
 	}
 	want := `Hello <script> - blog
@@ -179,5 +183,82 @@ func TestPostPageHeading(t *testing.T) {
 	}
 	if strings.Count(body, "<h1>") != 1 || !strings.Contains(body, "<h1>Body heading</h1>") {
 		t.Error("both: want exactly the body heading as <h1>")
+	}
+}
+
+func TestOGP(t *testing.T) {
+	h := newTestServer(t, fstest.MapFS{
+		"2026-10-14-hello.md": file("---\ndescription: Say \"hi\" & more\n---\n# Hello\nbody"),
+	})
+	cases := []struct {
+		path string
+		want []string
+	}{
+		{"/", []string{
+			`<meta property="og:title" content="blog">`,
+			`<meta property="og:type" content="website">`,
+			`<meta property="og:url" content="https://example.com/">`,
+			`<meta property="og:description" content="Notes rendered with the Go standard library only.">`,
+			`<meta property="og:site_name" content="blog">`,
+		}},
+		{"/posts/hello", []string{
+			`<meta property="og:title" content="Hello - blog">`,
+			`<meta property="og:type" content="article">`,
+			`<meta property="og:url" content="https://example.com/posts/hello">`,
+			`<meta property="og:description" content="Say &#34;hi&#34; &amp; more">`,
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.path, func(t *testing.T) {
+			_, body := get(t, h, c.path)
+			for _, want := range c.want {
+				if !strings.Contains(body, want) {
+					t.Errorf("body does not contain %q", want)
+				}
+			}
+		})
+	}
+	t.Run("error pages have no OGP", func(t *testing.T) {
+		_, body := get(t, h, "/nope")
+		if strings.Contains(body, "og:") {
+			t.Error("404 page should not have OGP tags")
+		}
+	})
+}
+
+func TestBaseURL(t *testing.T) {
+	cases := []struct {
+		in, wantURL string // wantURL empty means an error
+	}{
+		{"https://example.com", "https://example.com/posts/x"},
+		{"https://example.com/", "https://example.com/posts/x"},
+		{"https://example.com/blog/", ""},
+		{"http://localhost:8080", "http://localhost:8080/posts/x"},
+		{"example.com", ""},
+		{"ftp://example.com", ""},
+		{"https://example.com/?q=1", ""},
+		{"", ""},
+	}
+	posts, err := loadPosts(fstest.MapFS{"2026-10-14-x.md": file("# x")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range cases {
+		t.Run(c.in, func(t *testing.T) {
+			h, err := newServer(c.in, posts)
+			if c.wantURL == "" {
+				if err == nil {
+					t.Error("want error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, body := get(t, h, "/posts/x")
+			if want := `<meta property="og:url" content="` + c.wantURL + `">`; !strings.Contains(body, want) {
+				t.Errorf("body does not contain %q", want)
+			}
+		})
 	}
 }

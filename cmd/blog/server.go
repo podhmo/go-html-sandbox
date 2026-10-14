@@ -6,7 +6,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/podhmo/go-html-sandbox/pkg/el"
 )
@@ -15,12 +17,21 @@ import (
 var renderer el.Renderer = el.HTMLRenderer{}
 
 type server struct {
-	posts  []Post
-	bySlug map[string]Post
+	baseURL string // absolute, without a trailing slash
+	posts   []Post
+	bySlug  map[string]Post
 }
 
-func newServer(posts []Post) http.Handler {
-	s := &server{posts: posts, bySlug: make(map[string]Post, len(posts))}
+// newServer serves posts. baseURL is the public origin used for absolute
+// URLs in OGP tags, e.g. "https://example.com". Path prefixes are rejected
+// because links inside the site are root-relative.
+func newServer(baseURL string, posts []Post) (http.Handler, error) {
+	u, err := url.Parse(baseURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
+		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
+		return nil, fmt.Errorf("base URL must be an http(s) origin such as https://example.com, got %q", baseURL)
+	}
+	s := &server{baseURL: strings.TrimSuffix(u.String(), "/"), posts: posts, bySlug: make(map[string]Post, len(posts))}
 	for _, p := range posts {
 		s.bySlug[p.Slug] = p
 	}
@@ -31,11 +42,11 @@ func newServer(posts []Post) http.Handler {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		renderError(w, r, http.StatusNotFound, "Page not found.", nil)
 	})
-	return recoverer(mux)
+	return recoverer(mux), nil
 }
 
 func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
-	page(w, r, postList(s.posts))
+	page(w, r, postList(s.baseURL, s.posts))
 }
 
 func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +55,7 @@ func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
 		renderError(w, r, http.StatusNotFound, "Post not found.", nil)
 		return
 	}
-	page(w, r, postPage(p))
+	page(w, r, postPage(s.baseURL, p))
 }
 
 // handleFavicon serves the embedded icon. Embedded files have no

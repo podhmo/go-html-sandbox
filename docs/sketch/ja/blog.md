@@ -160,6 +160,12 @@ func renderError(w http.ResponseWriter, r *http.Request, status int, message str
 - メソッドが合わない場合（例: `POST /`）も、メソッドを指定しない受け皿の `/` に当たるので 404 のエラーページになる。405 を返し分けることはしない（読むだけのブログでは、ブラウザから普通に操作して起きることはないため）。
 - 起動時の記事読み込みのエラー（ファイル名が `YYYY-MM-DD-slug.md` の形でない、スラッグが重複している など）は、画面ではなくログに出してプロセスを終了する。
 
+### OGP
+
+- 一覧と記事ページの `<head>` に `og:title`、`og:type`（一覧は `website`、記事は `article`）、`og:url`、`og:description`、`og:site_name` を出す。エラーページには出さない。
+- `og:url` は絶対 URL が必要なので、`-base-url https://example.com` で公開時のオリジンを渡す（省略時は `http://<addr>`）。サイト内のリンクはルート相対なので、パス付きのベース URL は受け付けない。
+- `og:image` は画像の用意が必要になるので、今は扱わない。
+
 ### モバイルファーストの CSS（変換なし）
 
 ブログは読むのが主なので、読みやすさを中心に少ない行数で済ませる。

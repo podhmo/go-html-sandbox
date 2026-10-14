@@ -50,6 +50,7 @@ const (
 	ID        AttrName = "id"
 	Lang      AttrName = "lang"
 	Name      AttrName = "name"
+	Property  AttrName = "property"
 	Rel       AttrName = "rel"
 	Src       AttrName = "src"
 	TitleAttr AttrName = "title"
