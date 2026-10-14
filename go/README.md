@@ -14,17 +14,22 @@ the commands below from here.
 ## Running the blog
 
 ```sh
-go generate ./...   # copies ../TODO.md and ../docs in, to be embedded
-go run ./examples/blog
+make run     # or: go generate ./... && go run ./examples/blog
 ```
+
+`go generate` copies `../TODO.md` and `../docs` in, to be embedded.
+`make build` builds the binary into `bin/blog`; `make help` lists the
+other targets. The `Makefile` at the repository root runs the same
+targets here.
 
 Then open <http://localhost:8080>. See [examples/blog/README.md](examples/blog/README.md) for flags and how to write posts.
 
 ## Development
 
-Run these before every commit:
+Run these before every commit (`make check` does all of them):
 
 ```sh
+go generate ./...
 gofmt -l .      # must print nothing; fix with gofmt -w .
 go vet ./...
 go test ./...
