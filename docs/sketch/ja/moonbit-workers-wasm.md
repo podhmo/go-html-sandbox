@@ -2,6 +2,7 @@
 
 TODO.md の「Reimplement the blog in MoonBit」の前段の調査。ブログを移植する前に、MoonBit の Wasm バックエンド（`wasm-gc` と `wasm`）でビルドしたものを Workers から呼べるか、文字列をどう受け渡すかを、小さな spike で確かめた。
 spike はリポジトリには入れておらず、要点のコードを末尾に載せた。
+その後、spike を `moonbit/` に取り込み、`wrangler dev` で動くところまで進めた（「`moonbit/` への取り込み」の節）。
 
 ## 結論
 
@@ -93,6 +94,46 @@ wasm-gc の配列を読む関数を MoonBit 側から export すれば回避で�
 
 MoonBit の数字は「ルーティングと HTML の組み立てだけ」のもので、Markdown のパーサーも記事の埋め込みもない。Go 版との比較は、ブログを移植してから同じ条件で取り直す。
 
+## `moonbit/` への取り込み
+
+TODO.md の「Experiment with MoonBit's Wasm backends on Cloudflare Workers」の子タスクとして、spike の方式（wasm-gc、builtin string なし、コード単位の ABI）をリポジトリに入れた。
+
+### 構成
+
+| パス | 中身 |
+| --- | --- |
+| `moonbit/moon.mod` | モジュール `podhmo/blog`。`preferred_target = "wasm-gc"` |
+| `moonbit/site/` | `render(path)`。トップページと、パスをエスケープした Not found ページを返す。`moon test` の対象 |
+| `moonbit/worker/` | Wasm の入り口。`path_push` と `serve` を export し、`host.put` を import する |
+| `moonbit/workers/` | Cloudflare Worker。`worker.mjs` と `wrangler.jsonc`（Worker 名は当面 `blog-moonbit`） |
+
+- **`site` と `worker` を分けた理由**：`host.put` の import がテスト用のバイナリに入ると、`moon test` の実行時にその import を解決できない。`render` だけを持つ `site` をテストし、import は `worker` に閉じ込めた。
+- **`workers/` という名前**：TODO では `moonbit/worker/` と書いていたが、`worker` は MoonBit のパッケージ名で使ったので、Go 版の `go/examples/blog/workers` にそろえた。
+- ビルドした Wasm の export は `path_push` と `serve` だけ、import は `host.put` だけになっていることを確認した。
+
+### spike からの変更
+
+- **インスタンスは isolate ごとに 1 つ**：spike はリクエストのたびに `WebAssembly.instantiate` していたが、`worker.mjs` のトップレベルで一度だけ作るようにした。Workers の isolate は 1 スレッドで動くので、リクエスト間で状態が混ざることはない。`serve` はパスを読んだ直後に空にするので、`render` の途中で失敗しても次のリクエストに前のパスは残らない。
+- **パスのデコード**：`decodeURIComponent` に失敗する壊れた `%` エスケープには、Wasm を呼ばずに 400 を返す。
+- **ビルド**：`wrangler.jsonc` のビルドコマンドで `moon build --target wasm-gc --release` を実行し、Wasm を `workers/build/app.wasm` にコピーする（git では無視）。`build.watch_dir` に `../site` と `../worker` を指定し、`wrangler dev` 中にソースを書き換えると 1 秒ほどで再ビルドされて表示に反映されることを確認した。
+
+### `wrangler dev` で確認したこと
+
+| リクエスト | 結果 |
+| --- | --- |
+| `/` | 200、`text/html; charset=utf-8`、トップページ |
+| `/a%3Cb%3E` | Not found ページに `/a&lt;b&gt;` と表示される。ステータスはまだ 200 |
+| `/%E6%97%A5%E6%9C%AC` | `/日本` と表示される |
+| `/%E0%A4%A` | 400 |
+
+ステータスは常に 200 なので、404 を返すには ABI を広げる必要がある（次の一歩）。
+
+なお、`wrangler dev` の既定のポート 8787 は、Go 版の Worker を `wrangler dev` で動かしていると使えない（`bind(): Address already in use` で workerd が起動に失敗する）。そのときは `--port` で別のポートを指定する。
+
+### サイズ
+
+`moonbit/` のビルド（`render` は spike より少し大きい）は 4,906 B、gzip -9 で 2,524 B。spike の 4,807 B とほぼ同じ。
+
 ## 未確認のこと
 
 - **デプロイ**：wasm-gc の Wasm を本番の Workers がアップロード時に受け付けるか。`wrangler dev` の workerd では動いたが、本番では試していない。
@@ -103,12 +144,16 @@ MoonBit の数字は「ルーティングと HTML の組み立てだけ」のも
 
 ## 次の一歩
 
-1. トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。
-2. ステータスとヘッダーを返せるように ABI を広げる。
-3. `pkg/el`（HTML ビルダー）と `pkg/tinymarkdown`（Markdown パーサー）を移植し、記事 1 本を表示するところまで作る。
-4. 本番にデプロイして wasm-gc が受け付けられるかを確かめ、Go 版とサイズを比べて、このレポートに追記する。
+1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。
+2. ステータスとヘッダーを返せるように ABI を広げ、存在しないパスに 404 を返す。
+3. `moonbit/Makefile` に `build`、`test`、`dev`、`deploy` を用意する。
+4. 本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。
+5. `wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。
+6. `pkg/el`（HTML ビルダー）と `pkg/tinymarkdown`（Markdown パーサー）を移植し、記事 1 本を表示するところまで作る。Go 版とサイズを比べて、このレポートに追記する。
 
 ## spike のコード
+
+記録として残す。今のコードは `moonbit/` にある（[`worker/worker.mbt`](../../../moonbit/worker/worker.mbt)、[`workers/worker.mjs`](../../../moonbit/workers/worker.mjs)）。
 
 `moon new mbspike` で作ったプロジェクトのルートパッケージ。
 
