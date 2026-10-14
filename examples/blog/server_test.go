@@ -11,7 +11,7 @@ import (
 	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 )
 
-func newTestServer(t *testing.T, fsys fstest.MapFS) http.Handler {
+func newTestServer(t *testing.T, fsys fstest.MapFS) *server {
 	t.Helper()
 	posts, err := loadPosts(fsys)
 	if err != nil {
@@ -103,7 +103,7 @@ func TestPostPageText(t *testing.T) {
 		t.Fatal(err)
 	}
 	var b strings.Builder
-	if err := pe.Render(&b, postPage("https://example.com", posts[0]), pe.PlainRenderer{}); err != nil {
+	if err := pe.Render(&b, postPage(pageEnv{BaseURL: "https://example.com"}, posts[0]), pe.PlainRenderer{}); err != nil {
 		t.Fatal(err)
 	}
 	want := `Hello <script> - blog
@@ -149,7 +149,11 @@ func TestNotFoundPages(t *testing.T) {
 }
 
 func TestPanicBecomes500Page(t *testing.T) {
-	h := recoverer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+	s, err := newServer("https://example.com", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := s.recoverer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		panic("secret: /etc/internal/path")
 	}))
 	res, body := get(t, h, "/")

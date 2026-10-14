@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 )
@@ -16,72 +17,97 @@ import (
 // renderer is the single place that picks the output format.
 var renderer pe.Renderer = pe.HTMLRenderer{}
 
+// site is the content being served. With -watch it is replaced as a whole
+// whenever files change, so a request always sees one consistent version.
+type site struct {
+	posts  []Post
+	bySlug map[string]Post
+	docs   []Doc
+	byPath map[string]Doc
+}
+
+func newSite(posts []Post, docs []Doc) *site {
+	st := &site{
+		posts:  posts,
+		bySlug: make(map[string]Post, len(posts)),
+		docs:   docs,
+		byPath: make(map[string]Doc, len(docs)),
+	}
+	for _, p := range posts {
+		st.bySlug[p.Slug] = p
+	}
+	for _, d := range docs {
+		st.byPath[d.Path] = d
+	}
+	return st
+}
+
 type server struct {
-	baseURL string // absolute, without a trailing slash
-	posts   []Post
-	bySlug  map[string]Post
-	docs    []Doc
-	byPath  map[string]Doc
+	env     pageEnv
+	site    atomic.Pointer[site]
+	reload  *broadcaster // nil unless live reload is enabled
+	handler http.Handler
 }
 
 // newServer serves posts and docs. baseURL is the public origin used for absolute
 // URLs in OGP tags, e.g. "https://example.com". Path prefixes are rejected
 // because links inside the site are root-relative.
-func newServer(baseURL string, posts []Post, docs []Doc) (http.Handler, error) {
+func newServer(baseURL string, posts []Post, docs []Doc) (*server, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
 		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
 		return nil, fmt.Errorf("base URL must be an http(s) origin such as https://example.com, got %q", baseURL)
 	}
-	s := &server{
-		baseURL: strings.TrimSuffix(u.String(), "/"),
-		posts:   posts,
-		bySlug:  make(map[string]Post, len(posts)),
-		docs:    docs,
-		byPath:  make(map[string]Doc, len(docs)),
-	}
-	for _, p := range posts {
-		s.bySlug[p.Slug] = p
-	}
-	for _, d := range docs {
-		s.byPath[d.Path] = d
-	}
+	s := &server{env: pageEnv{BaseURL: strings.TrimSuffix(u.String(), "/")}}
+	s.update(posts, docs)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleList)
 	mux.HandleFunc("GET /posts/{slug}", s.handlePost)
 	mux.HandleFunc("GET /docs/{$}", s.handleDocList)
 	mux.HandleFunc("GET /docs/{path...}", s.handleDoc)
 	mux.HandleFunc("GET /favicon.svg", handleFavicon)
+	mux.HandleFunc("GET "+liveReloadScriptPath, s.handleLiveReloadScript)
+	mux.HandleFunc("GET "+liveReloadEventsPath, s.handleLiveReloadEvents)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		renderError(w, r, http.StatusNotFound, "Page not found.", nil)
+		s.renderError(w, r, http.StatusNotFound, "Page not found.", nil)
 	})
-	return recoverer(mux), nil
+	s.handler = s.recoverer(mux)
+	return s, nil
+}
+
+func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.handler.ServeHTTP(w, r)
+}
+
+// update replaces the content being served.
+func (s *server) update(posts []Post, docs []Doc) {
+	s.site.Store(newSite(posts, docs))
 }
 
 func (s *server) handleList(w http.ResponseWriter, r *http.Request) {
-	page(w, r, postList(s.baseURL, s.posts))
+	s.page(w, r, postList(s.env, s.site.Load().posts))
 }
 
 func (s *server) handlePost(w http.ResponseWriter, r *http.Request) {
-	p, ok := s.bySlug[r.PathValue("slug")]
+	p, ok := s.site.Load().bySlug[r.PathValue("slug")]
 	if !ok {
-		renderError(w, r, http.StatusNotFound, "Post not found.", nil)
+		s.renderError(w, r, http.StatusNotFound, "Post not found.", nil)
 		return
 	}
-	page(w, r, postPage(s.baseURL, p))
+	s.page(w, r, postPage(s.env, p))
 }
 
 func (s *server) handleDocList(w http.ResponseWriter, r *http.Request) {
-	page(w, r, docList(s.baseURL, s.docs))
+	s.page(w, r, docList(s.env, s.site.Load().docs))
 }
 
 func (s *server) handleDoc(w http.ResponseWriter, r *http.Request) {
-	d, ok := s.byPath[r.PathValue("path")]
+	d, ok := s.site.Load().byPath[r.PathValue("path")]
 	if !ok {
-		renderError(w, r, http.StatusNotFound, "Document not found.", nil)
+		s.renderError(w, r, http.StatusNotFound, "Document not found.", nil)
 		return
 	}
-	page(w, r, docPage(s.baseURL, d))
+	s.page(w, r, docPage(s.env, d))
 }
 
 // handleFavicon serves the embedded icon. Embedded files have no
@@ -95,19 +121,19 @@ func handleFavicon(w http.ResponseWriter, r *http.Request) {
 }
 
 // page renders n with status 200, or an error page if rendering fails.
-func page(w http.ResponseWriter, r *http.Request, n pe.Node) {
+func (s *server) page(w http.ResponseWriter, r *http.Request, n pe.Node) {
 	if err := render(w, http.StatusOK, n); err != nil {
-		renderError(w, r, http.StatusInternalServerError, "Something went wrong.", err)
+		s.renderError(w, r, http.StatusInternalServerError, "Something went wrong.", err)
 	}
 }
 
 // renderError shows message to the user and logs err, which may hold
 // internal details, only on the server.
-func renderError(w http.ResponseWriter, r *http.Request, status int, message string, err error) {
+func (s *server) renderError(w http.ResponseWriter, r *http.Request, status int, message string, err error) {
 	if err != nil {
 		slog.ErrorContext(r.Context(), "request failed", "method", r.Method, "path", r.URL.Path, "status", status, "error", err)
 	}
-	if rerr := render(w, status, errorPage(status, message)); rerr != nil {
+	if rerr := render(w, status, errorPage(s.env, status, message)); rerr != nil {
 		slog.ErrorContext(r.Context(), "render error page", "error", rerr)
 		http.Error(w, message, status)
 	}
@@ -115,7 +141,7 @@ func renderError(w http.ResponseWriter, r *http.Request, status int, message str
 
 // recoverer turns a panic in h into a 500 error page. Because pages are
 // rendered into a buffer first, no partial response has been sent yet.
-func recoverer(h http.Handler) http.Handler {
+func (s *server) recoverer(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			v := recover()
@@ -125,7 +151,7 @@ func recoverer(h http.Handler) http.Handler {
 			if v == http.ErrAbortHandler {
 				panic(v)
 			}
-			renderError(w, r, http.StatusInternalServerError, "Something went wrong.", fmt.Errorf("panic: %v", v))
+			s.renderError(w, r, http.StatusInternalServerError, "Something went wrong.", fmt.Errorf("panic: %v", v))
 		}()
 		h.ServeHTTP(w, r)
 	})

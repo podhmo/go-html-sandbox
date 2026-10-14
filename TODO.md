@@ -44,7 +44,7 @@ This file tracks actionable tasks only; completed work is swept to
   `` `code` `` spans (CommonMark-style backtick runs) and render the spans
   as `<code>` in headings, paragraphs, and list items.
 
-- [ ] **blog: `-debug` and `-watch` for writing**: `-debug` reads posts and
+- [x] **blog: `-debug` and `-watch` for writing**: `-debug` reads posts and
   docs from files on disk instead of the embedded copies; `-watch` implies
   `-debug`, polls those files for changes, reloads them, and tells open
   pages to reload over SSE. Deploys keep serving the embedded files.

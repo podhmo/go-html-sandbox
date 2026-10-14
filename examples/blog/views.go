@@ -24,14 +24,25 @@ type pageMeta struct {
 	Type string // OGP type: "website" or "article"
 }
 
+// pageEnv is what every page needs to know about the running server.
+type pageEnv struct {
+	BaseURL string // absolute, without a trailing slash
+	// LiveReload loads the script that reloads the page when the server
+	// says files have changed (the -watch flag).
+	LiveReload bool
+}
+
 // layout is the frame shared by every page. The doctype is written by render.
-func layout(meta pageMeta, body ...pe.Node) pe.Node {
+func layout(env pageEnv, meta pageMeta, body ...pe.Node) pe.Node {
 	head := []pe.Node{
 		pe.Title(documentTitle(meta.Title)),
 		pe.MetaName("description", meta.Description),
 	}
 	head = append(head, ogp(meta)...)
 	head = append(head, pe.Icon("/favicon.svg", "image/svg+xml"))
+	if env.LiveReload {
+		head = append(head, pe.Script(liveReloadScriptPath))
+	}
 	return pe.Document("en", head,
 		pe.Header(pe.Nav(
 			pe.A("/", pe.Strong(pe.Text(siteName))),
@@ -67,7 +78,7 @@ func ogp(meta pageMeta) []pe.Node {
 
 // postList shows each post as a card: the title links to the post and the
 // date below it is muted by hgroup.
-func postList(baseURL string, posts []Post) pe.Node {
+func postList(env pageEnv, posts []Post) pe.Node {
 	body := []pe.Node{pe.H1(pe.Text("Posts"))}
 	for _, p := range posts {
 		body = append(body, pe.Article(pe.Hgroup(
@@ -75,10 +86,10 @@ func postList(baseURL string, posts []Post) pe.Node {
 			pe.P(pe.Date(p.Date)),
 		)))
 	}
-	return layout(pageMeta{Description: siteDescription, URL: baseURL + "/", Type: "website"}, body...)
+	return layout(env, pageMeta{Description: siteDescription, URL: env.BaseURL + "/", Type: "website"}, body...)
 }
 
-func postPage(baseURL string, p Post) pe.Node {
+func postPage(env pageEnv, p Post) pe.Node {
 	body := []pe.Node{pe.ArticleHeader(pe.Date(p.Date))}
 	if _, ok := firstTitle(p.Doc); !ok {
 		// The title came from front matter only, so the body has no heading.
@@ -88,15 +99,15 @@ func postPage(baseURL string, p Post) pe.Node {
 	meta := pageMeta{
 		Title:       p.Title,
 		Description: p.Description,
-		URL:         baseURL + postPath(p),
+		URL:         env.BaseURL + postPath(p),
 		Type:        "article",
 	}
-	return layout(meta, pe.Article(body...))
+	return layout(env, meta, pe.Article(body...))
 }
 
 // docList links to every repository document, showing its file path below
 // the title.
-func docList(baseURL string, docs []Doc) pe.Node {
+func docList(env pageEnv, docs []Doc) pe.Node {
 	body := []pe.Node{pe.H1(pe.Text("Docs"))}
 	for _, d := range docs {
 		body = append(body, pe.Article(pe.Hgroup(
@@ -104,27 +115,27 @@ func docList(baseURL string, docs []Doc) pe.Node {
 			pe.P(pe.Text(d.Source)),
 		)))
 	}
-	meta := pageMeta{Title: "Docs", Description: "Documents of this repository.", URL: baseURL + "/docs/", Type: "website"}
-	return layout(meta, body...)
+	meta := pageMeta{Title: "Docs", Description: "Documents of this repository.", URL: env.BaseURL + "/docs/", Type: "website"}
+	return layout(env, meta, body...)
 }
 
-func docPage(baseURL string, d Doc) pe.Node {
+func docPage(env pageEnv, d Doc) pe.Node {
 	body := []pe.Node{pe.ArticleHeader(pe.Small(pe.Text(d.Source)))}
 	if _, ok := firstTitle(d.Doc); !ok {
 		body = append(body, pe.H1(pe.Text(d.Title)))
 	}
 	body = append(body, renderBlocks(d.Doc.Children)...)
-	meta := pageMeta{Title: d.Title, Description: d.Description, URL: baseURL + docPath(d), Type: "article"}
-	return layout(meta, pe.Article(body...))
+	meta := pageMeta{Title: d.Title, Description: d.Description, URL: env.BaseURL + docPath(d), Type: "article"}
+	return layout(env, meta, pe.Article(body...))
 }
 
 func postPath(p Post) string {
 	return "/posts/" + p.Slug
 }
 
-func errorPage(status int, message string) pe.Node {
+func errorPage(env pageEnv, status int, message string) pe.Node {
 	title := strconv.Itoa(status) + " " + http.StatusText(status)
-	return layout(pageMeta{Title: title, Description: message},
+	return layout(env, pageMeta{Title: title, Description: message},
 		pe.H1(pe.Text(title)),
 		pe.P(pe.Text(message)),
 		pe.P(pe.A("/", pe.Text("Back to all posts"))),

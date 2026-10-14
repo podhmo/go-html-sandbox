@@ -48,6 +48,7 @@ func TestElements(t *testing.T) {
 		{Small(Text("<s>")), `<small>&lt;s&gt;</small>`},
 		{A(`/?a="b"`, Text("x")), `<a href="/?a=&#34;b&#34;">x</a>`},
 		{MetaProperty("og:title", "t"), `<meta property="og:title" content="t">`},
+		{Script("/x.js"), `<script src="/x.js" defer></script>`},
 		{Icon("/favicon.svg", "image/svg+xml"), `<link rel="icon" href="/favicon.svg" type="image/svg+xml">`},
 	}
 	for _, c := range cases {

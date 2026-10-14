@@ -15,6 +15,8 @@ var testDocs = fstest.MapFS{
 	"docs/ja/design.md": file("# Design <x>\n\nwhy\n## Use `el`\n- run `go test`\n- ``a ` b``"),
 	"docs/notes.md":     file("no heading"),
 	"docs/image.svg":    file("<svg/>"),
+	"README.md":         file("# not a doc"),
+	"other/x.md":        file("# not a doc either"),
 }
 
 func TestLoadDocs(t *testing.T) {

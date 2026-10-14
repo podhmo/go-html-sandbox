@@ -32,6 +32,7 @@ const (
 	Nav        Tag = "nav"
 	P          Tag = "p"
 	Pre        Tag = "pre"
+	Script     Tag = "script"
 	Section    Tag = "section"
 	Small      Tag = "small"
 	Span       Tag = "span"
@@ -46,6 +47,7 @@ const (
 // AttrName("data-id").
 const (
 	Alt       AttrName = "alt"
+	Defer     AttrName = "defer"
 	Charset   AttrName = "charset"
 	Class     AttrName = "class"
 	Content   AttrName = "content"

@@ -66,6 +66,12 @@ func Icon(href, mimeType string) Node {
 	return el.El(el.Link, el.Attr(el.Rel, "icon"), el.Attr(el.Href, href), el.Attr(el.Type, mimeType))
 }
 
+// Script loads the external script at src after the document is parsed.
+// pico itself needs no JavaScript; use this only for development aids.
+func Script(src string) Node {
+	return el.El(el.Script, el.Attr(el.Src, src), el.BoolAttrNode(el.Defer))
+}
+
 // container is pico's centered, responsive width.
 var container = el.Attr(el.Class, "container")
 
