@@ -18,6 +18,9 @@ This file tracks actionable tasks only; completed work is swept to
   `header`/`main`/`footer`, pico v2 from the CDN). Rewrite `examples/blog` to
   import only `picoel` (no direct `pkg/el`) and drop `style.go`.
 
+- [x] **Dark mode for the blog**: render every page in pico's dark theme
+  (`data-theme="dark"` on `<html>`) instead of following the OS setting.
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry

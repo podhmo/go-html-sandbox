@@ -17,10 +17,10 @@ func render(t *testing.T, n Node) string {
 
 func TestDocument(t *testing.T) {
 	got := render(t, Document("en", []Node{Title("T")}, Main(P(Text("x")))))
-	want := `<html lang="en"><head>` +
+	want := `<html lang="en" data-theme="dark"><head>` +
 		`<meta charset="utf-8">` +
 		`<meta name="viewport" content="width=device-width, initial-scale=1">` +
-		`<meta name="color-scheme" content="light dark">` +
+		`<meta name="color-scheme" content="dark">` +
 		`<link rel="stylesheet" href="` + StylesheetURL + `">` +
 		`<title>T</title>` +
 		`</head><body><main class="container"><p>x</p></main></body></html>`

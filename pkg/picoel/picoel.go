@@ -30,17 +30,17 @@ func Render(w io.Writer, n Node, r Renderer) error {
 // StylesheetURL is pico.css v2 on a CDN.
 const StylesheetURL = "https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
 
-// Document is the <html> element: the head carries the charset, viewport,
-// color scheme (pico follows the user's light/dark preference), and the
-// pico stylesheet, followed by head. The doctype is the caller's job.
+// Document is the <html> element in pico's dark theme: the head carries the
+// charset, viewport, color scheme, and the pico stylesheet, followed by head.
+// The doctype is the caller's job.
 func Document(lang string, head []Node, body ...Node) Node {
 	h := []Node{
 		el.El(el.Meta, el.Attr(el.Charset, "utf-8")),
 		MetaName("viewport", "width=device-width, initial-scale=1"),
-		MetaName("color-scheme", "light dark"),
+		MetaName("color-scheme", "dark"),
 		el.El(el.Link, el.Attr(el.Rel, "stylesheet"), el.Attr(el.Href, StylesheetURL)),
 	}
-	return el.El(el.HTML, el.Attr(el.Lang, lang),
+	return el.El(el.HTML, el.Attr(el.Lang, lang), el.Attr(el.AttrName("data-theme"), "dark"),
 		el.El(el.Head, append(h, head...)...),
 		el.El(el.Body, body...),
 	)
