@@ -31,6 +31,11 @@ This file tracks actionable tasks only; completed work is swept to
   paragraph. Today every multi-line entry in `TODO.md` splits into a
   one-line list plus a paragraph (check with `examples/parse-markdown`).
 
+- [ ] **Serve `TODO.md` and `docs/` in the blog**: embed them with
+  `go:embed` from a package at the repository root (embed cannot reach
+  `..`), parse them with tinymarkdown at startup, and serve them under
+  `/docs/` with an index page and a nav link.
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
