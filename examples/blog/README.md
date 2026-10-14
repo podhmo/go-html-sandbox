@@ -1,0 +1,90 @@
+# blog
+
+A mobile-first, server-side rendered blog built on `pkg/el`,
+`pkg/tinymarkdown`, and `pkg/tinyfrontmatter`. It uses only the Go standard
+library: there is no template engine, no CSS build step, and no JavaScript.
+Posts and the favicon are embedded with `go:embed`, so the binary is all you
+need to run it.
+
+See the [sketch](../../docs/sketch/ja/blog.md) for the design.
+
+## Running
+
+From the repository root:
+
+```sh
+go run ./examples/blog
+```
+
+Then open <http://localhost:8080>.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-addr` | `localhost:8080` | Address to listen on. |
+| `-base-url` | `http://<addr>` | Public origin used for absolute URLs in OGP tags, e.g. `https://example.com`. Must not contain a path. |
+
+To build a single binary:
+
+```sh
+go build -o blog ./examples/blog
+./blog -addr :8080 -base-url https://example.com
+```
+
+Posts are embedded at build time, so rebuild after editing them.
+
+## Pages
+
+| Path | Page |
+| --- | --- |
+| `/` | Post list, newest first |
+| `/posts/{slug}` | A post |
+| `/favicon.svg` | The embedded favicon |
+| anything else | 404 error page |
+
+## Writing posts
+
+Add a file to [`posts/`](posts/) named `YYYY-MM-DD-slug.md`. The date and
+slug come from the file name; the slug may contain `a-z`, `0-9`, and `-`.
+
+A post may start with front matter. Only `title` and `description` are
+allowed:
+
+```markdown
+---
+title: Hello
+description: Shown in <meta name="description"> and OGP.
+---
+```
+
+Without front matter, the title is the first `#` heading and the
+description is the first paragraph.
+
+The body supports a tiny subset of Markdown:
+
+- `#` to `###` headings, which open nested sections
+- `- ` list items (no nesting)
+- paragraphs
+- code blocks fenced by exactly three backquotes (no highlighting)
+
+Everything else, including inline syntax and HTML, is shown as plain,
+escaped text. Problems such as a bad file name, a duplicate slug, a missing
+title, or an unknown front matter key stop the server at startup.
+
+## Files
+
+| File | Contents |
+| --- | --- |
+| `main.go` | Flags, embedding, startup |
+| `posts.go` | Loading posts from an `fs.FS` |
+| `server.go` | Routing, rendering, error pages, panic recovery |
+| `views.go` | Pages built as `el.Node` trees, OGP tags |
+| `style.go` | The inline CSS |
+
+## Testing
+
+```sh
+go test ./examples/blog
+```
+
+Tests load posts from a `fstest.MapFS` and exercise the handlers with
+`httptest`.
