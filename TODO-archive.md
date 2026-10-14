@@ -3,7 +3,15 @@
 > **What this file is:** append-only history of completed work moved out of
 > `TODO.md` by a periodic GC sweep (see `.claude/skills/todo-md/SKILL.md` —
 > feature PRs never write here, so this file never conflicts). Entries land
-> **verbatim** at the end of the file as `- [x] **Core `pkg/el`** ([design](docs/ja/design.md)): the scope the blog
+> **verbatim** at the end of the file as `- [x]` lines; nested items get a
+> `> parent: <title>` context line first. Entries are never rewritten;
+> links into docs, issues, and PRs are preserved.
+>
+> **Reading this file:** do not read it whole — `grep` for a symbol or
+> feature name, then read only the surrounding lines (`rg -C` / read with
+> an offset).
+
+- [x] **Core `pkg/el`** ([design](docs/ja/design.md)): the scope the blog
   needs first; more elements/attributes are added as const lines later.
 > parent: Core `pkg/el`
 - [x] **Node types and constructors**: `Node`, `Tag` / `AttrName` consts,
