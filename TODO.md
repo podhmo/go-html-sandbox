@@ -19,7 +19,7 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### pkg/tinyfrontmatter
 
-- [ ] **Tiny front matter**: split a leading `---` block of `key: value`
+- [x] **Tiny front matter**: split a leading `---` block of `key: value`
   lines from the Markdown body, as a separate package next to
   `pkg/tinymarkdown`. Errors for an unclosed block, a line without `:`,
   and duplicate keys.
