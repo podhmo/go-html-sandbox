@@ -1,27 +1,60 @@
-# What tinymarkdown supports
+# tinymarkdown で書けること
 
-Posts are written in a deliberately tiny subset of Markdown.
-Anything outside it is shown as plain text, so <b>this</b> stays escaped.
+記事は、わざと小さく絞った Markdown のサブセットで書いている。
+対応していない書き方はそのままテキストとして表示されるので、<b>これ</b> もエスケープされたまま出る。
+**太字** や *強調* も同じで、記号ごと表示される。
 
-## Sections
+## セクション
 
-Headings from # to ### open nested sections.
+`#` から `#####` までの見出しが、入れ子のセクションを開く。
 
-### A third-level heading
+### 3 段目の見出し
 
-Deeper headings are not supported and stay as paragraph text:
+#### 4 段目の見出し
 
-#### like this one
+##### 5 段目の見出し
 
-## Lists
+###### 6 段目はサポート外で、段落のテキストになる
 
-- One item per line, starting with "- ".
-- No nesting and no numbered lists.
-- A blank line ends the list.
+## リスト
 
-## Code blocks
+- 1 行に 1 項目で、`- ` で始める。
+- 字下げした次の行は、
+  直前の項目の続きになる。
+- 入れ子のリストや番号付きリストはない。
+- 空行でリストが終わる。
 
-Fences are exactly three backquotes. The language name is ignored and there is no highlighting.
+## 引用
+
+> `> ` で始まる行が引用になる。
+>
+> 中身はもう一度ドキュメントとしてパースされるので、
+>
+> - リストや
+> - コードブロック、入れ子の引用も書ける。
+
+## 表
+
+GitHub 風のパイプ区切りの表に対応している。
+
+| 書き方 | 結果 |
+| :--- | :---: |
+| `` `code` `` | インラインのコード |
+| `[text](url)` | リンク |
+| `a \| b` | セルの中の `\|` |
+
+区切り行の `:---:` は受け付けるが、揃え方は無視する。
+
+## インライン
+
+段落、リスト、見出し、表のセルの中では、`` `code` `` とリンクだけが使える。
+リンクは、`https://...` ならそのまま、リポジトリ内の相対パスならファイルの置き場所から解決される。
+たとえば [tinymarkdown の設計メモ](../../../docs/sketch/ja/blog.md) はこのサイトの `/docs/` のページへ、
+[パッケージのソース](../../../pkg/tinymarkdown/tinymarkdown.go) は GitHub へリンクする。
+
+## コードブロック
+
+フェンスはちょうど 3 つのバッククォート。言語名は無視され、ハイライトもない。
 
 ```go
 func Render(w io.Writer, n Node, r Renderer) error {
@@ -33,4 +66,4 @@ func Render(w io.Writer, n Node, r Renderer) error {
 }
 ```
 
-Text after the code block is a paragraph again.
+コードブロックの後のテキストは、また段落に戻る。
