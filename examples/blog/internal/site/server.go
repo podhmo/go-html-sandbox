@@ -21,24 +21,30 @@ var renderer pe.Renderer = pe.HTMLRenderer{}
 // site is the content being served. With -watch it is replaced as a whole
 // whenever files change, so a request always sees one consistent version.
 type site struct {
-	posts  []Post
-	bySlug map[string]Post
-	docs   []Doc
-	byPath map[string]Doc
+	posts    []Post
+	bySlug   map[string]Post
+	byFile   map[string]Post // by file path in the repository, for links
+	docs     []Doc
+	byPath   map[string]Doc
+	bySource map[string]Doc
 }
 
 func newSite(posts []Post, docs []Doc) *site {
 	st := &site{
-		posts:  posts,
-		bySlug: make(map[string]Post, len(posts)),
-		docs:   docs,
-		byPath: make(map[string]Doc, len(docs)),
+		posts:    posts,
+		bySlug:   make(map[string]Post, len(posts)),
+		byFile:   make(map[string]Post, len(posts)),
+		docs:     docs,
+		byPath:   make(map[string]Doc, len(docs)),
+		bySource: make(map[string]Doc, len(docs)),
 	}
 	for _, p := range posts {
 		st.bySlug[p.Slug] = p
+		st.byFile[postSource(p)] = p
 	}
 	for _, d := range docs {
 		st.byPath[d.Path] = d
+		st.bySource[d.Source] = d
 	}
 	return st
 }
@@ -133,12 +139,13 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePost(w http.ResponseWriter, r *http.Request) {
-	p, ok := s.site.Load().bySlug[r.PathValue("slug")]
+	st := s.site.Load()
+	p, ok := st.bySlug[r.PathValue("slug")]
 	if !ok {
 		s.renderError(w, r, http.StatusNotFound, "Post not found.", nil)
 		return
 	}
-	s.page(w, r, postPage(s.env, p))
+	s.page(w, r, postPage(s.env, st.linker(postSource(p)), p))
 }
 
 func (s *Server) handleDocList(w http.ResponseWriter, r *http.Request) {
@@ -146,12 +153,13 @@ func (s *Server) handleDocList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDoc(w http.ResponseWriter, r *http.Request) {
-	d, ok := s.site.Load().byPath[r.PathValue("path")]
+	st := s.site.Load()
+	d, ok := st.byPath[r.PathValue("path")]
 	if !ok {
 		s.renderError(w, r, http.StatusNotFound, "Document not found.", nil)
 		return
 	}
-	s.page(w, r, docPage(s.env, d))
+	s.page(w, r, docPage(s.env, st.linker(d.Source), d))
 }
 
 // handlePostMarkdown serves the source of a post, as linked from its page.

@@ -5,7 +5,7 @@
 // code blocks fenced by exactly "```". Anything else is treated as paragraph
 // text.
 // Block parsing keeps inline syntax as text; Inlines splits out code spans
-// on request. See docs/sketch/ja/blog.md.
+// and links on request. See docs/sketch/ja/blog.md.
 package tinymarkdown
 
 import "strings"

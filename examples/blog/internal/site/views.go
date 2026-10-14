@@ -90,13 +90,13 @@ func postList(env pageEnv, posts []Post) pe.Node {
 	return layout(env, pageMeta{Description: siteDescription, URL: env.BaseURL + "/", Type: "website"}, body...)
 }
 
-func postPage(env pageEnv, p Post) pe.Node {
+func postPage(env pageEnv, link linker, p Post) pe.Node {
 	var body []pe.Node
 	if _, ok := firstTitle(p.Doc); !ok {
 		// The title came from front matter only, so the body has no heading.
 		body = append(body, pe.H1(pe.Text(p.Title)))
 	}
-	body = append(body, renderBlocks(p.Doc.Children)...)
+	body = append(body, renderBlocks(p.Doc.Children, link)...)
 	meta := pageMeta{
 		Title:       p.Title,
 		Description: p.Description,
@@ -120,12 +120,12 @@ func docList(env pageEnv, docs []Doc) pe.Node {
 	return layout(env, meta, body...)
 }
 
-func docPage(env pageEnv, d Doc) pe.Node {
+func docPage(env pageEnv, link linker, d Doc) pe.Node {
 	var body []pe.Node
 	if _, ok := firstTitle(d.Doc); !ok {
 		body = append(body, pe.H1(pe.Text(d.Title)))
 	}
-	body = append(body, renderBlocks(d.Doc.Children)...)
+	body = append(body, renderBlocks(d.Doc.Children, link)...)
 	meta := pageMeta{Title: d.Title, Description: d.Description, URL: env.BaseURL + docPath(d), Type: "article"}
 	return layout(env, meta, pageHeader(pe.Small(pe.Text(d.Source)), docMarkdownPath(d), path.Base(d.Source)), pe.Article(body...))
 }
@@ -159,24 +159,25 @@ func errorPage(env pageEnv, status int, message string) pe.Node {
 var headings = [...]func(...pe.Node) pe.Node{1: pe.H1, 2: pe.H2, 3: pe.H3}
 
 // renderBlocks converts the Markdown tree into nodes. Every piece of text
-// goes through pe.Text, so HTML in posts is escaped.
-func renderBlocks(bs []tinymarkdown.Block) []pe.Node {
+// goes through pe.Text, so HTML in posts is escaped. link resolves the URLs
+// of links.
+func renderBlocks(bs []tinymarkdown.Block, link linker) []pe.Node {
 	out := make([]pe.Node, 0, len(bs))
 	for _, b := range bs {
 		switch b := b.(type) {
 		case tinymarkdown.Section:
-			children := append([]pe.Node{headings[b.Level](renderInlines(b.Title)...)}, renderBlocks(b.Children)...)
+			children := append([]pe.Node{headings[b.Level](renderInlines(tinymarkdown.Inlines(b.Title), link)...)}, renderBlocks(b.Children, link)...)
 			out = append(out, pe.Section(children...))
 		case tinymarkdown.Paragraph:
-			out = append(out, pe.P(renderInlines(b.Text)...))
+			out = append(out, pe.P(renderInlines(tinymarkdown.Inlines(b.Text), link)...))
 		case tinymarkdown.List:
 			items := make([]pe.Node, 0, len(b.Items))
 			for _, it := range b.Items {
-				items = append(items, pe.Li(renderInlines(it)...))
+				items = append(items, pe.Li(renderInlines(tinymarkdown.Inlines(it), link)...))
 			}
 			out = append(out, pe.List(items...))
 		case tinymarkdown.Quote:
-			out = append(out, pe.Blockquote(renderBlocks(b.Children)...))
+			out = append(out, pe.Blockquote(renderBlocks(b.Children, link)...))
 		case tinymarkdown.CodeBlock:
 			out = append(out, pe.Pre(b.Code))
 		}
@@ -184,15 +185,23 @@ func renderBlocks(bs []tinymarkdown.Block) []pe.Node {
 	return out
 }
 
-// renderInlines turns `code` spans in s into <code>; the rest is text.
-func renderInlines(s string) []pe.Node {
+// renderInlines turns code spans into <code> and links into <a>; the rest
+// is text. A link whose URL link rejects shows only its text.
+func renderInlines(ins []tinymarkdown.Inline, link linker) []pe.Node {
 	var out []pe.Node
-	for _, in := range tinymarkdown.Inlines(s) {
+	for _, in := range ins {
 		switch in := in.(type) {
 		case tinymarkdown.Text:
 			out = append(out, pe.Text(string(in)))
 		case tinymarkdown.Code:
 			out = append(out, pe.Code(string(in)))
+		case tinymarkdown.Link:
+			children := renderInlines(in.Children, link)
+			if href, ok := link(in.URL); ok {
+				out = append(out, pe.A(href, children...))
+			} else {
+				out = append(out, children...)
+			}
 		}
 	}
 	return out

@@ -119,12 +119,29 @@ The body supports a tiny subset of Markdown:
 - `- ` list items (no nesting); indented lines continue the item above
 - paragraphs
 - `>` quotes, whose content is Markdown again
-- `` `code` `` spans in headings, paragraphs, and list items
+- `` `code` `` spans and `[text](url)` links in headings, paragraphs, and
+  list items (see [Links](#links))
 - code blocks fenced by exactly three backquotes (no highlighting)
 
 Everything else, including other inline syntax and HTML, is shown as plain,
 escaped text. Problems such as a bad file name, a duplicate slug, a missing
 title, or an unknown front matter key stop the server at startup.
+
+## Links
+
+Relative link URLs are resolved against the file they are written in, as
+on GitHub, so the same Markdown works in both places:
+
+- a link to a document under `/docs/` (`TODO.md`, `docs/**/*.md`) or to a
+  post goes to its page, e.g. `docs/ja/design.md` from `TODO.md` becomes
+  `/docs/ja/design`; posts live at `examples/blog/posts/` in the repository
+- a link to any other file in the repository goes to that file on GitHub
+  (the `main` branch)
+- a link that leaves the repository is not a link: only its text is shown
+
+URLs starting with `/` or `#` are kept as written. URLs with a scheme are
+linked only for `http`, `https`, and `mailto`; others, such as
+`javascript:`, show only the text.
 
 ## Files
 
@@ -139,6 +156,7 @@ title, or an unknown front matter key stop the server at startup.
 | `internal/site/livereload.go` | `-watch`: polling, reloading, and the SSE endpoint |
 | `internal/site/server.go` | Routing (by hand, see `route`), rendering, error pages, panic recovery |
 | `internal/site/views.go` | Pages built from `pkg/picoel`, OGP tags |
+| `internal/site/links.go` | Resolving the URLs of Markdown links |
 | `workers/` | Cloudflare Workers entry point (a module of its own) |
 
 ## Testing

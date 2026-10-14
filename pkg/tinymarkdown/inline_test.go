@@ -26,6 +26,22 @@ func TestInlines(t *testing.T) {
 		{"unmatched run before a span", "`` x `y`", []Inline{Text("`` x "), Code("y")}},
 		{"empty run pair is text", "``", []Inline{Text("``")}},
 		{"html stays text", "`<b>` <i>", []Inline{Code("<b>"), Text(" <i>")}},
+		{"link", "see [docs](docs/a.md) now", []Inline{Text("see "), Link{[]Inline{Text("docs")}, "docs/a.md"}, Text(" now")}},
+		{"link only", "[a](b)", []Inline{Link{[]Inline{Text("a")}, "b"}}},
+		{"link with code", "[`x` y](u)", []Inline{Link{[]Inline{Code("x"), Text(" y")}, "u"}}},
+		{"bracket in code inside link", "[`]` y](u)", []Inline{Link{[]Inline{Code("]"), Text(" y")}, "u"}}},
+		{"link in code is code", "`[a](b)`", []Inline{Code("[a](b)")}},
+		{"code across link is code", "[a `b](c)` d", []Inline{Text("[a "), Code("b](c)"), Text(" d")}},
+		{"empty url", "[a]()", []Inline{Link{[]Inline{Text("a")}, ""}}},
+		{"empty text", "[](u)", []Inline{Link{nil, "u"}}},
+		{"fragment and query", "[a](https://x.test/p?q=1#f)", []Inline{Link{[]Inline{Text("a")}, "https://x.test/p?q=1#f"}}},
+		{"no url is text", "[a] (b)", []Inline{Text("[a] (b)")}},
+		{"brackets only are text", "[a]", []Inline{Text("[a]")}},
+		{"space in url is text", "[a](b c)", []Inline{Text("[a](b c)")}},
+		{"unclosed url is text", "[a](b", []Inline{Text("[a](b")}},
+		{"nested brackets: inner link", "[a [b](c)](d)", []Inline{Text("[a "), Link{[]Inline{Text("b")}, "c"}, Text("](d)")}},
+		{"line break in text", "[a\nb](u)", []Inline{Link{[]Inline{Text("a\nb")}, "u"}}},
+		{"two links", "[a](1) [b](2)", []Inline{Link{[]Inline{Text("a")}, "1"}, Text(" "), Link{[]Inline{Text("b")}, "2"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

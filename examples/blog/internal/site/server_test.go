@@ -108,7 +108,7 @@ func TestPostPageText(t *testing.T) {
 		t.Fatal(err)
 	}
 	var b strings.Builder
-	if err := pe.Render(&b, postPage(pageEnv{BaseURL: "https://example.com"}, posts[0]), pe.PlainRenderer{}); err != nil {
+	if err := pe.Render(&b, postPage(pageEnv{BaseURL: "https://example.com"}, newSite(posts, nil).linker(postSource(posts[0])), posts[0]), pe.PlainRenderer{}); err != nil {
 		t.Fatal(err)
 	}
 	want := `Hello <script> - blog

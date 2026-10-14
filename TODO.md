@@ -16,7 +16,7 @@ This file tracks actionable tasks only; completed work is swept to
   prefers-color-scheme, ...), but pages now use pico.css v2 in its dark
   theme, plus a small `site.css` for what pico cannot express.
 
-- [ ] **tinymarkdown: links**: parse `[text](url)` into a link inline
+- [x] **tinymarkdown: links**: parse `[text](url)` into a link inline
   (alongside `` `code` `` spans) and render it as `<a>` in the blog; today
   it shows as raw text, e.g. the note at the top of `TODO.md`. Decide how
   relative links between repository files (`docs/...md`, `.claude/...`)
