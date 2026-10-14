@@ -34,3 +34,11 @@ This file tracks actionable tasks only; completed work is swept to
   `og:url`, `og:description` (the post's description), `og:site_name`.
   Needs a base URL flag for absolute URLs and a `property` attribute
   const in `pkg/el`; `og:image` is out of scope for now.
+
+### Future work
+
+- [ ] **Run `cmd/blog` on Cloudflare Workers with TinyGo**: split the entry
+  point by build tag so the default build stays standard-library only,
+  and serve the same `http.Handler` via
+  [syumai/workers-go](https://github.com/syumai/workers-go) under TinyGo.
+  Far off; check that `pkg/*` and `go:embed` work under TinyGo first.
