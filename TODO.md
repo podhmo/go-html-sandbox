@@ -11,7 +11,7 @@ This file tracks actionable tasks only; completed work is swept to
 
 ## To Be Implemented
 
-- [-] **Experiment with MoonBit's Wasm backends on Cloudflare Workers**:
+- [x] **Experiment with MoonBit's Wasm backends on Cloudflare Workers**:
   before porting the blog, get a MoonBit Worker under `moonbit/` that can
   be checked locally and deployed, serving pages from `wasm-gc` (without
   `use-js-builtin-string`, which Workers cannot compile for) through the
@@ -42,7 +42,7 @@ This file tracks actionable tasks only; completed work is swept to
     when the workers.dev URL serves the top page and a 404, confirming that
     Workers accepts wasm-gc uploads; record the upload size wrangler
     reports in the research notes.
-  - [ ] **Measure**: the Wasm size with `wasm-opt -Oz`, and the time
+  - [x] **Measure**: the Wasm size with `wasm-opt -Oz`, and the time
     `serve` spends on per-code-unit calls for a page of about 50 KB
     (locally under `wrangler dev`). Record both in the research notes, and
     if the calls are slow, sketch an ABI passing UTF-8 bytes through

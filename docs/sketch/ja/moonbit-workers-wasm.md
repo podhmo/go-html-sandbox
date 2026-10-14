@@ -14,6 +14,8 @@ spike はリポジトリには入れておらず、要点のコードを末尾�
 - **文字列を UTF-16 のコード単位ごとに受け渡す小さな ABI なら、`wasm-gc`（builtin string なし）でも `wasm`（線形メモリ）でも、`wrangler dev` 上で動いた。** wasm-gc が workerd で動くことも、これで確認できた。
 - **本番の Workers にもデプロイでき、wasm-gc の Wasm がそのまま動いた**（「デプロイ」の節）。アップロードは 5.85 KiB（gzip 後 3.17 KiB）、起動時間は 2 ms。
 - サイズは、ルーティングと HTML の組み立てだけの小さな関数で wasm-gc が 4.8 KB（gzip 後 2.4 KB）、wasm が 8.2 KB（同 4.2 KB）。Go 版（TinyGo で約 2 MiB）とは桁が違うが、ブログ全体を移植してから比べないと公平な比較にはならない。
+- **コード単位の ABI は、時間の約 8 割を JS との受け渡しに使うが、51 KB のページでも 1 リクエスト 0.4 ms 前後で済む**（「計測」の節）。今のところ、受け渡し方を変える必要はない。
+- `wasm-opt -Oz` をかけると 5,279 B が 4,021 B になる（gzip 後は 2,744 B が 2,110 B）。差は 600 B ほどなので、ビルドには入れていない。
 - 移植は **wasm-gc（builtin string なし）+ コード単位の ABI** から始めるのがよい。サイズが小さく、GC を Wasm 側で持たずに済む。
 
 ## 環境
@@ -127,7 +129,7 @@ TODO.md の「Experiment with MoonBit's Wasm backends on Cloudflare Workers」�
 | `/%E6%97%A5%E6%9C%AC` | `/日本` と表示される |
 | `/%E0%A4%A` | 400 |
 
-ステータスは常に 200 なので、404 を返すには ABI を広げる必要がある（次の一歩）。
+この時点ではステータスは常に 200 だった。その後 ABI を広げて 404 を返すようにした（「ステータスとヘッダー」の節）。
 
 なお、`wrangler dev` の既定のポート 8787 は、Go 版の Worker を `wrangler dev` で動かしていると使えない（`bind(): Address already in use` で workerd が起動に失敗する）。そのときは `--port` で別のポートを指定する。
 
@@ -164,20 +166,75 @@ Deployed blog-moonbit triggers (0.84 sec)
 
 `wrangler dev` と同じ結果になった。手元（日本）から `curl` で `/` を 5 回取ったときの所要時間は 0.38〜0.44 秒だったが、TLS の接続を含む往復の時間で、Worker の処理時間ではない。
 
+デプロイしたのは、次の「ステータスとヘッダー」より前の版なので、公開中の Worker は存在しないパスにも 200 を返す。
+
+## ステータスとヘッダー
+
+`site.render` が `Response`（`status`、`headers`、`body`）を返すようにし、ABI を次のように広げた。import は 4 つになった。
+
+| import | 役割 |
+| --- | --- |
+| `host.put(code)` | UTF-16 のコード単位を 1 つ、JS 側のバッファに足す |
+| `host.status(code)` | ステータスコードを設定する |
+| `host.header_name()` | バッファの中身を取り出し、次のヘッダーの名前にする |
+| `host.header_value()` | バッファの中身を取り出し、直前の名前のヘッダーの値にする |
+
+`serve` は、ステータス、ヘッダー（名前と値の組ごと）、本文の順に送る。`serve` が返った時点でバッファに残っているものが本文になる。文字列を渡す手段は `put` だけのままなので、ヘッダーの数や種類が増えても import は増えない。
+
+`wrangler dev` で、`/` は 200、存在しないパスは 404（どちらも `Content-Type: text/html; charset=utf-8`）、壊れた `%` エスケープは 400 を返すことを確認した。`moon test` でも、`render` が選ぶステータスと `content-type` を確かめている。Wasm は 5,279 B になった。
+
+## Makefile
+
+`moonbit/Makefile` に `build`、`test`、`check`（`moon fmt --check`、`moon check`、`moon test`）、`dev`、`deploy`、`clean` を用意した。`go/Makefile` と同じく、`moonbit/` の中で実行する（ルートの Makefile はない）。`make dev PORT=8798` のようにポートを変えられるので、Go 版の Worker が 8787 番を使っていても動かせる。git で管理しているファイルだけをコピーした、clone 直後と同じ状態から `make test dev` が動くことを確認した。
+
+## 計測
+
+### コード単位の受け渡しにかかる時間
+
+Workers の中では、Spectre 対策で `Date.now()` や `performance.now()` が処理の途中で進まない（I/O を待つまで止まっている）ので、Worker の中では計れない。そこで、同じ V8 で動く Node.js 24 で、`worker.mjs` と同じ受け渡しの処理を書いて測った。
+
+計測用に、一時的なコピーへ次の 2 つを足した（リポジトリには入れていない）。
+
+- `/big`：600 段落、40,195 コード単位（UTF-8 で 50,995 B）の HTML を返すページ。
+- `bench_render`：`render` だけを実行し、本文の長さを返す export。JS との受け渡しをしない。
+
+| ページ | `render` だけ（Wasm の中） | `serve` で受け渡しまで | 受け渡しの割合 |
+| --- | --- | --- | --- |
+| `/`（148 コード単位、`put` 184 回） | 0.3〜0.4 µs | 1.5 µs | 約 8 割 |
+| `/big`（40,195 コード単位、`put` 40,231 回） | 79〜87 µs | 369〜446 µs | 約 8 割 |
+
+`/big` は 3 回測った範囲。受け渡しのコストは、コード単位の数（= `put` の呼び出し回数）に比例する。割合は大きいが、50 KB のページでも 0.5 ms を切る。Workers の無料プランの CPU 時間の上限（10 ms）に比べても十分小さいので、今のところ UTF-8 のバイト列を線形メモリ越しにまとめて渡す ABI に切り替える必要はない。ページが数百 KB になる、あるいは 1 リクエストで何度も呼ぶようになったら考え直す。
+
+`wrangler dev` に `curl` を 20 回送った往復時間（中央値）も、`/` が 1.0 ms、`/big` が 1.8 ms で、差は 1 ms 程度だった。
+
+### `wasm-opt`
+
+binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけた。
+
+| ビルド | サイズ | gzip -9 |
+| --- | --- | --- |
+| `moon build --release` そのまま | 5,279 B | 2,744 B |
+| `wasm-opt -O3` | 4,752 B | 2,266 B |
+| `wasm-opt -Oz` | 4,021 B | 2,110 B |
+
+`-Oz` で 24% 小さくなり、最適化後の Wasm も同じ応答を返した。ただし gzip 後の差は 600 B ほどなので、ビルドの依存（binaryen）を増やしてまで入れてはいない。ブログ全体を移植して Wasm が大きくなったら、もう一度測る。
+
+`wasm-opt` に渡す機能の指定には注意が要る。
+
+- `-all` だと、V8 がまだ対応していない機能も有効になり、出力が読み込めなくなる（`invalid heap type 'exact'`、`--disable-custom-descriptors` を足しても `unknown import kind 0x7e`）。
+- `--enable-gc --enable-reference-types --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int --enable-mutable-globals --enable-multivalue` と、使う機能だけを指定すると通った。
+
 ## 未確認のこと
 
-- **性能**：コード単位ごとに Wasm と JS を行き来するコスト。数十 KB のページなら問題ないと思うが測っていない。重ければ、線形メモリの wasm で UTF-8 のバイト列をメモリ越しにまとめて渡す ABI に切り替える。
-- **`wasm-opt`** をかけたときのサイズ（手元に入っていなかった）。
-- **ステータスコードとヘッダー**：spike は常に 200 の HTML を返す。404 や `text/markdown`、`Cache-Control` を返すには、ABI に「ステータス」と「ヘッダー」を足す必要がある。
 - **記事の埋め込み**：MoonBit に `go:embed` に当たる仕組みがあるかは調べていない。なければ、Markdown を MoonBit のソースに変換するコード生成を挟む。
 
 ## 次の一歩
 
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。
-2. ステータスとヘッダーを返せるように ABI を広げ、存在しないパスに 404 を返す。
-3. `moonbit/Makefile` に `build`、`test`、`dev`、`deploy` を用意する。
+2. （済み）ステータスとヘッダーを返せるように ABI を広げ、存在しないパスに 404 を返す。「ステータスとヘッダー」の節を参照。
+3. （済み）`moonbit/Makefile` に `build`、`test`、`dev`、`deploy` を用意する。「Makefile」の節を参照。
 4. （済み）本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。「デプロイ」の節を参照。
-5. `wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。
+5. （済み）`wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。「計測」の節を参照。
 6. `pkg/el`（HTML ビルダー）と `pkg/tinymarkdown`（Markdown パーサー）を移植し、記事 1 本を表示するところまで作る。Go 版とサイズを比べて、このレポートに追記する。
 
 ## spike のコード
