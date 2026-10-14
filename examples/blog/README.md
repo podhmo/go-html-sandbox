@@ -54,8 +54,8 @@ the previous content stays. Pages load the small reload script
 
 Every post and document can also be fetched as the Markdown it was written
 in: add `.md` to its URL, e.g. `/posts/hello.md` or `/docs/TODO.md`. It is
-served as `text/markdown; charset=utf-8`, and each page links to it with a
-"Download Markdown" button.
+served as `text/markdown; charset=utf-8`, and each page links to it with a small
+"Download .md" link at the top right of the article.
 
 ## Cloudflare Workers (experimental)
 

@@ -59,7 +59,6 @@ const (
 	Name      AttrName = "name"
 	Property  AttrName = "property"
 	Rel       AttrName = "rel"
-	Role      AttrName = "role"
 	Src       AttrName = "src"
 	TitleAttr AttrName = "title"
 	Type      AttrName = "type"

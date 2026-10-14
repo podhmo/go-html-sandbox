@@ -91,13 +91,12 @@ func postList(env pageEnv, posts []Post) pe.Node {
 }
 
 func postPage(env pageEnv, p Post) pe.Node {
-	body := []pe.Node{pe.ArticleHeader(pe.Date(p.Date))}
+	body := []pe.Node{articleHeader(pe.Date(p.Date), postMarkdownPath(p), p.File)}
 	if _, ok := firstTitle(p.Doc); !ok {
 		// The title came from front matter only, so the body has no heading.
 		body = append(body, pe.H1(pe.Text(p.Title)))
 	}
 	body = append(body, renderBlocks(p.Doc.Children)...)
-	body = append(body, downloadFooter(postMarkdownPath(p), p.File))
 	meta := pageMeta{
 		Title:       p.Title,
 		Description: p.Description,
@@ -122,12 +121,11 @@ func docList(env pageEnv, docs []Doc) pe.Node {
 }
 
 func docPage(env pageEnv, d Doc) pe.Node {
-	body := []pe.Node{pe.ArticleHeader(pe.Small(pe.Text(d.Source)))}
+	body := []pe.Node{articleHeader(pe.Small(pe.Text(d.Source)), docMarkdownPath(d), path.Base(d.Source))}
 	if _, ok := firstTitle(d.Doc); !ok {
 		body = append(body, pe.H1(pe.Text(d.Title)))
 	}
 	body = append(body, renderBlocks(d.Doc.Children)...)
-	body = append(body, downloadFooter(docMarkdownPath(d), path.Base(d.Source)))
 	meta := pageMeta{Title: d.Title, Description: d.Description, URL: env.BaseURL + docPath(d), Type: "article"}
 	return layout(env, meta, pe.Article(body...))
 }
@@ -141,9 +139,11 @@ func postMarkdownPath(p Post) string {
 	return postPath(p) + ".md"
 }
 
-// downloadFooter closes a page with a link to its Markdown source.
-func downloadFooter(href, filename string) pe.Node {
-	return pe.ArticleFooter(pe.DownloadButton(href, filename, pe.Text("Download Markdown")))
+// articleHeader shows info on the left and, on the right, a small link
+// that downloads the page's Markdown source.
+func articleHeader(info pe.Node, href, filename string) pe.Node {
+	download := pe.Small(pe.DownloadLink(href, filename, pe.Text("Download .md")))
+	return pe.ArticleHeader(pe.Spread([]pe.Node{info}, []pe.Node{download}))
 }
 
 func errorPage(env pageEnv, status int, message string) pe.Node {

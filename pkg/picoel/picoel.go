@@ -96,6 +96,13 @@ func Nav(items ...Node) Node {
 	return el.El(el.Nav, el.El(el.Ul, listItems(items)...))
 }
 
+// Spread puts start at the leading edge and end at the trailing edge of one
+// row, using pico's nav layout: each side is a list and the lists are pushed
+// apart.
+func Spread(start, end []Node) Node {
+	return el.El(el.Nav, el.El(el.Ul, listItems(start)...), el.El(el.Ul, listItems(end)...))
+}
+
 // Article is a card.
 func Article(children ...Node) Node {
 	return el.El(el.Article, children...)
@@ -105,11 +112,6 @@ func Article(children ...Node) Node {
 // .container: it belongs inside a card, not at the top of the page.
 func ArticleHeader(children ...Node) Node {
 	return el.El(el.Header, children...)
-}
-
-// ArticleFooter is the banded footer of an Article.
-func ArticleFooter(children ...Node) Node {
-	return el.El(el.Footer, children...)
 }
 
 // Hgroup groups a heading with lines that pico shows in a muted color.
@@ -166,14 +168,13 @@ func A(href string, children ...Node) Node {
 	return el.El(el.A, append([]Node{el.Attr(el.Href, href)}, children...)...)
 }
 
-// DownloadButton is a link that downloads href as filename, drawn by pico
-// as an outlined button.
-func DownloadButton(href, filename string, children ...Node) Node {
+// DownloadLink is a link that downloads href as filename, in pico's muted
+// secondary color.
+func DownloadLink(href, filename string, children ...Node) Node {
 	attrs := []Node{
 		el.Attr(el.Href, href),
 		el.Attr(el.Download, filename),
-		el.Attr(el.Role, "button"),
-		el.Attr(el.Class, "outline"),
+		el.Attr(el.Class, "secondary"),
 	}
 	return el.El(el.A, append(attrs, children...)...)
 }

@@ -104,7 +104,7 @@ func TestDocMarkdown(t *testing.T) {
 	}
 
 	_, body := get(t, h, "/docs/ja/design")
-	if want := `<footer><a href="/docs/ja/design.md" download="design.md" role="button" class="outline">Download Markdown</a></footer>`; !strings.Contains(body, want) {
+	if want := `<ul><li><small><a href="/docs/ja/design.md" download="design.md" class="secondary">Download .md</a></small></li></ul></nav></header>`; !strings.Contains(body, want) {
 		t.Errorf("design: body does not contain %q", want)
 	}
 }
