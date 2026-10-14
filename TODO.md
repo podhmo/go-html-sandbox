@@ -59,6 +59,12 @@ This file tracks actionable tasks only; completed work is swept to
   `text/markdown`, and add a download link to each page
   ([#3](https://github.com/podhmo/go-html-sandbox/issues/3)).
 
+- [x] **blog: sticky site header and tighter spacing with a small
+  `site.css`**: pico has no utility for either, so allow one embedded
+  stylesheet served after pico that only overrides pico variables and adds
+  minimal layout rules (sticky `body > header`, smaller block spacing for
+  `header`/`main`).
+
 - [ ] **tinymarkdown: links**: parse `[text](url)` into a link inline
   (alongside `` `code` `` spans) and render it as `<a>` in the blog; today
   it shows as raw text, e.g. the note at the top of `TODO.md`. Decide how

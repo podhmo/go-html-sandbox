@@ -1,9 +1,10 @@
-// Package picoel builds pages styled by pico.css v2 alone, on top of pkg/el.
+// Package picoel builds pages styled by pico.css v2, on top of pkg/el.
 //
 // It provides only the elements the blog needs. Following pico's approach,
-// there are no custom classes and no CSS: layout and decoration come from
-// semantic elements (article, nav, hgroup, ...) and the classes pico ships
-// with (container). Every helper returns an el.Node, so the result is plain
+// there are no custom classes: layout and decoration come from semantic
+// elements (article, nav, hgroup, ...) and the classes pico ships with
+// (container). The few rules pico cannot express, such as a sticky header,
+// go in a small stylesheet linked with Stylesheet. Every helper returns an el.Node, so the result is plain
 // data rendered by an el.Renderer like any other tree.
 package picoel
 
@@ -38,7 +39,7 @@ func Document(lang string, head []Node, body ...Node) Node {
 		el.El(el.Meta, el.Attr(el.Charset, "utf-8")),
 		MetaName("viewport", "width=device-width, initial-scale=1"),
 		MetaName("color-scheme", "dark"),
-		el.El(el.Link, el.Attr(el.Rel, "stylesheet"), el.Attr(el.Href, StylesheetURL)),
+		Stylesheet(StylesheetURL),
 	}
 	return el.El(el.HTML, el.Attr(el.Lang, lang), el.Attr(el.AttrName("data-theme"), "dark"),
 		el.El(el.Head, append(h, head...)...),
@@ -59,6 +60,12 @@ func MetaName(name, content string) Node {
 // MetaProperty is <meta property content>, as used by Open Graph.
 func MetaProperty(property, content string) Node {
 	return el.El(el.Meta, el.Attr(el.Property, property), el.Attr(el.Content, content))
+}
+
+// Stylesheet links the stylesheet at href. Document already links pico;
+// use this for the few rules pico cannot express, placed after it.
+func Stylesheet(href string) Node {
+	return el.El(el.Link, el.Attr(el.Rel, "stylesheet"), el.Attr(el.Href, href))
 }
 
 // Icon links the favicon at href with the given MIME type.

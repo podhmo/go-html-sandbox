@@ -51,6 +51,7 @@ func TestElements(t *testing.T) {
 		{Spread([]Node{Text("a")}, []Node{Text("b"), Text("c")}), `<nav><ul><li>a</li></ul><ul><li>b</li><li>c</li></ul></nav>`},
 		{MetaProperty("og:title", "t"), `<meta property="og:title" content="t">`},
 		{Script("/x.js"), `<script src="/x.js" defer></script>`},
+		{Stylesheet("/a.css?v=1"), `<link rel="stylesheet" href="/a.css?v=1">`},
 		{Icon("/favicon.svg", "image/svg+xml"), `<link rel="icon" href="/favicon.svg" type="image/svg+xml">`},
 	}
 	for _, c := range cases {

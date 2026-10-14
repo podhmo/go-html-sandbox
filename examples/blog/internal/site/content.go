@@ -4,7 +4,9 @@
 package site
 
 import (
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"io/fs"
 
 	sandbox "github.com/podhmo/go-html-sandbox"
@@ -13,6 +15,18 @@ import (
 
 //go:embed favicon.svg
 var favicon []byte
+
+// siteCSS holds the rules pico cannot express, loaded after pico.
+//
+//go:embed site.css
+var siteCSS []byte
+
+// siteCSSPath carries a hash of siteCSS, so browsers may cache it for long
+// and still pick up a new version right after a deploy.
+var siteCSSPath = func() string {
+	sum := sha256.Sum256(siteCSS)
+	return "/site.css?v=" + hex.EncodeToString(sum[:4])
+}()
 
 // EmbeddedSources returns the posts and documents built into the binary.
 // Every entry point serves these unless told to read files from disk.
