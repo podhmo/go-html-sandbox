@@ -1,5 +1,6 @@
 // Cloudflare Workers config for this module.
 // `npx wrangler dev` builds with TinyGo and serves on http://localhost:8787.
+// `npx wrangler dev --env go` builds with the standard Go toolchain instead.
 {
   "name": "go-html-sandbox-blog",
   "main": "./build/worker.mjs",
@@ -10,5 +11,19 @@
   "vars": {
     // Public origin for OGP tags, like -base-url.
     "BASE_URL": "http://localhost:8787"
+  },
+  "env": {
+    // The same Worker built with the standard Go toolchain (GOOS=js
+    // GOARCH=wasm), for when TinyGo is not installed. The binary is about
+    // four times as large; see docs/sketch/ja/blog-tinygo-workers.md.
+    "go": {
+      "build": {
+        "command": "go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm ."
+      },
+      // vars are not inherited by environments.
+      "vars": {
+        "BASE_URL": "http://localhost:8787"
+      }
+    }
   }
 }

@@ -74,6 +74,19 @@ cd examples/blog/workers
 npx wrangler dev   # needs TinyGo 0.42.0 or later on PATH
 ```
 
+Without TinyGo, build with the standard Go toolchain (`GOOS=js
+GOARCH=wasm`) through the `go` environment in `wrangler.jsonc`. The Wasm
+binary is about 8 MiB instead of 2 MiB, which still fits the Workers size
+limit:
+
+```sh
+npx wrangler dev --env go
+```
+
+Note that `wrangler deploy --env go` deploys a Worker named
+`go-html-sandbox-blog-go`, and its `BASE_URL` is set separately under
+`env.go.vars`.
+
 The site itself lives in `internal/site`, which is tested under TinyGo too:
 
 ```sh
