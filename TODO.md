@@ -36,6 +36,14 @@ This file tracks actionable tasks only; completed work is swept to
   `..`), parse them with tinymarkdown at startup, and serve them under
   `/docs/` with an index page and a nav link.
 
+- [ ] **tinymarkdown: blockquotes**: consecutive `>` lines become a `Quote`
+  whose content is parsed as Markdown again; render it as `<blockquote>`
+  in the blog (the note at the top of `TODO.md` is one).
+
+- [ ] **tinymarkdown: inline code**: split text into plain runs and
+  `` `code` `` spans (CommonMark-style backtick runs) and render the spans
+  as `<code>` in headings, paragraphs, and list items.
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
