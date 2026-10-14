@@ -1,3 +1,7 @@
 # moon's build output and downloaded dependencies.
 _build/
 .mooncakes/
+
+# The Wasm copied in by the Workers build, and wrangler's local state.
+workers/build/
+workers/.wrangler/

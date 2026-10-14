@@ -22,7 +22,7 @@ This file tracks actionable tasks only; completed work is swept to
     covering both. Done when `moon test` passes and
     `moon build --target wasm-gc --release` writes a Wasm exporting only
     `path_push` and `serve` and importing only `host.put`.
-  - [ ] **Worker shell and `wrangler dev`**: `moonbit/worker/` with the
+  - [x] **Worker shell and `wrangler dev`**: `moonbit/workers/` with the
     spike's `worker.mjs` and a `wrangler.jsonc` whose build command runs
     the MoonBit build and copies the Wasm next to `worker.mjs` (ignored by
     git). Done when `npx wrangler dev` in it serves the top page, and a

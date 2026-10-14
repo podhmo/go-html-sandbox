@@ -1,0 +1,12 @@
+// Cloudflare Workers config for the MoonBit blog; see ../README.md.
+// `npx wrangler dev` builds the Wasm and serves on http://localhost:8787.
+{
+  "name": "blog-moonbit",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "build": {
+    "command": "cd .. && moon build --target wasm-gc --release && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
+    // Rebuild when the MoonBit sources change under `wrangler dev`.
+    "watch_dir": ["../site", "../worker"]
+  }
+}
