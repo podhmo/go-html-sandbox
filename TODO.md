@@ -21,10 +21,15 @@ This file tracks actionable tasks only; completed work is swept to
 - [x] **Dark mode for the blog**: render every page in pico's dark theme
   (`data-theme="dark"` on `<html>`) instead of following the OS setting.
 
-- [ ] **`examples/parse-markdown`: dump the tinymarkdown tree**: a small
+- [x] **`examples/parse-markdown`: dump the tinymarkdown tree**: a small
   CLI that parses Markdown files (or stdin) with `pkg/tinymarkdown` and
   prints the resulting tree, to check how documents such as `TODO.md` and
   `docs/**/*.md` are understood before embedding them in the blog.
+
+- [ ] **tinymarkdown: list items spanning several lines**: indented lines
+  after a `- ` item should continue that item instead of starting a
+  paragraph. Today every multi-line entry in `TODO.md` splits into a
+  one-line list plus a paragraph (check with `examples/parse-markdown`).
 
 ### Future work
 
