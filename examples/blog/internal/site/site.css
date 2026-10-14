@@ -1,5 +1,6 @@
-/* The few rules pico cannot express. Keep this file small and build on
-   pico's variables so the theme still applies. */
+/* The few rules pico cannot express, and typography tuned for Japanese.
+   Keep this file small and build on pico's variables so the theme still
+   applies. */
 
 /* Keep the site navigation in view. It needs a background, or the page
    scrolling under it would show through. */
@@ -20,4 +21,54 @@ body > main {
 
 nav {
   --pico-nav-element-spacing-vertical: 0.5rem;
+}
+
+/* Tune pico's typography for Japanese on narrow screens. */
+
+/* Japanese lines are dense, so pico's 1.5 leading reads as cramped. Set it
+   here, not through --pico-line-height, which also sizes form controls. */
+article {
+  line-height: 1.8;
+}
+
+/* pico's headings are sized for Latin text; Japanese titles wrap into
+   three lines on a phone. Break them at phrases and even out the lines,
+   so a single character is not left on the last one. */
+article h1 {
+  --pico-font-size: 1.75rem;
+}
+article h2 {
+  --pico-font-size: 1.5rem;
+}
+article h3 {
+  --pico-font-size: 1.25rem;
+}
+article :is(h1, h2, h3, h4, h5) {
+  text-wrap: balance;
+  word-break: auto-phrase;
+}
+
+/* pico spaces a heading from the content above it only when they are
+   siblings, but each heading here opens its own section. Give the space
+   back, except right after a parent heading. */
+article :not(:is(h1, h2, h3, h4, h5)) + section > :is(h2, h3, h4, h5):first-child {
+  margin-top: calc(var(--pico-typography-spacing-vertical) * 2);
+}
+
+/* The browser default of 40px is too deep for a narrow screen. */
+article :is(ul, ol) {
+  padding-inline-start: 1.25rem;
+}
+
+/* In the list cards, the title is a link already told apart by its color;
+   an underline only blurs the strokes of kanji. The hgroup margin would
+   double the card's bottom padding. */
+article > hgroup:last-child {
+  margin-bottom: 0;
+}
+article > hgroup h2 {
+  --pico-font-size: 1.25rem;
+}
+article > hgroup a {
+  text-decoration: none;
 }

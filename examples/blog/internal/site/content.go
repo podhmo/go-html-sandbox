@@ -16,7 +16,8 @@ import (
 //go:embed favicon.svg
 var favicon []byte
 
-// siteCSS holds the rules pico cannot express, loaded after pico.
+// siteCSS holds the rules pico cannot express and the typography tuned
+// for Japanese, loaded after pico.
 //
 //go:embed site.css
 var siteCSS []byte
