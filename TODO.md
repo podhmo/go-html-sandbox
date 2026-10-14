@@ -13,9 +13,9 @@ This file tracks actionable tasks only; completed work is swept to
 
 ### pkg/el (HTML library)
 
-- [ ] **Core `pkg/el`** ([design](docs/ja/design.md)): the scope the blog
+- [-] **Core `pkg/el`** ([design](docs/ja/design.md)): the scope the blog
   needs first; more elements/attributes are added as const lines later.
-  - [ ] **Node types and constructors**: `Node`, `Tag` / `AttrName` consts,
+  - [x] **Node types and constructors**: `Node`, `Tag` / `AttrName` consts,
     `El`, `Attr`, `Text`, `Raw`. Tests compare trees with
     `reflect.DeepEqual`.
   - [ ] **`HTMLRenderer`**: escaping in `Text`, void elements, attributes
