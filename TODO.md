@@ -61,3 +61,6 @@ This file tracks actionable tasks only; completed work is swept to
   and serve the same `http.Handler` via
   [syumai/workers-go](https://github.com/syumai/workers-go) under TinyGo.
   Far off; check that `pkg/*` and `go:embed` work under TinyGo first.
+  Spike: [report](docs/sketch/ja/blog-tinygo-workers.md), branches
+  `spike/tinygo-workers` (build tags) and `spike/tinygo-workers-module`
+  (separate module).
