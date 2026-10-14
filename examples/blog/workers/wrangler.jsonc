@@ -17,6 +17,8 @@
     // GOARCH=wasm), for when TinyGo is not installed. The binary is about
     // four times as large; see docs/sketch/ja/blog-tinygo-workers.md.
     "go": {
+      // Without this, wrangler would name it go-html-sandbox-blog-go.
+      "name": "blog",
       "build": {
         "command": "go run github.com/syumai/workers-go/cmd/workers-assets-gen -mode go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm ."
       },

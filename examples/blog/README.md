@@ -84,7 +84,7 @@ npx wrangler dev --env go
 ```
 
 Note that `wrangler deploy --env go` deploys a Worker named
-`go-html-sandbox-blog-go`, and its `BASE_URL` is set separately under
+`blog` (set by `env.go.name`), and its `BASE_URL` is set separately under
 `env.go.vars`.
 
 The site itself lives in `internal/site`, which is tested under TinyGo too:
