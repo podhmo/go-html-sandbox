@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"net/http"
 	"strconv"
 	"time"
@@ -16,7 +17,7 @@ const (
 
 // pageMeta describes a page for <head>.
 type pageMeta struct {
-	Title       string
+	Title       string // page title without the site name; empty for the top page
 	Description string
 	// URL is the absolute URL of the page. OGP tags are written only when
 	// it is set, so error pages have none.
@@ -30,7 +31,7 @@ func layout(meta pageMeta, body ...el.Node) el.Node {
 		el.El(el.Meta, el.Attr(el.Charset, "utf-8")),
 		el.El(el.Meta, el.Attr(el.Name, "viewport"), el.Attr(el.Content, "width=device-width, initial-scale=1")),
 		el.El(el.Meta, el.Attr(el.Name, "color-scheme"), el.Attr(el.Content, "light dark")),
-		el.El(el.Title, el.Text(meta.Title)),
+		el.El(el.Title, el.Text(documentTitle(meta.Title))),
 		el.El(el.Meta, el.Attr(el.Name, "description"), el.Attr(el.Content, meta.Description)),
 	}
 	head = append(head, ogp(meta)...)
@@ -48,6 +49,14 @@ func layout(meta pageMeta, body ...el.Node) el.Node {
 	)
 }
 
+// documentTitle is the <title> text: the page title followed by the site name.
+func documentTitle(title string) string {
+	if title == "" {
+		return siteName
+	}
+	return title + " - " + siteName
+}
+
 // ogp returns Open Graph <meta> tags, or none when meta has no URL.
 func ogp(meta pageMeta) []el.Node {
 	if meta.URL == "" {
@@ -57,7 +66,7 @@ func ogp(meta pageMeta) []el.Node {
 		return el.El(el.Meta, el.Attr(el.Property, property), el.Attr(el.Content, content))
 	}
 	return []el.Node{
-		prop("og:title", meta.Title),
+		prop("og:title", cmp.Or(meta.Title, siteName)),
 		prop("og:type", meta.Type),
 		prop("og:url", meta.URL),
 		prop("og:description", meta.Description),
@@ -75,7 +84,7 @@ func postList(baseURL string, posts []Post) el.Node {
 			),
 		))
 	}
-	return layout(pageMeta{Title: siteName, Description: siteDescription, URL: baseURL + "/", Type: "website"},
+	return layout(pageMeta{Description: siteDescription, URL: baseURL + "/", Type: "website"},
 		el.El(el.H1, el.Text("Posts")),
 		el.El(el.Ul, append([]el.Node{el.Attr(el.Class, "posts")}, items...)...),
 	)
@@ -89,7 +98,7 @@ func postPage(baseURL string, p Post) el.Node {
 	}
 	body = append(body, renderBlocks(p.Doc.Children)...)
 	meta := pageMeta{
-		Title:       p.Title + " - " + siteName,
+		Title:       p.Title,
 		Description: p.Description,
 		URL:         baseURL + postPath(p),
 		Type:        "article",
@@ -103,7 +112,7 @@ func postPath(p Post) string {
 
 func errorPage(status int, message string) el.Node {
 	title := strconv.Itoa(status) + " " + http.StatusText(status)
-	return layout(pageMeta{Title: title + " - " + siteName, Description: message},
+	return layout(pageMeta{Title: title, Description: message},
 		el.El(el.H1, el.Text(title)),
 		el.El(el.P, el.Text(message)),
 		el.El(el.P, el.El(el.A, el.Attr(el.Href, "/"), el.Text("Back to all posts"))),

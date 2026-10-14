@@ -195,6 +195,7 @@ func TestOGP(t *testing.T) {
 		want []string
 	}{
 		{"/", []string{
+			`<title>blog</title>`,
 			`<meta property="og:title" content="blog">`,
 			`<meta property="og:type" content="website">`,
 			`<meta property="og:url" content="https://example.com/">`,
@@ -202,7 +203,7 @@ func TestOGP(t *testing.T) {
 			`<meta property="og:site_name" content="blog">`,
 		}},
 		{"/posts/hello", []string{
-			`<meta property="og:title" content="Hello - blog">`,
+			`<meta property="og:title" content="Hello">`,
 			`<meta property="og:type" content="article">`,
 			`<meta property="og:url" content="https://example.com/posts/hello">`,
 			`<meta property="og:description" content="Say &#34;hi&#34; &amp; more">`,
