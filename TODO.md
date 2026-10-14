@@ -11,6 +11,13 @@ This file tracks actionable tasks only; completed work is swept to
 
 ## To Be Implemented
 
+- [ ] **`pkg/picoel`: pico.css v2 building blocks for the blog**: add a
+  package with only the elements the blog needs, built on `pkg/el` and
+  following the rules in `../podhmo.github.io/ui/pico/README.md` (no custom
+  classes or CSS, semantic elements first, `.container` on
+  `header`/`main`/`footer`, pico v2 from the CDN). Rewrite `examples/blog` to
+  import only `picoel` (no direct `pkg/el`) and drop `style.go`.
+
 ### Future work
 
 - [ ] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry
