@@ -4,7 +4,8 @@
 // items (which may continue on indented lines), paragraphs, "> " quotes, and
 // code blocks fenced by exactly "```". Anything else is treated as paragraph
 // text.
-// Inline syntax is not interpreted. See docs/sketch/ja/blog.md.
+// Block parsing keeps inline syntax as text; Inlines splits out code spans
+// on request. See docs/sketch/ja/blog.md.
 package tinymarkdown
 
 import "strings"

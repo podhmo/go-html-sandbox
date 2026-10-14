@@ -125,9 +125,14 @@ func P(children ...Node) Node {
 	return el.El(el.P, children...)
 }
 
-// List is an unordered list; each item becomes a list item.
+// List is an unordered list of Li items.
 func List(items ...Node) Node {
-	return el.El(el.Ul, listItems(items)...)
+	return el.El(el.Ul, items...)
+}
+
+// Li is a list item.
+func Li(children ...Node) Node {
+	return el.El(el.Li, children...)
 }
 
 // Blockquote is a quotation; pico draws a bar on its leading edge.
@@ -138,6 +143,11 @@ func Blockquote(children ...Node) Node {
 // Pre is preformatted text such as a code block.
 func Pre(text string) Node {
 	return el.El(el.Pre, el.Text(text))
+}
+
+// Code is a fragment of code inside text.
+func Code(text string) Node {
+	return el.El(el.Code, el.Text(text))
 }
 
 // A is a link to href.

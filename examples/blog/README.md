@@ -69,9 +69,10 @@ The body supports a tiny subset of Markdown:
 - `- ` list items (no nesting); indented lines continue the item above
 - paragraphs
 - `>` quotes, whose content is Markdown again
+- `` `code` `` spans in headings, paragraphs, and list items
 - code blocks fenced by exactly three backquotes (no highlighting)
 
-Everything else, including inline syntax and HTML, is shown as plain,
+Everything else, including other inline syntax and HTML, is shown as plain,
 escaped text. Problems such as a bad file name, a duplicate slug, a missing
 title, or an unknown front matter key stop the server at startup.
 

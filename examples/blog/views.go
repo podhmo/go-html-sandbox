@@ -140,20 +140,34 @@ func renderBlocks(bs []tinymarkdown.Block) []pe.Node {
 	for _, b := range bs {
 		switch b := b.(type) {
 		case tinymarkdown.Section:
-			children := append([]pe.Node{headings[b.Level](pe.Text(b.Title))}, renderBlocks(b.Children)...)
+			children := append([]pe.Node{headings[b.Level](renderInlines(b.Title)...)}, renderBlocks(b.Children)...)
 			out = append(out, pe.Section(children...))
 		case tinymarkdown.Paragraph:
-			out = append(out, pe.P(pe.Text(b.Text)))
+			out = append(out, pe.P(renderInlines(b.Text)...))
 		case tinymarkdown.List:
 			items := make([]pe.Node, 0, len(b.Items))
 			for _, it := range b.Items {
-				items = append(items, pe.Text(it))
+				items = append(items, pe.Li(renderInlines(it)...))
 			}
 			out = append(out, pe.List(items...))
 		case tinymarkdown.Quote:
 			out = append(out, pe.Blockquote(renderBlocks(b.Children)...))
 		case tinymarkdown.CodeBlock:
 			out = append(out, pe.Pre(b.Code))
+		}
+	}
+	return out
+}
+
+// renderInlines turns `code` spans in s into <code>; the rest is text.
+func renderInlines(s string) []pe.Node {
+	var out []pe.Node
+	for _, in := range tinymarkdown.Inlines(s) {
+		switch in := in.(type) {
+		case tinymarkdown.Text:
+			out = append(out, pe.Text(string(in)))
+		case tinymarkdown.Code:
+			out = append(out, pe.Code(string(in)))
 		}
 	}
 	return out

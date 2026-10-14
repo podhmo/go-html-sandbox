@@ -40,7 +40,7 @@ This file tracks actionable tasks only; completed work is swept to
   whose content is parsed as Markdown again; render it as `<blockquote>`
   in the blog (the note at the top of `TODO.md` is one).
 
-- [ ] **tinymarkdown: inline code**: split text into plain runs and
+- [x] **tinymarkdown: inline code**: split text into plain runs and
   `` `code` `` spans (CommonMark-style backtick runs) and render the spans
   as `<code>` in headings, paragraphs, and list items.
 

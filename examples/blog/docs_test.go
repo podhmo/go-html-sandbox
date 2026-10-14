@@ -12,7 +12,7 @@ import (
 
 var testDocs = fstest.MapFS{
 	"TODO.md":           file("# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line"),
-	"docs/ja/design.md": file("# Design <x>\n\nwhy"),
+	"docs/ja/design.md": file("# Design <x>\n\nwhy\n## Use `el`\n- run `go test`\n- ``a ` b``"),
 	"docs/notes.md":     file("no heading"),
 	"docs/image.svg":    file("<svg/>"),
 }
@@ -66,6 +66,11 @@ second line</li>`; !strings.Contains(body, want) {
 
 	if want := `<blockquote><p>note</p></blockquote>`; !strings.Contains(body, want) {
 		t.Errorf("TODO: body does not contain %q", want)
+	}
+
+	_, body = get(t, h, "/docs/ja/design")
+	if want := `<h2>Use <code>el</code></h2><ul><li>run <code>go test</code></li><li><code>a ` + "`" + ` b</code></li></ul>`; !strings.Contains(body, want) {
+		t.Errorf("design: body does not contain %q", want)
 	}
 
 	_, body = get(t, h, "/docs/notes")
