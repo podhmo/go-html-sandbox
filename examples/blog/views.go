@@ -4,9 +4,8 @@ import (
 	"cmp"
 	"net/http"
 	"strconv"
-	"time"
 
-	"github.com/podhmo/go-html-sandbox/pkg/el"
+	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 	"github.com/podhmo/go-html-sandbox/pkg/tinymarkdown"
 )
 
@@ -26,26 +25,17 @@ type pageMeta struct {
 }
 
 // layout is the frame shared by every page. The doctype is written by render.
-func layout(meta pageMeta, body ...el.Node) el.Node {
-	head := []el.Node{
-		el.El(el.Meta, el.Attr(el.Charset, "utf-8")),
-		el.El(el.Meta, el.Attr(el.Name, "viewport"), el.Attr(el.Content, "width=device-width, initial-scale=1")),
-		el.El(el.Meta, el.Attr(el.Name, "color-scheme"), el.Attr(el.Content, "light dark")),
-		el.El(el.Title, el.Text(documentTitle(meta.Title))),
-		el.El(el.Meta, el.Attr(el.Name, "description"), el.Attr(el.Content, meta.Description)),
+func layout(meta pageMeta, body ...pe.Node) pe.Node {
+	head := []pe.Node{
+		pe.Title(documentTitle(meta.Title)),
+		pe.MetaName("description", meta.Description),
 	}
 	head = append(head, ogp(meta)...)
-	head = append(head,
-		el.El(el.Link, el.Attr(el.Rel, "icon"), el.Attr(el.Href, "/favicon.svg"), el.Attr(el.Type, "image/svg+xml")),
-		el.El(el.Style, el.Raw(css)),
-	)
-	return el.El(el.HTML, el.Attr(el.Lang, "en"),
-		el.El(el.Head, head...),
-		el.El(el.Body,
-			el.El(el.Header, el.El(el.A, el.Attr(el.Href, "/"), el.Attr(el.Class, "site"), el.Text(siteName))),
-			el.El(el.Main, body...),
-			el.El(el.Footer, el.Text("Rendered with the Go standard library.")),
-		),
+	head = append(head, pe.Icon("/favicon.svg", "image/svg+xml"))
+	return pe.Document("en", head,
+		pe.Header(pe.Nav(pe.A("/", pe.Strong(pe.Text(siteName))))),
+		pe.Main(body...),
+		pe.Footer(pe.Small(pe.Text("Rendered with the Go standard library."))),
 	)
 }
 
@@ -58,14 +48,12 @@ func documentTitle(title string) string {
 }
 
 // ogp returns Open Graph <meta> tags, or none when meta has no URL.
-func ogp(meta pageMeta) []el.Node {
+func ogp(meta pageMeta) []pe.Node {
 	if meta.URL == "" {
 		return nil
 	}
-	prop := func(property, content string) el.Node {
-		return el.El(el.Meta, el.Attr(el.Property, property), el.Attr(el.Content, content))
-	}
-	return []el.Node{
+	prop := pe.MetaProperty
+	return []pe.Node{
 		prop("og:title", cmp.Or(meta.Title, siteName)),
 		prop("og:type", meta.Type),
 		prop("og:url", meta.URL),
@@ -74,27 +62,24 @@ func ogp(meta pageMeta) []el.Node {
 	}
 }
 
-func postList(baseURL string, posts []Post) el.Node {
-	items := make([]el.Node, 0, len(posts))
+// postList shows each post as a card: the title links to the post and the
+// date below it is muted by hgroup.
+func postList(baseURL string, posts []Post) pe.Node {
+	body := []pe.Node{pe.H1(pe.Text("Posts"))}
 	for _, p := range posts {
-		items = append(items, el.El(el.Li,
-			el.El(el.A, el.Attr(el.Href, postPath(p)),
-				el.El(el.Span, el.Attr(el.Class, "title"), el.Text(p.Title)),
-				dateNode(p.Date),
-			),
-		))
+		body = append(body, pe.Article(pe.Hgroup(
+			pe.H2(pe.A(postPath(p), pe.Text(p.Title))),
+			pe.P(pe.Date(p.Date)),
+		)))
 	}
-	return layout(pageMeta{Description: siteDescription, URL: baseURL + "/", Type: "website"},
-		el.El(el.H1, el.Text("Posts")),
-		el.El(el.Ul, append([]el.Node{el.Attr(el.Class, "posts")}, items...)...),
-	)
+	return layout(pageMeta{Description: siteDescription, URL: baseURL + "/", Type: "website"}, body...)
 }
 
-func postPage(baseURL string, p Post) el.Node {
-	body := []el.Node{dateNode(p.Date)}
+func postPage(baseURL string, p Post) pe.Node {
+	body := []pe.Node{pe.ArticleHeader(pe.Date(p.Date))}
 	if _, ok := firstTitle(p.Doc); !ok {
 		// The title came from front matter only, so the body has no heading.
-		body = append(body, el.El(el.H1, el.Text(p.Title)))
+		body = append(body, pe.H1(pe.Text(p.Title)))
 	}
 	body = append(body, renderBlocks(p.Doc.Children)...)
 	meta := pageMeta{
@@ -103,48 +88,43 @@ func postPage(baseURL string, p Post) el.Node {
 		URL:         baseURL + postPath(p),
 		Type:        "article",
 	}
-	return layout(meta, el.El(el.Article, body...))
+	return layout(meta, pe.Article(body...))
 }
 
 func postPath(p Post) string {
 	return "/posts/" + p.Slug
 }
 
-func errorPage(status int, message string) el.Node {
+func errorPage(status int, message string) pe.Node {
 	title := strconv.Itoa(status) + " " + http.StatusText(status)
 	return layout(pageMeta{Title: title, Description: message},
-		el.El(el.H1, el.Text(title)),
-		el.El(el.P, el.Text(message)),
-		el.El(el.P, el.El(el.A, el.Attr(el.Href, "/"), el.Text("Back to all posts"))),
+		pe.H1(pe.Text(title)),
+		pe.P(pe.Text(message)),
+		pe.P(pe.A("/", pe.Text("Back to all posts"))),
 	)
 }
 
-func dateNode(d time.Time) el.Node {
-	s := d.Format(time.DateOnly)
-	return el.El(el.Time, el.Attr(el.DateTime, s), el.Text(s))
-}
-
-var headings = [...]el.Tag{1: el.H1, 2: el.H2, 3: el.H3}
+var headings = [...]func(...pe.Node) pe.Node{1: pe.H1, 2: pe.H2, 3: pe.H3}
 
 // renderBlocks converts the Markdown tree into nodes. Every piece of text
-// goes through el.Text, so HTML in posts is escaped.
-func renderBlocks(bs []tinymarkdown.Block) []el.Node {
-	out := make([]el.Node, 0, len(bs))
+// goes through pe.Text, so HTML in posts is escaped.
+func renderBlocks(bs []tinymarkdown.Block) []pe.Node {
+	out := make([]pe.Node, 0, len(bs))
 	for _, b := range bs {
 		switch b := b.(type) {
 		case tinymarkdown.Section:
-			children := append([]el.Node{el.El(headings[b.Level], el.Text(b.Title))}, renderBlocks(b.Children)...)
-			out = append(out, el.El(el.Section, children...))
+			children := append([]pe.Node{headings[b.Level](pe.Text(b.Title))}, renderBlocks(b.Children)...)
+			out = append(out, pe.Section(children...))
 		case tinymarkdown.Paragraph:
-			out = append(out, el.El(el.P, el.Text(b.Text)))
+			out = append(out, pe.P(pe.Text(b.Text)))
 		case tinymarkdown.List:
-			items := make([]el.Node, 0, len(b.Items))
+			items := make([]pe.Node, 0, len(b.Items))
 			for _, it := range b.Items {
-				items = append(items, el.El(el.Li, el.Text(it)))
+				items = append(items, pe.Text(it))
 			}
-			out = append(out, el.El(el.Ul, items...))
+			out = append(out, pe.List(items...))
 		case tinymarkdown.CodeBlock:
-			out = append(out, el.El(el.Pre, el.Text(b.Code)))
+			out = append(out, pe.Pre(b.Code))
 		}
 	}
 	return out

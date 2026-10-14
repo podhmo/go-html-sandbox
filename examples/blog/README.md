@@ -1,8 +1,10 @@
 # blog
 
-A mobile-first, server-side rendered blog built on `pkg/el`,
+A mobile-first, server-side rendered blog built on `pkg/picoel`,
 `pkg/tinymarkdown`, and `pkg/tinyfrontmatter`. It uses only the Go standard
-library: there is no template engine, no CSS build step, and no JavaScript.
+library: there is no template engine, no JavaScript, and no CSS of its own.
+Styling is [pico.css v2](https://picocss.com/docs) alone, loaded from a CDN;
+pages are made of semantic elements and pico's `container` class.
 Posts and the favicon are embedded with `go:embed`, so the binary is all you
 need to run it.
 
@@ -77,8 +79,7 @@ title, or an unknown front matter key stop the server at startup.
 | `main.go` | Flags, embedding, startup |
 | `posts.go` | Loading posts from an `fs.FS` |
 | `server.go` | Routing, rendering, error pages, panic recovery |
-| `views.go` | Pages built as `el.Node` trees, OGP tags |
-| `style.go` | The inline CSS |
+| `views.go` | Pages built from `pkg/picoel`, OGP tags |
 
 ## Testing
 

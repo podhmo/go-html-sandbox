@@ -3,6 +3,7 @@
 Classic server-side rendered HTML with the Go standard library only.
 
 - `pkg/el` — HTML as plain data, rendered by a `Renderer` ([design](docs/ja/design.md))
+- `pkg/picoel` — the [pico.css v2](https://picocss.com/docs) building blocks the blog needs, on top of `pkg/el`
 - `pkg/tinymarkdown` — a tiny Markdown parser (sections, lists, paragraphs, code blocks)
 - `pkg/tinyfrontmatter` — splits a `---` block of `key: value` lines from a document
 - `examples/blog` — a mobile-first blog built on the above ([README](examples/blog/README.md), [sketch](docs/sketch/ja/blog.md))

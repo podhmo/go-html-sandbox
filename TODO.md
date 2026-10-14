@@ -11,7 +11,7 @@ This file tracks actionable tasks only; completed work is swept to
 
 ## To Be Implemented
 
-- [ ] **`pkg/picoel`: pico.css v2 building blocks for the blog**: add a
+- [x] **`pkg/picoel`: pico.css v2 building blocks for the blog**: add a
   package with only the elements the blog needs, built on `pkg/el` and
   following the rules in `../podhmo.github.io/ui/pico/README.md` (no custom
   classes or CSS, semantic elements first, `.container` on

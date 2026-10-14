@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/podhmo/go-html-sandbox/pkg/el"
+	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 )
 
 // renderer is the single place that picks the output format.
-var renderer el.Renderer = el.HTMLRenderer{}
+var renderer pe.Renderer = pe.HTMLRenderer{}
 
 type server struct {
 	baseURL string // absolute, without a trailing slash
@@ -69,7 +69,7 @@ func handleFavicon(w http.ResponseWriter, r *http.Request) {
 }
 
 // page renders n with status 200, or an error page if rendering fails.
-func page(w http.ResponseWriter, r *http.Request, n el.Node) {
+func page(w http.ResponseWriter, r *http.Request, n pe.Node) {
 	if err := render(w, http.StatusOK, n); err != nil {
 		renderError(w, r, http.StatusInternalServerError, "Something went wrong.", err)
 	}
@@ -107,10 +107,10 @@ func recoverer(h http.Handler) http.Handler {
 
 // render writes a full HTML document. It renders into a buffer first so that
 // nothing is sent until rendering has succeeded.
-func render(w http.ResponseWriter, status int, n el.Node) error {
+func render(w http.ResponseWriter, status int, n pe.Node) error {
 	var b bytes.Buffer
 	b.WriteString("<!doctype html>\n")
-	if err := el.Render(&b, n, renderer); err != nil {
+	if err := pe.Render(&b, n, renderer); err != nil {
 		return err
 	}
 	h := w.Header()

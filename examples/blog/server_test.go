@@ -8,7 +8,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/podhmo/go-html-sandbox/pkg/el"
+	pe "github.com/podhmo/go-html-sandbox/pkg/picoel"
 )
 
 func newTestServer(t *testing.T, fsys fstest.MapFS) http.Handler {
@@ -62,6 +62,21 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestPicoOnly(t *testing.T) {
+	_, body := get(t, newTestServer(t, testPosts), "/posts/hello")
+	if !strings.Contains(body, `<link rel="stylesheet" href="`+pe.StylesheetURL+`">`) {
+		t.Error("missing pico stylesheet")
+	}
+	if strings.Contains(body, "<style") || strings.Contains(body, " style=") {
+		t.Error("want no custom CSS")
+	}
+	for _, want := range []string{`<header class="container">`, `<main class="container">`, `<footer class="container">`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body does not contain %q", want)
+		}
+	}
+}
+
 func TestPost(t *testing.T) {
 	res, body := get(t, newTestServer(t, testPosts), "/posts/hello")
 	if res.StatusCode != http.StatusOK {
@@ -84,7 +99,7 @@ func TestPostPageText(t *testing.T) {
 		t.Fatal(err)
 	}
 	var b strings.Builder
-	if err := el.Render(&b, postPage("https://example.com", posts[0]), el.PlainRenderer{}); err != nil {
+	if err := pe.Render(&b, postPage("https://example.com", posts[0]), pe.PlainRenderer{}); err != nil {
 		t.Fatal(err)
 	}
 	want := `Hello <script> - blog
