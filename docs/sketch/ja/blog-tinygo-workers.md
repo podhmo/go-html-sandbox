@@ -136,6 +136,17 @@ examples/blog/
 - 記事はディレクトリをそのままにして、`posts/embed.go` でパッケージにした。`go:embed` は親ディレクトリを参照できないので、別モジュール（や別パッケージ）から記事を使うにはこの形が要る。`-debug` は今までどおり `examples/blog/posts` を読み、`embed.go` は `*.md` の glob に掛からないので問題ない。
 - 代償は差分の大きさ（20 ファイル、+295/-105。ほとんどはファイルの移動と識別子の export）。`Post`、`Doc`、`LoadPosts`、`LoadDocs`、`NewServer`、`Server`、`Server.EnableLiveReload`、`Server.Watch`、`Source{FS, Paths}`、`DocSources`、`EmbeddedSources` を export した。
 
+### `replace` ではなく `go.work` を使う場合
+
+`examples/blog/workers/go.mod` の `require` + `replace ../../..` の代わりに、ルートに `go.work`（`use .` と `use ./examples/blog/workers`）を置く形も試した。
+
+- `go.work` があれば、`workers/go.mod` からルートモジュールの `require` を消しても、`go build` と `tinygo build` の両方が通る。ルートで `go test ./...`／`go vet ./...` を実行しても、`workers` のパッケージは対象にならない（`go list ./...` で確認）。
+- `require` を残して `replace` だけを消すと、`go.work` があっても `v0.0.0` を取りに行って失敗した。
+- `go.work` がないとき（`GOWORK=off`、または clone した直後）はビルドできない。`.gitignore` が `go.work` を無視しているので、コミットしない運用とは合わない。
+- `go mod tidy` は `go.work` を見ないので、`workers` で実行すると proxy から公開済みのルートモジュールを取ってきて、`internal/site` がないと言って失敗する。
+
+このため `replace` を残すのがよい。`replace` があれば、モジュール単体で `go mod tidy` もビルドも完結する。エディタ（gopls）で両方のモジュールをまとめて開きたいときに、各自が手元で `go.work` を作る（ignore されたまま）のは、`replace` と併用しても問題ない。
+
 ### `examples/blog-tiny`（兄弟）ではなく `examples/blog/workers`（入れ子）にする理由
 
 - 兄弟の `examples/blog-tiny` からは `examples/blog/internal/...` を import できない。共有部分を `examples/internal/...` に移すか、`internal` でない公開パッケージにする必要がある。入れ子にすれば、ブログに関係するものを `examples/blog` の下にまとめたまま `internal` を使える。
