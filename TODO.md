@@ -44,6 +44,13 @@ This file tracks actionable tasks only; completed work is swept to
   since the title is already a link), and strip the markup from `<title>`
   and `og:title`.
 
+- [ ] **blog: serve `TODO.md` and `docs/` again**: since the Go code moved
+  into `go/`, they sit above the module and `go:embed` cannot reach them,
+  so the root `embed.go` was dropped and `/docs/` lists nothing (the nav
+  link still shows). Decide how to bring them back, e.g. copy them into
+  the module with `go generate` before building, or read them from disk
+  in `-debug` with `-root` pointing at the repository.
+
 ### Future work
 
 - [x] **Run `examples/blog` on Cloudflare Workers with TinyGo**: split the entry

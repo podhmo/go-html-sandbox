@@ -1,6 +1,6 @@
 ---
 name: todo-md
-description: Maintaining go-html-sandbox's task tracker (TODO.md + TODO-archive.md). Use whenever you add a task, complete or partially complete one, or re-apply TODO.md changes across merges/rebases.
+description: Maintaining html-sandbox's task tracker (TODO.md + TODO-archive.md). Use whenever you add a task, complete or partially complete one, or re-apply TODO.md changes across merges/rebases.
 ---
 
 # TODO.md upkeep

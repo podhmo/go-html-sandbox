@@ -1,0 +1,13 @@
+#!/bin/sh
+# tinygo runs TinyGo in Docker, for building the Worker without installing
+# it. The repository is mounted at /src, since this module replaces
+# github.com/podhmo/html-sandbox/go with ../../.. and TinyGo has to see both. Put this
+# directory first on PATH: PATH="$PWD/bin:$PATH" npx wrangler deploy
+set -e
+image=${TINYGO_IMAGE:-tinygo/tinygo:0.43.0}
+root=$(git rev-parse --show-toplevel)
+rel=$(pwd -P)
+rel=${rel#"$root"}
+exec docker run --rm -v "$root":/src -w "/src$rel" \
+	-v tinygo-cache:/root/.cache -v tinygo-gomod:/go/pkg/mod \
+	-u root "$image" tinygo "$@"
