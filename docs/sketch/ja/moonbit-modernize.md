@@ -9,6 +9,7 @@ skill はこのリポジトリにも個人の環境にもインストールせ�
 ## 結論
 
 - 15 種類の書き換えを、それぞれ 1 コミットにして適用した。挙動は変えていない。各コミットの後で `moon fmt`、wasm-gc と native の両方での `moon check --deny-warn`、`moon test`（24 件）を通し、最後に `make check` も通した。
+- 最初のパスでは、handbook の `language-changes-catalog` にある 2 つの参照文書を読んでいなかった。後から照合し、さらに 8 種類を適用した（「追記: language-changes-catalog との照合」の節）。
 - コードは移植したばかりで、もともとかなり今風に書かれていた。opt-in の警告で見つかった書き換えは 2 種類（6 箇所）だけで、残りはすべて、警告の出ない慣習（skill の catalog と grep）から見つけた。
 - 公開 API が変わったのは `compare` パッケージ（引数のラベルと `Report` の可視性）と `site` パッケージ（`Response` の可視性）だけ。`pkg.generated.mbti` の diff がそのまま API の変更点になっている。
 - 「適用できる」と「適用すべき」は別、という skill の判断基準に従い、読みにくくなるものは見送った（「見送ったもの」の節）。
@@ -146,3 +147,45 @@ modernize のコミットでは、`[:]` を削り、`strip_prefix` の結果を 
 公開 API に、doc コメント中のテスト（`mbt check` のコードブロック）はない。
 テストはすべて、Go のテストケースを移したブラックボックステスト（`*_test.mbt`）になっている。
 modernize で変えた公開 API（`compare` のラベル、`Response` と `Report` の可視性）は README に書かれておらず、README を直す必要はなかった。
+
+## 追記: language-changes-catalog との照合
+
+最初のパスは、`moonbit-modernize` と `moonbit-modernize-explore` の SKILL.md にある catalog、opt-in の警告、grep だけを手がかりにしていた。
+`moonbit-modernize` は自分の catalog を「前回うまくいったものの標本で、全体ではない」と書いている。それにもかかわらず、全体にあたる `language-changes-catalog` の 2 つの参照文書は読んでいなかった。
+
+- `references/language-changes.md`: release notes から集めた「問題意識 → 言語機能」の catalog。
+- `references/about-idiomatic-code.md`: 知識の階層の整理と、個人ポリシー。
+
+そこで、この 2 つを読み、テーマ別 catalog の項目と個人ポリシーをひとつずつコードに当てはめた。
+構文は、スクラッチのモジュールで今の toolchain（moon 0.1.20261012）でも通ることを確かめてから使った。
+
+### 適用したもの
+
+| commit | catalog の項目 | 内容 |
+| --- | --- | --- |
+| 2037cdd | 型・値「`const`」 | `tinymarkdown` の `fence`、`max_level`、`spaces` を `const` の `FENCE`、`MAX_LEVEL`、`SPACES` に |
+| 965597e | パターンマッチング「配列パターンの `..rest`」 | `parse_table` の `lines[0]`、`lines[1]`、`lines[2:]` を `guard lines is [header, delim, .. body]` に |
+| 36912bc | パターンマッチング「文字列パターン」 | リストの行を `trimmed is [.. "- ", .. rest]` で、両端の空白を落とすコードスパンを `s is [' ', .. inner, ' ']` で判定 |
+| a955ed2 | ループ「`for x in expr`」 | テストの `for c in cases { let (name, src, want) = c` を `for (name, src, want) in cases` に |
+| 8f443d2 | ループ「リスト内包」 | `posts` のテストの `.iter().map(f => f.0).collect()` を `[for f in @posts.files => f.0]` に |
+| b81b058 | エラー処理「Result 化」と個人ポリシー「raise が既定」 | `compare/cmd` の `fetch` を raise する関数にし、失敗をデータとして残す `try_fetch` を `Ok(fetch(url)) catch { e => Err(..) }` の薄い層として分けた。閉じたポートに向けて CLI を実行し、両側の失敗が報告されることを確かめた |
+| 1990fe1 | メソッド「外部型へのローカルメソッド」 | `el` の `escape_to(sb, s)` と `site` の `write_escaped(sb, s)` を、パッケージ内だけの `StringBuilder::write_escaped` に |
+| 5a9d51b | 文字列「補間」 | `compare` の `header + details.to_string()` と、`tinymarkdown` のリスト項目の継続行の `+` 連結を、テンプレート文字列に |
+
+### 当てはまらなかったもの、見送ったもの
+
+- **正規表現（`lexscan`、`=~`）:** `tinymarkdown` のインライン解析は、トークナイザとして書き直せる。ただし Go 版と同じ挙動の移植が目的で、書き直しが大きいので見送った。
+- **`<?`、カスケード `..`、ラベル付きブロック、`[| .. |]`、`extenum`、ローカル型、phantom type、ビット列パターン、`defer` / `errdefer`、`suberror`、`#non_exhaustive`、FFI の注釈:** どれも使う場面がなかった。
+- **`fn Type::Type`:** 構築用の関数は、名前空間付きの `Response::html` しかない。
+- **`#as_free_fn`:** 最初のパスでメソッドにした関数は、どれもパッケージ内に閉じていて、移行させる呼び出し元がない。
+- **`ReadOnlyArray` / `FixedArray`:** `prefer_readonly_array` / `prefer_fixed_array` の警告は出なかった。
+- **`trim_space` のローカルメソッド化:** `StringView` のメソッドにすると、`String` の値から呼ぶときに変換が要るので見送った。
+- **`|` と `>` の行の判定:** 束縛する値がないので、`has_prefix` の方が読みやすい。
+- **個人ポリシー「主要な引数以外はラベル付きにする」との差:** 最初のパスでは、`el(name, children)` の `children` のような、役割の明らかな第 2 引数を位置引数のまま残した（`escape_to(sb, s)` はメソッド `sb.write_escaped(s)` になり、self の直後は位置引数でよいという精緻化の側に入った）。個人ポリシーはこれもラベル付きにする側なので、方針が分かれている。`el` は HTML を組み立てる DSL で、ノードごとに `children=` が入ると読みにくいため、そのままにしている。
+- **`mbt check` の doc テスト:** 「テストとドキュメント」の節のとおり、まだない。
+
+### 気づいたこと
+
+- catalog の多くは、警告ではなく「この問題にはこの機能がある」という当たりを付けるための知識だった。今回適用した 8 種類は、どれも警告が出ない。
+- 文字列パターンは `Char` 単位でマッチし、`s[i]` は UTF-16 のコード単位を返す。今回の対象（`'- '`、`' '`）は ASCII なので両者は一致する。ASCII 以外の文字を扱う箇所に使うときは、この違いに注意がいる。
+- 配列への複合代入 `items[i] += ".."` も、今の toolchain で書けた。
