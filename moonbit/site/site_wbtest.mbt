@@ -73,8 +73,8 @@ test "path helpers match Go's path package" {
     ("../../x", "../../x"),
     ("/", "/"),
   ]
-  for c in cases {
-    assert_eq(clean(c.0), c.1, msg="clean(\{c.0})")
+  for (p, want) in cases {
+    assert_eq(clean(p), want, msg="clean(\{p})")
   }
   assert_eq(dir("TODO.md"), ".")
   assert_eq(dir("docs/ja/design.md"), "docs/ja")

@@ -376,17 +376,17 @@ test "post markdown" {
 test "doc markdown" {
   let s = new_site(test_posts)
   for
-    c in [
+    (path, want) in [
       ("/docs/TODO.md", test_docs[0].1),
       ("/docs/ja/design.md", test_docs[1].1),
     ] {
-    let res = s.render(c.0)
-    assert_eq(res.status, 200, msg=c.0)
-    assert_eq(res.body, c.1, msg=c.0)
+    let res = s.render(path)
+    assert_eq(res.status, 200, msg=path)
+    assert_eq(res.body, want, msg=path)
     assert_eq(
       header(res, "content-type"),
       Some("text/markdown; charset=utf-8"),
-      msg=c.0,
+      msg=path,
     )
   }
   assert_contains(body(s, "/docs/nope.md", want=404), ["Document not found."])
@@ -401,14 +401,12 @@ test "more not found pages" {
     ("/posts/hello/extra.md", "Page not found."),
     ("/posts/", "Page not found."),
   ]
-  for c in cases {
-    let res = s.render(c.0)
-    assert_eq(res.status, 404, msg=c.0)
+  for (path, message) in cases {
+    let res = s.render(path)
+    assert_eq(res.status, 404, msg=path)
     assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
     assert_contains(res.body, [
-      "<h1>404 Not Found</h1>",
-      c.1,
-      "<a href=\"/\">Back to all posts</a>",
+      "<h1>404 Not Found</h1>", message, "<a href=\"/\">Back to all posts</a>",
     ])
   }
 }

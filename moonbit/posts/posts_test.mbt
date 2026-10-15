@@ -1,6 +1,6 @@
 ///|
 test "every post is embedded with its file name" {
-  let names = [ for f in @posts.files => f.0 ]
+  let names = [ for (name, _) in @posts.files => name ]
   let want = [
     "2026-10-14-hello.md", "2026-10-15-tinymarkdown.md", "2026-10-16-mobile-first.md",
     "2026-10-17-workers-wasm.md",
@@ -12,7 +12,7 @@ test "every post is embedded with its file name" {
 
 ///|
 test "files are sorted by name and hold the whole file" {
-  let names = [ for f in @posts.files => f.0 ]
+  let names = [ for (name, _) in @posts.files => name ]
   // String::compare puts shorter strings first; file names sort by
   // characters, as go:embed does.
   assert_eq(names, names.copy()..sort_by((a, b) => a.lexical_compare(b)))
