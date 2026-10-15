@@ -28,12 +28,16 @@ build: embed
 test: embed
 	moon test
 
-## check: what to run before every commit (moon fmt, moon check on wasm-gc and native, moon test)
+## check: what to run before every commit (moon fmt, moon check on wasm-gc and native, moon test, moon info)
+# moon info has no --check; it rewrites the .mbti files, and git diff fails
+# when they differ from what is staged.
 check: embed
 	moon fmt --check
 	moon check
 	moon check --target native
 	moon test
+	moon info
+	@git diff --exit-code -- '*.mbti' || { echo 'moon info changed the .mbti files above; add them to the commit' >&2; exit 1; }
 
 ## dev: serve the Worker on localhost:PORT (default 8787), rebuilding on changes
 dev:
