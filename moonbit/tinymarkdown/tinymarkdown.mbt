@@ -158,9 +158,7 @@ fn scan(src : String) -> Array[Flat] {
         flush()
       }
       items.push(trim_space(trimmed[2:]))
-    } else if items.length() > 0 &&
-      line != trimmed &&
-      (line[0] == ' ' || line[0] == '\t') {
+    } else if items.length() > 0 && line != trimmed && line[0] is (' ' | '\t') {
       // An indented line continues the item above it.
       items[items.length() - 1] = items[items.length() - 1] + "\n" + trimmed
     } else {

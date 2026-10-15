@@ -102,7 +102,7 @@ fn link(s : String, i : Int32) -> (String, String, Int32)? {
   }
   let label = s[i + 1:j].to_owned()
   let k = for k = j + 2; k < s.length() && s[k] != ')'; k = k + 1 {
-    if s[k] == ' ' || s[k] == '\t' || s[k] == '\n' || s[k] == '(' {
+    if s[k] is (' ' | '\t' | '\n' | '(') {
       return None
     }
   } nobreak {
