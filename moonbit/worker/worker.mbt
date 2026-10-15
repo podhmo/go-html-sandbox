@@ -96,10 +96,10 @@ pub fn serve() -> Unit {
     Err(msg) => @site.Response::text(500, "\{msg}\n")
   }
   status(res.status)
-  for h in res.headers {
-    put_string(h.0)
+  for (name, value) in res.headers {
+    put_string(name)
     header_name()
-    put_string(h.1)
+    put_string(value)
     header_value()
   }
   put_string(res.body)

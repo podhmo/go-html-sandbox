@@ -32,9 +32,9 @@ fn new_site(
 
 ///|
 fn header(res : @site.Response, name : String) -> String? {
-  for h in res.headers {
-    if h.0 == name {
-      return Some(h.1)
+  for (n, v) in res.headers {
+    if n == name {
+      return Some(v)
     }
   }
   None
@@ -96,8 +96,7 @@ test "load posts errors" {
       "unknown front matter key \"titel\"",
     ),
   ]
-  for c in cases {
-    let (name, files, want) = c
+  for (name, files, want) in cases {
     let msg = try @site.load_posts(files) catch {
       LoadError(msg) => msg
     } noraise {
@@ -135,8 +134,7 @@ test "load posts front matter" {
       "Heading", "body",
     ),
   ]
-  for c in cases {
-    let (name, src, title, description) = c
+  for (name, src, title, description) in cases {
     let p = @site.load_posts([("2026-10-14-x.md", src)])[0]
     assert_eq((p.title, p.description), (title, description), msg=name)
   }
@@ -243,8 +241,7 @@ test "base url" {
     ("https://example.com/?q=1", ""),
     ("", ""),
   ]
-  for c in cases {
-    let (base_url, want) = c
+  for (base_url, want) in cases {
     let s = @site.Site(base_url~, posts~, docs=[]) catch {
       LoadError(_) => {
         assert_eq(want, "", msg="\{base_url}: want no error")
@@ -451,8 +448,7 @@ test "redirects" {
     ("/メモ//", "", "/%E3%83%A1%E3%83%A2/"),
     ("/docs", "a=\"<>", "/docs/?a=\"<>"),
   ]
-  for c in cases {
-    let (path, query, location) = c
+  for (path, query, location) in cases {
     let res = s.render(path, query~)
     assert_eq(res.status, 307, msg=path)
     assert_eq(header(res, "location"), Some(location), msg=path)

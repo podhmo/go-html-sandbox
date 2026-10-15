@@ -57,8 +57,7 @@ test "split" {
       "body\r\n",
     ),
   ]
-  for c in cases {
-    let (name, src, want_meta, want_body) = c
+  for (name, src, want_meta, want_body) in cases {
     let (got_meta, got_body) = @tinyfrontmatter.split(src) catch {
       SplitError(msg) => fail("\{name}: \{msg}")
     }
@@ -85,8 +84,7 @@ test "split errors" {
     ("empty key", "---\n: x\n---\n", "line 2"),
     ("duplicate key", "---\na: 1\na: 2\n---\n", "line 3: duplicate key \"a\""),
   ]
-  for c in cases {
-    let (name, src, want) = c
+  for (name, src, want) in cases {
     let msg = try @tinyfrontmatter.split(src) catch {
       SplitError(msg) => msg
     } noraise {
