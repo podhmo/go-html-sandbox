@@ -19,8 +19,23 @@ const SPACES = "\t\n\u{0B}\u{0C}\r \u{85}\u{A0}\u{1680}\u{2000}\u{2001}\u{2002}\
 /// SplitError is a malformed front matter block; the message says which
 /// line and why, as the Go version's error does.
 pub(all) suberror SplitError {
-  SplitError(String)
+  SplitError(message~ : String)
+} derive(Debug)
+
+///|
+/// output writes the message alone, so "\{e}" reads as the error text.
+pub impl Show for SplitError with fn output(self, logger) {
+  let SplitError(message~) = self
+  logger.write_string(message)
 }
+
+///|
+#deprecated("Use \"\\{e}\" or Show::to_string instead")
+pub extend SplitError with Show::{to_string, output}
+
+///|
+#deprecated("Use Debug::to_repr instead")
+pub extend SplitError with Debug::{to_repr}
 
 ///|
 /// split returns the front matter of src and the rest of the document. If
@@ -43,24 +58,26 @@ pub fn split(src : String) -> (Map[String, String]?, String) raise SplitError {
     }
     guard line.find(":") is Some(i) else {
       raise SplitError(
-        "tinyfrontmatter: line \{lineno}: want \"key: value\", got \{line.to_owned().escape()}",
+        message="tinyfrontmatter: line \{lineno}: want \"key: value\", got \{line.to_owned().escape()}",
       )
     }
     let key = line[:i].trim(chars=SPACES).to_owned()
     if key == "" {
       raise SplitError(
-        "tinyfrontmatter: line \{lineno}: want \"key: value\", got \{line.to_owned().escape()}",
+        message="tinyfrontmatter: line \{lineno}: want \"key: value\", got \{line.to_owned().escape()}",
       )
     }
     if meta.contains(key) {
       raise SplitError(
-        "tinyfrontmatter: line \{lineno}: duplicate key \{key.escape()}",
+        message="tinyfrontmatter: line \{lineno}: duplicate key \{key.escape()}",
       )
     }
     meta[key] = unquote(line[i + 1:].trim(chars=SPACES))
     continue next, lineno + 1
   } nobreak {
-    raise SplitError("tinyfrontmatter: no closing \{DELIMITER.escape()}")
+    raise SplitError(
+      message="tinyfrontmatter: no closing \{DELIMITER.escape()}",
+    )
   }
 }
 

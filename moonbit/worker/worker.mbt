@@ -73,7 +73,7 @@ fn load() -> Result[@site.Site, String] {
     Some(s) => s
     None => {
       let s = Ok(@site.Site::embedded(base_url=base_url.val)) catch {
-        LoadError(msg) => Err(msg)
+        e => Err("\{e}")
       }
       site.val = Some(s)
       s

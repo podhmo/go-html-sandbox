@@ -5,8 +5,23 @@
 /// LoadError is content that cannot be served; the message names the
 /// file and the problem, as the Go blog's errors do.
 pub(all) suberror LoadError {
-  LoadError(String)
+  LoadError(message~ : String)
+} derive(Debug)
+
+///|
+/// output writes the message alone, so "\{e}" reads as the error text.
+pub impl Show for LoadError with fn output(self, logger) {
+  let LoadError(message~) = self
+  logger.write_string(message)
 }
+
+///|
+#deprecated("Use \"\\{e}\" or Show::to_string instead")
+pub extend LoadError with Show::{to_string, output}
+
+///|
+#deprecated("Use Debug::to_repr instead")
+pub extend LoadError with Debug::{to_repr}
 
 ///|
 /// Post is one blog post loaded from a YYYY-MM-DD-slug.md file.
@@ -37,26 +52,28 @@ pub fn load_posts(
     guard name.has_suffix(".md") else { continue }
     guard post_name(name) is Some((date, slug)) else {
       raise LoadError(
-        "\{name}: file name must look like YYYY-MM-DD-slug.md (slug: a-z, 0-9, -)",
+        message="\{name}: file name must look like YYYY-MM-DD-slug.md (slug: a-z, 0-9, -)",
       )
     }
     if check_date(date) is Some(problem) {
-      raise LoadError("\{name}: parsing time \{date.escape()}: \{problem}")
+      raise LoadError(
+        message="\{name}: parsing time \{date.escape()}: \{problem}",
+      )
     }
     if seen.get(slug) is Some(prev) {
       raise LoadError(
-        "\{name}: slug \{slug.escape()} is already used by \{prev}",
+        message="\{name}: slug \{slug.escape()} is already used by \{prev}",
       )
     }
     seen[slug] = name
     let (meta, body) = @tinyfrontmatter.split(src) catch {
-      SplitError(msg) => raise LoadError("\{name}: \{msg}")
+      e => raise LoadError(message="\{name}: \{e}")
     }
     let meta = meta.unwrap_or(Map([]))
     for k, _ in meta {
       if !front_matter_keys.contains(k) {
         raise LoadError(
-          "\{name}: unknown front matter key \{k.escape()} (want one of [\{front_matter_keys.join(" ")}])",
+          message="\{name}: unknown front matter key \{k.escape()} (want one of [\{front_matter_keys.join(" ")}])",
         )
       }
     }
@@ -67,7 +84,7 @@ pub fn load_posts(
     }
     if title == "" {
       raise LoadError(
-        "\{name}: no title (set \"title\" in front matter or start with a \"# title\" heading)",
+        message="\{name}: no title (set \"title\" in front matter or start with a \"# title\" heading)",
       )
     }
     let description = match meta.get("description") {
@@ -227,7 +244,7 @@ pub fn load_docs(
     let p = name.strip_suffix(".md").unwrap_or(name)
     let p = p.strip_prefix("docs/").unwrap_or(p).to_owned()
     if seen.get(p) is Some(prev) {
-      raise LoadError("\{name}: /docs/\{p} is already used by \{prev}")
+      raise LoadError(message="\{name}: /docs/\{p} is already used by \{prev}")
     }
     seen[p] = name
     let doc = @tinymarkdown.parse(src)
