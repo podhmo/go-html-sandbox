@@ -15,10 +15,10 @@ fn escape_to(sb : StringBuilder, s : String) -> Unit {
 }
 
 ///|
-/// is_void reports whether elements named name have no content and no end
+/// is_void reports whether elements named self have no content and no end
 /// tag.
-fn is_void(name : Tag) -> Bool {
-  match name.0 {
+fn Tag::is_void(self : Tag) -> Bool {
+  match self.0 {
     "area"
     | "base"
     | "br"
@@ -37,15 +37,16 @@ fn is_void(name : Tag) -> Bool {
 }
 
 ///|
-/// is_attr reports whether n belongs in a start tag rather than in content.
-fn is_attr(n : Node) -> Bool {
-  n is (Attr(_) | BoolAttr(_))
+/// is_attr reports whether self belongs in a start tag rather than in
+/// content.
+fn Node::is_attr(self : Node) -> Bool {
+  self is (Attr(_) | BoolAttr(_))
 }
 
 ///|
-/// write_html writes n to sb as HTML5.
-fn write_html(sb : StringBuilder, n : Node) -> Unit {
-  match n {
+/// write_html writes self to sb as HTML5.
+fn Node::write_html(self : Node, sb : StringBuilder) -> Unit {
+  match self {
     Text(s) => escape_to(sb, s)
     Raw(s) => sb.write_string(s)
     Attr(AttrName(k), v) => {
@@ -57,17 +58,17 @@ fn write_html(sb : StringBuilder, n : Node) -> Unit {
     Element(name, children) => {
       sb <+ "<\{name.0}"
       for c in children {
-        if is_attr(c) {
-          write_html(sb, c)
+        if c.is_attr() {
+          c.write_html(sb)
         }
       }
       sb.write_char('>')
-      if is_void(name) {
+      if name.is_void() {
         return
       }
       for c in children {
-        if !is_attr(c) {
-          write_html(sb, c)
+        if !c.is_attr() {
+          c.write_html(sb)
         }
       }
       sb <+ "</\{name.0}>"
@@ -80,15 +81,15 @@ fn write_html(sb : StringBuilder, n : Node) -> Unit {
 /// Raw is written as is.
 pub fn render_html(n : Node) -> String {
   let sb = StringBuilder()
-  write_html(sb, n)
+  n.write_html(sb)
   sb.to_string()
 }
 
 ///|
-/// is_block reports whether render_plain puts elements named name on their
+/// is_block reports whether render_plain puts elements named self on their
 /// own lines.
-fn is_block(name : Tag) -> Bool {
-  match name.0 {
+fn Tag::is_block(self : Tag) -> Bool {
+  match self.0 {
     "address"
     | "article"
     | "aside"
@@ -155,18 +156,18 @@ fn LineWriter::break_line(self : LineWriter) -> Unit {
 }
 
 ///|
-/// write_plain writes the text content of n to w.
-fn write_plain(w : LineWriter, n : Node) -> Unit {
-  match n {
+/// write_plain writes the text content of self to w.
+fn Node::write_plain(self : Node, w : LineWriter) -> Unit {
+  match self {
     Text(s) => w.write(s)
     Raw(_) | Attr(_) | BoolAttr(_) => ()
     Element(name, children) => {
-      let block = is_block(name)
+      let block = name.is_block()
       if block {
         w.break_line()
       }
       for c in children {
-        write_plain(w, c)
+        c.write_plain(w)
       }
       if block {
         w.break_line()
@@ -183,6 +184,6 @@ fn write_plain(w : LineWriter, n : Node) -> Unit {
 /// tests that check what a page says.
 pub fn render_plain(n : Node) -> String {
   let w = LineWriter::{ sb: StringBuilder(), at_line_start: true, }
-  write_plain(w, n)
+  n.write_plain(w)
   w.sb.to_string()
 }

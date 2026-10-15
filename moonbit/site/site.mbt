@@ -38,8 +38,8 @@ pub(all) struct Response {
 }
 
 ///|
-/// html_response wraps an HTML page with status.
-fn html_response(status : Int32, body : String) -> Response {
+/// Response::html wraps an HTML page with status.
+fn Response::html(status : Int32, body~ : String) -> Response {
   { status, headers: [("content-type", "text/html; charset=utf-8")], body, }
 }
 
@@ -51,7 +51,7 @@ pub fn render(path : String) -> Response {
   match path {
     "/" => {
       page(sb, "blog", sb => sb <+ "<h1>blog</h1><p>Rendered with MoonBit.</p>")
-      html_response(200, sb.to_string())
+      Response::html(200, body=sb.to_string())
     }
     _ => {
       page(sb, "Not found | blog", sb => {
@@ -59,7 +59,7 @@ pub fn render(path : String) -> Response {
         write_escaped(sb, path)
         sb <+ "</code>.</p>"
       })
-      html_response(404, sb.to_string())
+      Response::html(404, body=sb.to_string())
     }
   }
 }
