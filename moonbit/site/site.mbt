@@ -4,11 +4,11 @@
 fn write_escaped(sb : StringBuilder, s : String) -> Unit {
   for c in s {
     match c {
-      '<' => sb.write_string("&lt;")
-      '>' => sb.write_string("&gt;")
-      '&' => sb.write_string("&amp;")
-      '"' => sb.write_string("&quot;")
-      '\'' => sb.write_string("&#39;")
+      '<' => sb <+ "&lt;"
+      '>' => sb <+ "&gt;"
+      '&' => sb <+ "&amp;"
+      '"' => sb <+ "&quot;"
+      '\'' => sb <+ "&#39;"
       _ => sb.write_char(c)
     }
   }
@@ -21,13 +21,12 @@ fn page(
   title : String,
   body : (StringBuilder) -> Unit,
 ) -> Unit {
-  sb.write_string(
-    "<!doctype html>\n<html lang=\"ja\"><head><meta charset=\"utf-8\"><title>",
-  )
+  sb <+
+    "<!doctype html>\n<html lang=\"ja\"><head><meta charset=\"utf-8\"><title>"
   write_escaped(sb, title)
-  sb.write_string("</title></head><body>")
+  sb <+ "</title></head><body>"
   body(sb)
-  sb.write_string("</body></html>")
+  sb <+ "</body></html>"
 }
 
 ///|
@@ -51,16 +50,14 @@ pub fn render(path : String) -> Response {
   let sb = StringBuilder()
   match path {
     "/" => {
-      page(sb, "blog", sb => {
-        sb.write_string("<h1>blog</h1><p>Rendered with MoonBit.</p>")
-      })
+      page(sb, "blog", sb => sb <+ "<h1>blog</h1><p>Rendered with MoonBit.</p>")
       html_response(200, sb.to_string())
     }
     _ => {
       page(sb, "Not found | blog", sb => {
-        sb.write_string("<h1>Not found</h1><p>No page at <code>")
+        sb <+ "<h1>Not found</h1><p>No page at <code>"
         write_escaped(sb, path)
-        sb.write_string("</code>.</p>")
+        sb <+ "</code>.</p>"
       })
       html_response(404, sb.to_string())
     }

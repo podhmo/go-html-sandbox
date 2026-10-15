@@ -4,11 +4,11 @@
 fn escape_to(sb : StringBuilder, s : String) -> Unit {
   for c in s {
     match c {
-      '<' => sb.write_string("&lt;")
-      '>' => sb.write_string("&gt;")
-      '&' => sb.write_string("&amp;")
-      '\'' => sb.write_string("&#39;")
-      '"' => sb.write_string("&#34;")
+      '<' => sb <+ "&lt;"
+      '>' => sb <+ "&gt;"
+      '&' => sb <+ "&amp;"
+      '\'' => sb <+ "&#39;"
+      '"' => sb <+ "&#34;"
       _ => sb.write_char(c)
     }
   }
@@ -49,13 +49,13 @@ fn write_html(sb : StringBuilder, n : Node) -> Unit {
     Text(s) => escape_to(sb, s)
     Raw(s) => sb.write_string(s)
     Attr(AttrName(k), v) => {
-      sb.write_string(" \{k}=\"")
+      sb <+ " \{k}=\""
       escape_to(sb, v)
       sb.write_char('"')
     }
-    BoolAttr(AttrName(k)) => sb.write_string(" \{k}")
+    BoolAttr(AttrName(k)) => sb <+ " \{k}"
     Element(name, children) => {
-      sb.write_string("<\{name.0}")
+      sb <+ "<\{name.0}"
       for c in children {
         if is_attr(c) {
           write_html(sb, c)
@@ -70,7 +70,7 @@ fn write_html(sb : StringBuilder, n : Node) -> Unit {
           write_html(sb, c)
         }
       }
-      sb.write_string("</\{name.0}>")
+      sb <+ "</\{name.0}>"
     }
   }
 }
