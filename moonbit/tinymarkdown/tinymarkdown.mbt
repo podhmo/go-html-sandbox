@@ -64,21 +64,21 @@ pub extend Block with Eq::{not_equal, equal}
 pub extend Block with Debug::{to_repr}
 
 ///|
-let fence = "```"
+const FENCE = "```"
 
 ///|
-/// max_level is the deepest heading level recognized.
-let max_level = 5
+/// MAX_LEVEL is the deepest heading level recognized.
+const MAX_LEVEL = 5
 
 ///|
-/// spaces are the characters Go's unicode.IsSpace accepts, so trimming
+/// SPACES are the characters Go's unicode.IsSpace accepts, so trimming
 /// matches strings.TrimSpace.
-let spaces = "\t\n\u{0B}\u{0C}\r \u{85}\u{A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}"
+const SPACES = "\t\n\u{0B}\u{0C}\r \u{85}\u{A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}"
 
 ///|
 /// trim_space is Go's strings.TrimSpace.
 fn trim_space(s : StringView) -> String {
-  s.trim(chars=spaces).to_owned()
+  s.trim(chars=SPACES).to_owned()
 }
 
 ///|
@@ -133,7 +133,7 @@ fn scan(src : String) -> Array[Flat] {
     let line = raw.strip_suffix("\r").unwrap_or(raw).to_owned()
     let trimmed = trim_space(line)
     if in_code {
-      if trimmed == fence {
+      if trimmed == FENCE {
         out.push(Block(CodeBlock(code.join("\n"))))
         code.clear()
         in_code = false
@@ -142,7 +142,7 @@ fn scan(src : String) -> Array[Flat] {
       }
       continue
     }
-    if trimmed.has_prefix(fence) {
+    if trimmed.has_prefix(FENCE) {
       flush()
       in_code = true
     } else if trimmed == "" {
@@ -244,7 +244,7 @@ fn is_delimiter(c : String) -> Bool {
 ///|
 fn is_heading(line : String) -> Bool {
   let n = line.length() - line.trim_start(chars="#").length()
-  1 <= n && n <= max_level && n < line.length() && line[n] == ' '
+  1 <= n && n <= MAX_LEVEL && n < line.length() && line[n] == ' '
 }
 
 ///|
