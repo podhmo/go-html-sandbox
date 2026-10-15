@@ -241,10 +241,7 @@ fn is_delimiter(c : String) -> Bool {
 
 ///|
 fn is_heading(line : String) -> Bool {
-  let mut n = 0
-  while n < line.length() && line[n] == '#' {
-    n += 1
-  }
+  let n = line.length() - line.trim_start(chars="#").length()
   1 <= n && n <= max_level && n < line.length() && line[n] == ' '
 }
 
