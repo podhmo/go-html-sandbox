@@ -116,7 +116,7 @@
   `String` を受け取るので、呼び出し側が先に `to_owned()` している。
   `StringView` を受け取るようにして、構文木に入れるときだけコピーする。
   [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「view 型とコピー」を参照。
-- [ ] **`moonbit/compare` のテストの抜けを埋める**: 改行も `>` もない末尾の
+- [x] **`moonbit/compare` のテストの抜けを埋める**: 改行も `>` もない末尾の
   断片、`\r` と `\t` の表示、MoonBit 側だけの取得失敗をテストする。
   [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「テストとドキュメント」を参照。
 - [ ] **`moonbit/` で opt-in の警告を有効にするか決める**: `moonc check -warn-help`
