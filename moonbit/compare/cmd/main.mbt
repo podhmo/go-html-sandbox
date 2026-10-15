@@ -1,14 +1,19 @@
 ///|
-/// fetch gets url and keeps what the comparison looks at, or why the
-/// request failed. Redirects are not followed, so they compare as they are.
-async fn fetch(url : String) -> Result[@compare.Fetched, String] {
-  try {
-    let (res, body) = @http.get(url)
-    let content_type = res.headers
-      .get(@http.CaseInsensitiveString("content-type"))
-      .unwrap_or("")
-    Ok({ status: res.code, content_type, body: body.text(), })
-  } catch {
+/// fetch gets url and keeps what the comparison looks at. Redirects are
+/// not followed, so they compare as they are.
+async fn fetch(url : String) -> @compare.Fetched {
+  let (res, body) = @http.get(url)
+  let content_type = res.headers
+    .get(@http.CaseInsensitiveString("content-type"))
+    .unwrap_or("")
+  { status: res.code, content_type, body: body.text(), }
+}
+
+///|
+/// try_fetch is fetch with the failure kept as data: compare reports why a
+/// side failed instead of stopping.
+async fn try_fetch(url : String) -> Result[@compare.Fetched, String] {
+  Ok(fetch(url)) catch {
     e => Err(e.to_string())
   }
 }
@@ -59,8 +64,8 @@ async fn main {
   }
   let reports = []
   for path in paths {
-    let go = fetch(@compare.join_url(go_base, path~))
-    let moonbit = fetch(@compare.join_url(moonbit_base, path~))
+    let go = try_fetch(@compare.join_url(go_base, path~))
+    let moonbit = try_fetch(@compare.join_url(moonbit_base, path~))
     let report = @compare.compare(path, go~, moonbit~, max_lines~)
     @stdio.stdout.write(report.text)
     reports.push(report)
