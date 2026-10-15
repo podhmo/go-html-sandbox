@@ -215,3 +215,21 @@ handbook の modernize は、2 段階に分かれている。
 - 外部型へのローカルメソッド。
 
 `moon fmt` が長い `<+` の右辺を次の行に送る件は、見た目だけの話で Pitfalls の選定基準に合わないので、入れていない。
+
+## 追記: opt-in の警告を `moon.mod` で有効にした
+
+`moonc check -warn-help` で `off` の警告を 1 つずつ `moon.mod` の `warnings` に入れ、`moon check --target all` で数えた（moon 0.1.20261012）。
+件数があったのは `unnecessary_annotation`（148 件）と `missing_doc`（118 件）だけで、ほかは 0 件だった。
+
+次の 8 つを `warnings` に入れた。今は 0 件なので、普段の `moon check` で新しく書いたコードの書き換えの候補だけが見える。
+
+- `unnecessary_view_op`、`unqualified_record`、`unqualified_local_using`
+- `unused_optional_argument`、`unused_default_value`
+- `result_error_return`、`ambiguous_range_direction`、`deprecated_for_in_method`
+
+入れなかったもの:
+
+- `unnecessary_annotation`: `@pkg.` を残す方針なので。
+- `missing_doc`: 公開していない補助関数にも doc を求めることになるので。
+- `prefer_readonly_array`、`prefer_fixed_array`: 移植では Go のスライスを `Array` のまま持つので。
+- `missing_invariant`、`missing_reasoning`、`declaration_implemented`: 手順の 3 と同じ理由で。

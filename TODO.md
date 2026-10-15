@@ -119,7 +119,7 @@
 - [x] **`moonbit/compare` のテストの抜けを埋める**: 改行も `>` もない末尾の
   断片、`\r` と `\t` の表示、MoonBit 側だけの取得失敗をテストする。
   [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「テストとドキュメント」を参照。
-- [ ] **`moonbit/` で opt-in の警告を有効にするか決める**: `moonc check -warn-help`
+- [x] **`moonbit/` で opt-in の警告を有効にするか決める**: `moonc check -warn-help`
   で `off` になっている警告（`unnecessary_view_op`、`unqualified_record` など）を
   `moon.mod` の `warnings` に入れれば、普段の `moon check` で書き換えの候補が
   見える。`unnecessary_annotation` は `@pkg.` を残す方針なので入れない。
