@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "podhmo/blog/site"
+
+// Values
+pub fn render(String) -> Response
+
+// Errors
+
+// Types and methods
+pub(all) struct Response {
+  status : Int
+  headers : Array[(String, String)]
+  body : String
+}
+
+// Type aliases
+
+// Traits

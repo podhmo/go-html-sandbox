@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "podhmo/blog/worker"
+
+// Values
+pub fn path_push(Int) -> Unit
+
+pub fn serve() -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "podhmo/blog/tinymarkdown"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn inlines(String) -> Array[Inline]
+
+pub fn parse(String) -> Document
+
+// Errors
+
+// Types and methods
+pub(all) enum Block {
+  Section(level~ : Int, title~ : String, children~ : Array[Block])
+  Paragraph(String)
+  List(Array[String])
+  Quote(Array[Block])
+  Table(header~ : Array[String], rows~ : Array[Array[String]])
+  CodeBlock(String)
+} derive(Eq, @debug.Debug)
+pub fn Block::equal(Self, Self) -> Bool
+pub fn Block::not_equal(Self, Self) -> Bool
+pub fn Block::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Document {
+  children : Array[Block]
+} derive(Eq, @debug.Debug)
+pub fn Document::equal(Self, Self) -> Bool
+pub fn Document::not_equal(Self, Self) -> Bool
+pub fn Document::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Inline {
+  Text(String)
+  Code(String)
+  Link(children~ : Array[Inline], url~ : String)
+} derive(Eq, @debug.Debug)
+pub fn Inline::equal(Self, Self) -> Bool
+pub fn Inline::not_equal(Self, Self) -> Bool
+pub fn Inline::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits
