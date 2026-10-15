@@ -3,15 +3,6 @@
 What a fresh environment (such as a Claude Code cloud session) needs
 before working on this repository.
 
-## Git identity
-
-Every commit must use this identity:
-
-```sh
-git config user.name podhmo
-git config user.email ababjam61+github@gmail.com
-```
-
 ## MoonBit toolchain
 
 ```sh
