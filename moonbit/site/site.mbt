@@ -48,10 +48,9 @@ pub fn Site::Site(
   docs~ : Array[Doc],
 ) -> Site raise LoadError {
   let origin = base_url.strip_suffix("/").unwrap_or(base_url)
-  let host = if origin.strip_prefix("https://") is Some(h) {
-    h
-  } else {
-    origin.strip_prefix("http://").unwrap_or("")
+  let host = match origin {
+    [.. "https://", .. h] | [.. "http://", .. h] => h
+    _ => ""
   }
   if host == "" || host.contains_any(chars="/?#") {
     raise LoadError(

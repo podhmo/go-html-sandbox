@@ -71,10 +71,10 @@ fn parse_ref(raw : String) -> Ref? {
       return None
     }
   }
-  let rest = if rest.has_prefix("//") &&
-    (scheme != "" || !rest.has_prefix("///")) {
-    match rest[2:].find("/") {
-      Some(i) => rest[2 + i:]
+  let rest = if rest is [.. "//", .. after] &&
+    (scheme != "" || !after.has_prefix("/")) {
+    match after.find("/") {
+      Some(i) => after[i:]
       None => ""
     }
   } else {
