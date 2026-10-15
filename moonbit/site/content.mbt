@@ -214,12 +214,10 @@ pub fn load_docs(
 ) -> Array[Doc] raise LoadError {
   let sources = []
   for root in doc_sources {
-    let found = files
-      .iter()
-      .filter(f => {
-        f.0.has_suffix(".md") && (f.0 == root || f.0.has_prefix("\{root}/"))
-      })
-      .to_array()
+    let found = [
+      for f in files if f.0.has_suffix(".md") &&
+      (f.0 == root || f.0.has_prefix("\{root}/")) => f
+    ]
     found.sort_by((a, b) => walk_order(a.0, b.0))
     sources.push_iter(found.iter())
   }
