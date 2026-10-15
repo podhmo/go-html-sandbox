@@ -48,6 +48,7 @@ pub struct Site {
   by_slug : Map[String, Post]
   by_file : Map[String, Post]
   docs : Array[Doc]
+  by_path : Map[String, Doc]
   by_source : Map[String, Doc]
 }
 pub fn Site::embedded(base_url~ : String) -> Self raise LoadError
