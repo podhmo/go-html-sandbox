@@ -117,11 +117,8 @@ fn link(s : String, i : Int32) -> (String, String, Int32)? {
 ///|
 /// backquotes returns the length of the run of backquotes at s[i:].
 fn backquotes(s : String, i : Int32) -> Int32 {
-  let mut j = i
-  while j < s.length() && s[j] == '`' {
-    j += 1
-  }
-  j - i
+  let rest = s[i:]
+  rest.length() - rest.trim_start(chars="`").length()
 }
 
 ///|
