@@ -187,5 +187,31 @@ modernize で変えた公開 API（`compare` のラベル、`Response` と `Repo
 ### 気づいたこと
 
 - catalog の多くは、警告ではなく「この問題にはこの機能がある」という当たりを付けるための知識だった。今回適用した 8 種類は、どれも警告が出ない。
-- 文字列パターンは `Char` 単位でマッチし、`s[i]` は UTF-16 のコード単位を返す。今回の対象（`'- '`、`' '`）は ASCII なので両者は一致する。ASCII 以外の文字を扱う箇所に使うときは、この違いに注意がいる。
+- 文字列パターンは `Char` 単位で進み、`s[i]` や `s[n:]` は UTF-16 のコード単位で数える。リテラルで判定する形（今回の `[.. "- ", .. rest]`、`[' ', .. inner, ' ']`）は、書き換えても結果が同じになる。一方、位置で数える形は変わる。`s[2:]` を `[_, _, .. rest]` にすると、BMP 外の文字が先頭にあるときに結果がずれ、警告も出ない。たとえば `"😀ab"` では、`s[2:]` は `"ab"`、パターンの `rest` は `"b"` になる（moon 0.1.20261012 で確認）。
 - 配列への複合代入 `items[i] += ".."` も、今の toolchain で書けた。
+
+## 追記: handbook に戻したもの
+
+このパスで得た知見のうち、skill に戻せるものを [podhmo/moonbit-individual-handbook#63](https://github.com/podhmo/moonbit-individual-handbook/pull/63) に draft として出した。
+
+handbook の modernize は、2 段階に分かれている。
+
+- **浅い版:** `moonbit-modernize` の catalog と警告だけで進める。
+- **深い版:** `language-changes-catalog` を見て入念に見直す。
+
+この使い分けはそのまま残し、浅い版には機械的に適用できるものだけを足した。
+
+- **`moonbit-modernize` の Pitfalls:**
+  - 3 部形式の functional-for で `continue e` に値を渡すと、更新節は実行されない。
+  - 文字列パターンは `Char` 単位で進み、添字は UTF-16 のコード単位で数える。
+- **`moonbit-modernize` の Step 2:** 深い版で見つけた書き換えのうち、設計の判断が要らないもの 6 種類（`const`、配列パターン、文字列パターン、for-in での分解、内包表記、テンプレート文字列）を足した。
+- **`moonbit-modernize` の Step 3 と `moonbit-modernize-explore`:**
+  - `moon info` を毎回実行し、`git diff --exit-code -- '*.mbti'` で確かめる。
+  - `moon ide find-references` は、`--target` を付けないと `preferred_target` しか解析しない。
+
+深い版に残したのは、設計の判断が要る 2 つ。
+
+- raise を既定にし、`Ok(..) catch` の薄い層を分けること。
+- 外部型へのローカルメソッド。
+
+`moon fmt` が長い `<+` の右辺を次の行に送る件は、見た目だけの話で Pitfalls の選定基準に合わないので、入れていない。
