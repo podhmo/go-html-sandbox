@@ -1,0 +1,16 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "podhmo/blog/tinyfrontmatter"
+
+// Values
+pub fn split(String) -> (Map[String, String]?, String) raise SplitError
+
+// Errors
+pub(all) suberror SplitError {
+  SplitError(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits

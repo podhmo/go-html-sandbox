@@ -25,6 +25,10 @@ It is an experiment in progress; see
   tree of sections, paragraphs, lists, quotes, tables, and code blocks, and
   `inlines(text)` into text, code spans, and links; its tests are the Go
   test cases
+- `tinyfrontmatter` — a port of `go/pkg/tinyfrontmatter`: `split(src)`
+  into the `key: value` pairs of a leading `---` block (`None` without
+  one) and the rest, raising `SplitError` on a malformed block; its tests
+  are the Go test cases
 - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
   response sent back through the imported `host` functions (`status`,
   then `put` for text one UTF-16 code unit at a time, with `header_name`
