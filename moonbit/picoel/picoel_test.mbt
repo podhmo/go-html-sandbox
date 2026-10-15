@@ -96,7 +96,7 @@ test "elements" {
     ),
     (@picoel.meta_name("a", content="b"), "<meta name=\"a\" content=\"b\">"),
   ]
-  for c in cases {
-    assert_eq(@el.render_html(c.0), c.1)
+  for (node, want) in cases {
+    assert_eq(@el.render_html(node), want)
   }
 }

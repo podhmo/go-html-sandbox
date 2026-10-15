@@ -1,6 +1,6 @@
 ///|
 test "TODO.md and the documents under docs/ are embedded by path" {
-  let names = [ for f in @repodocs.files => f.0 ]
+  let names = [ for (name, _) in @repodocs.files => name ]
   let want = [
     "TODO.md", "docs/ja/design.md", "docs/sketch/ja/blog.md", "docs/sketch/ja/moonbit-workers-wasm.md",
   ]
@@ -17,7 +17,7 @@ test "TODO.md and the documents under docs/ are embedded by path" {
 
 ///|
 test "files are sorted by path and hold the whole file" {
-  let names = [ for f in @repodocs.files => f.0 ]
+  let names = [ for (name, _) in @repodocs.files => name ]
   assert_eq(names, names.copy()..sort_by((a, b) => a.lexical_compare(b)))
   let todo = @repodocs.files.iter().find_first(f => f.0 == "TODO.md")
   guard todo is Some((_, content)) else { fail("no TODO.md") }
