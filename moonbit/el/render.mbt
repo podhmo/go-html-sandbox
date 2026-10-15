@@ -182,7 +182,7 @@ fn write_plain(w : LineWriter, n : Node) -> Unit {
 /// line, so the output reads like the page. Useful for debugging and for
 /// tests that check what a page says.
 pub fn render_plain(n : Node) -> String {
-  let w = { sb: StringBuilder(), at_line_start: true, }
+  let w = LineWriter::{ sb: StringBuilder(), at_line_start: true, }
   write_plain(w, n)
   w.sb.to_string()
 }
