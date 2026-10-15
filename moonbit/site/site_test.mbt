@@ -12,6 +12,7 @@ let test_docs : ReadOnlyArray[(String, String)] = [
       #|
       #|- [ ] **task**: first line
       #|  second line
+      #|  - [x] child
     ),
   ),
   (
@@ -40,6 +41,7 @@ let test_posts : ReadOnlyArray[(String, String)] = [
       #|first
       #|## Points
       #|- one
+      #|  - one.1
       #|- two
       #|```
       #|x := <1>
@@ -204,7 +206,7 @@ test "pico only" {
 test "post" {
   assert_contains(body(new_site(test_posts), "/posts/hello"), [
     "<title>Hello &lt;script&gt; - blog</title>", "<time datetime=\"2026-10-14\">2026-10-14</time>",
-    "<section><h1>Hello &lt;script&gt;</h1><p>first</p><section><h2>Points</h2><ul><li>one</li><li>two</li></ul><pre>x := &lt;1&gt;</pre></section></section>",
+    "<section><h1>Hello &lt;script&gt;</h1><p>first</p><section><h2>Points</h2><ul><li>one<ul><li>one.1</li></ul></li><li>two</li></ul><pre>x := &lt;1&gt;</pre></section></section>",
   ])
 }
 
@@ -366,7 +368,8 @@ test "doc pages" {
     "<p>docs/ja/design.md</p>",
   ])
   assert_contains(body(s, "/docs/TODO"), [
-    "<li>[ ] **task**: first line\nsecond line</li>", "<blockquote><p>note</p></blockquote>",
+    "<li>[ ] **task**: first line\nsecond line<ul><li>[x] child</li></ul></li>",
+    "<blockquote><p>note</p></blockquote>",
   ])
   assert_contains(body(s, "/docs/ja/design"), [
     "<h2>Use <code>el</code></h2><ul><li>run <code>go test</code></li><li><code>a ` b</code></li></ul>",

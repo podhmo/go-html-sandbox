@@ -27,13 +27,13 @@
   - 完了の条件: `make compare` で Go 版と一致したまま、記事を 1 本足しても Wasm の
     サイズが変わらない。サイズと処理時間の変化を
     [調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
-- [-] **tinymarkdown: ネストした箇条書きを扱う**: ブログで `TODO.md` をそのまま
+- [x] **tinymarkdown: ネストした箇条書きを扱う**: ブログで `TODO.md` をそのまま
   読めるように、インデントした `- ` を親の項目の子のリストにする。今は
   `List.Items` が文字列の並びなので、子の項目が親と同じ階層に並んでしまう
   （`examples/parse-markdown` で確かめられる）。
   - [x] Go 版（`go/pkg/tinymarkdown`）を直し、HTML とプレーンテキストの描画も
     子のリストに対応させる。
-  - [ ] MoonBit 版（`moonbit/tinymarkdown`）も同じように直す。
+  - [x] MoonBit 版（`moonbit/tinymarkdown`）も同じように直す。
   - 完了の条件: `TODO.md` の入れ子がそのまま描画され、`make compare` で Go 版と
     一致する。
 

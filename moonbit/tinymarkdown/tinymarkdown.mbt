@@ -3,7 +3,8 @@
 // including the cases its tests pin down.
 //
 // Supported: headings "#" to "#####" (which open nested sections), "- "
-// list items (which may continue on indented lines), paragraphs, "> "
+// list items (which may continue on indented lines and nest by
+// indentation), paragraphs, "> "
 // quotes, "|" tables, and code blocks fenced by exactly "```". Anything else
 // is treated as paragraph text. Block parsing keeps inline syntax as text;
 // inlines splits out code spans and links on request.
@@ -36,8 +37,10 @@ pub extend Document with Debug::{to_repr}
 /// - Section is a heading together with everything up to the next heading
 ///   of the same or a shallower level (level is 1..5).
 /// - Paragraph is a run of consecutive non-blank lines, joined with "\n".
-/// - List is a run of consecutive "- " lines, holding the text after "- ".
-///   Indented lines that follow an item continue it, joined with "\n".
+/// - List is a run of consecutive "- " lines. Each item is nested under the
+///   nearest item above it whose "- " is indented less, as "b" is under "a"
+///   in "- a\n  - b"; with no such item, it is at the top level.
+///   Indentation counts leading spaces and tabs, one column each.
 /// - Quote is a run of consecutive lines starting with ">". The text after
 ///   ">" and one optional space is parsed again as a document.
 /// - Table is a run of consecutive lines starting with "|": a header row, a
@@ -49,7 +52,7 @@ pub extend Document with Debug::{to_repr}
 pub(all) enum Block {
   Section(level~ : Int32, title~ : String, children~ : Array[Block])
   Paragraph(String)
-  List(Array[String])
+  List(Array[Item])
   Quote(Array[Block])
   Table(header~ : Array[String], rows~ : Array[Array[String]])
   CodeBlock(String)
@@ -62,6 +65,23 @@ pub extend Block with Eq::{not_equal, equal}
 ///|
 #deprecated("Use Debug::to_repr instead")
 pub extend Block with Debug::{to_repr}
+
+///|
+/// Item is a list item: the text after "- " and the items nested under it.
+/// Indented lines that follow an item without "- " continue its text,
+/// joined with "\n".
+pub(all) struct Item {
+  text : String
+  children : Array[Item]
+} derive(Eq, Debug)
+
+///|
+#deprecated("Use == and != instead")
+pub extend Item with Eq::{not_equal, equal}
+
+///|
+#deprecated("Use Debug::to_repr instead")
+pub extend Item with Debug::{to_repr}
 
 ///|
 const FENCE = "```"
@@ -102,7 +122,7 @@ pub fn parse(src : String) -> Document {
 fn scan(src : String) -> Array[Flat] {
   let out : Array[Flat] = []
   let para : Array[String] = []
-  let items : Array[String] = []
+  let items : Array[RawItem] = []
   let quote : Array[String] = []
   let table : Array[String] = []
   fn flush() {
@@ -111,7 +131,7 @@ fn scan(src : String) -> Array[Flat] {
       para.clear()
     }
     if !items.is_empty() {
-      out.push(Block(List(items.copy())))
+      out.push(Block(List(nest_items(items, from=0, parent=-1).0)))
       items.clear()
     }
     if !quote.is_empty() {
@@ -165,10 +185,10 @@ fn scan(src : String) -> Array[Flat] {
       if !para.is_empty() || !quote.is_empty() || !table.is_empty() {
         flush()
       }
-      items.push(trim_space(rest))
+      items.push({ indent: indent(line), text: trim_space(rest), })
     } else if !items.is_empty() && line != trimmed && line[0] is (' ' | '\t') {
       // An indented line continues the item above it.
-      items[items.length() - 1] += "\n\{trimmed}"
+      items[items.length() - 1].text += "\n\{trimmed}"
     } else {
       if !items.is_empty() || !quote.is_empty() || !table.is_empty() {
         flush()
@@ -182,6 +202,39 @@ fn scan(src : String) -> Array[Flat] {
   }
   flush()
   out
+}
+
+///|
+/// RawItem is a list item as scan reads it, kept flat until nest_items
+/// builds the nested lists.
+priv struct RawItem {
+  indent : Int32
+  mut text : String
+}
+
+///|
+/// indent counts the leading spaces and tabs of line.
+fn indent(line : String) -> Int32 {
+  line.length() - line.trim_start(chars=" \t").length()
+}
+
+///|
+/// nest_items turns indentation in flat into nested lists. It consumes
+/// items from flat[from:] while they are indented deeper than parent,
+/// returning them and the index where it stopped.
+fn nest_items(
+  flat : Array[RawItem],
+  from~ : Int32,
+  parent~ : Int32,
+) -> (Array[Item], Int32) {
+  let out = []
+  for i = from; i < flat.length() && flat[i].indent > parent; {
+    let (children, next) = nest_items(flat, from=i + 1, parent=flat[i].indent)
+    out.push({ text: flat[i].text, children, })
+    continue next
+  } nobreak {
+    (out, i)
+  }
 }
 
 ///|

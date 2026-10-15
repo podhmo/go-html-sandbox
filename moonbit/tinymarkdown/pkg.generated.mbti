@@ -16,7 +16,7 @@ pub fn parse(String) -> Document
 pub(all) enum Block {
   Section(level~ : Int, title~ : String, children~ : Array[Block])
   Paragraph(String)
-  List(Array[String])
+  List(Array[Item])
   Quote(Array[Block])
   Table(header~ : Array[String], rows~ : Array[Array[String]])
   CodeBlock(String)
@@ -49,6 +49,17 @@ pub fn Inline::equal(Self, Self) -> Bool
 pub fn Inline::not_equal(Self, Self) -> Bool
 #deprecated
 pub fn Inline::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Item {
+  text : String
+  children : Array[Item]
+} derive(Eq, @debug.Debug)
+#deprecated
+pub fn Item::equal(Self, Self) -> Bool
+#deprecated
+pub fn Item::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn Item::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 
