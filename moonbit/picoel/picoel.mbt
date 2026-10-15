@@ -22,8 +22,8 @@ pub fn document(
 ) -> @el.Node {
   let h = [
     @el.el(@el.meta, [@el.Attr(@el.charset, "utf-8")]),
-    meta_name("viewport", "width=device-width, initial-scale=1"),
-    meta_name("color-scheme", "dark"),
+    meta_name("viewport", content="width=device-width, initial-scale=1"),
+    meta_name("color-scheme", content="dark"),
     stylesheet(STYLESHEET_URL),
     ..head,
   ]
@@ -43,13 +43,13 @@ pub fn title(s : String) -> @el.Node {
 
 ///|
 /// meta_name is <meta name content>.
-pub fn meta_name(name : String, content : String) -> @el.Node {
+pub fn meta_name(name : String, content~ : String) -> @el.Node {
   @el.el(@el.meta, [@el.Attr(@el.name, name), @el.Attr(@el.content, content)])
 }
 
 ///|
 /// meta_property is <meta property content>, as used by Open Graph.
-pub fn meta_property(property : String, content : String) -> @el.Node {
+pub fn meta_property(property : String, content~ : String) -> @el.Node {
   @el.el(@el.meta, [
     @el.Attr(@el.property, property),
     @el.Attr(@el.content, content),
@@ -65,7 +65,7 @@ pub fn stylesheet(href : String) -> @el.Node {
 
 ///|
 /// icon links the favicon at href with the given MIME type.
-pub fn icon(href : String, mime_type : String) -> @el.Node {
+pub fn icon(href : String, mime_type~ : String) -> @el.Node {
   @el.el(@el.link, [
     @el.Attr(@el.rel, "icon"),
     @el.Attr(@el.href, href),
@@ -117,7 +117,7 @@ pub fn nav(items : Array[@el.Node]) -> @el.Node {
 /// spread puts start at the leading edge and end at the trailing edge of
 /// one row, using pico's nav layout: each side is a list and the lists are
 /// pushed apart.
-pub fn spread(start : Array[@el.Node], end : Array[@el.Node]) -> @el.Node {
+pub fn spread(start : Array[@el.Node], end~ : Array[@el.Node]) -> @el.Node {
   @el.el(@el.nav, [
     @el.el(@el.ul, list_items(start)),
     @el.el(@el.ul, list_items(end)),
@@ -249,7 +249,7 @@ pub fn a(href : String, children : Array[@el.Node]) -> @el.Node {
 /// muted secondary color.
 pub fn download_link(
   href : String,
-  filename : String,
+  filename~ : String,
   children : Array[@el.Node],
 ) -> @el.Node {
   @el.el(
