@@ -207,7 +207,7 @@ examples/blog/
 
 ## デプロイ
 
-2026-10-14 に、TinyGo のビルドを `https://blog.ababjam61.workers.dev`（Worker 名 `blog`）へデプロイした。それまでは同じ名前で標準 Go のビルドが動いていた。
+2026-10-14 に、TinyGo のビルドを `https://blog.podhmo.workers.dev`（Worker 名 `blog`）へデプロイした。それまでは同じ名前で標準 Go のビルドが動いていた。
 
 - TinyGo は、上のシムを `examples/blog/workers/bin/tinygo` としてリポジトリに入れたものを使った。`PATH="$PWD/bin:$PATH" npx wrangler deploy --env=""` で、`wrangler.jsonc` のビルドコマンドがそのまま通る。
 - アップロードは 2117.89 KiB（gzip 後 757.41 KiB）、wrangler が表示した Worker Startup Time は 8 ms。

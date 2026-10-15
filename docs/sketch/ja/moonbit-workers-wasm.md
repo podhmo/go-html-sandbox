@@ -310,9 +310,11 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 
 ## ブログ全体の比較とデプロイ
 
-2026-10-15 に、Go 版のルートをすべて移した MoonBit の Worker を、まず `blog-moonbit` として、続けて `make deploy-blog`（`wrangler.jsonc` の env `blog`）で `blog` としてデプロイした。`https://blog.ababjam61.workers.dev` は、TinyGo 版から MoonBit 版に置き換わった。Go 版に戻すには、`go/examples/blog/workers` でもう一度デプロイする。
+2026-10-15 に、Go 版のルートをすべて移した MoonBit の Worker を、まず `blog-moonbit` として、続けて `make deploy-blog`（`wrangler.jsonc` の env `blog`）で `blog` としてデプロイした。`https://blog.podhmo.workers.dev` は、TinyGo 版から MoonBit 版に置き換わった。Go 版に戻すには、`go/examples/blog/workers` でもう一度デプロイする。
 
 その後、`wrangler.jsonc` の Worker 名を `blog` にして env `blog` と `make deploy-blog` をなくし、`make deploy` がそのまま `blog` にデプロイするようにした。不要になった `blog-moonbit` の Worker は削除した。
+
+同じ日に、アカウントの workers.dev のサブドメインを `ababjam61` から `podhmo` に変えたので、ブログの URL は `https://blog.podhmo.workers.dev` になった（`BASE_URL` も同じく変えた）。上の「デプロイ」の節の wrangler の出力は、変える前のもの。
 
 | ビルド | Wasm | wrangler の Total Upload | Worker Startup Time |
 | --- | --- | --- | --- |
