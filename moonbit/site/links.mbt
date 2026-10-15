@@ -272,3 +272,21 @@ fn Site::linker(self : Site, source : String) -> Linker {
     Some("\{href}\{fragment}")
   }
 }
+
+///|
+/// hex_escape_non_ascii is the helper of the same name in Go's net/http:
+/// s with each byte of its non-ASCII characters written as %XX.
+fn hex_escape_non_ascii(s : String) -> String {
+  guard s.iter().any(c => c.to_int() >= 0x80) else { return s }
+  let sb = StringBuilder()
+  for c in s {
+    if c.to_int() < 0x80 {
+      sb.write_char(c)
+    } else {
+      for b in @utf8.encode(c.to_string()) {
+        sb <+ "%\{hex_digits[b.to_int() >> 4]}\{hex_digits[b.to_int() & 15]}"
+      }
+    }
+  }
+  sb.to_string()
+}

@@ -8,6 +8,8 @@ pub fn serve() -> Unit
 
 pub fn set_base_url() -> Unit
 
+pub fn set_query() -> Unit
+
 // Errors
 
 // Types and methods

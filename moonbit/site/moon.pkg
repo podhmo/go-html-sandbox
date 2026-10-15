@@ -8,3 +8,7 @@ import {
   "podhmo/blog/assets",
   "moonbitlang/core/encoding/utf8",
 }
+
+import {
+  "podhmo/blog/el",
+} for "test"

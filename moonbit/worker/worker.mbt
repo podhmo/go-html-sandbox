@@ -29,7 +29,7 @@ let path : StringBuilder = StringBuilder()
 
 ///|
 /// path_push appends one UTF-16 code unit of the request path, or of the
-/// base URL before set_base_url.
+/// base URL before set_base_url, or of the query before set_query.
 pub fn path_push(code : Int32) -> Unit {
   path.write_char(code.unsafe_to_char())
 }
@@ -51,6 +51,19 @@ pub fn set_base_url() -> Unit {
   base_url.val = path.to_string()
   path.reset()
   site.val = None
+}
+
+///|
+/// query is the raw query string of the next request, set by set_query.
+let query : Ref[String] = Ref("")
+
+///|
+/// set_query takes what path_push pushed as the raw query string (without
+/// "?") of the next request. The host calls it before pushing the path,
+/// when the request has a query; serve clears it.
+pub fn set_query() -> Unit {
+  query.val = path.to_string()
+  path.reset()
 }
 
 ///|
@@ -76,8 +89,10 @@ fn load() -> Result[@site.Site, String] {
 pub fn serve() -> Unit {
   let p = path.to_string()
   path.reset()
+  let q = query.val
+  query.val = ""
   let res = match load() {
-    Ok(s) => s.render(p)
+    Ok(s) => s.render(p, query=q)
     Err(msg) => @site.Response::text(500, "\{msg}\n")
   }
   status(res.status)
