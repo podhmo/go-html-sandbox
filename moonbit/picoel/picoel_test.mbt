@@ -75,15 +75,15 @@ test "elements" {
     (@picoel.small([t("<s>")]), "<small>&lt;s&gt;</small>"),
     (@picoel.a("/?a=\"b\"", [t("x")]), "<a href=\"/?a=&#34;b&#34;\">x</a>"),
     (
-      @picoel.download_link("/a.md", "\"a\".md", [t("x")]),
+      @picoel.download_link("/a.md", filename="\"a\".md", [t("x")]),
       "<a href=\"/a.md\" download=\"&#34;a&#34;.md\" class=\"secondary\">x</a>",
     ),
     (
-      @picoel.spread([t("a")], [t("b"), t("c")]),
+      @picoel.spread([t("a")], end=[t("b"), t("c")]),
       "<nav><ul><li>a</li></ul><ul><li>b</li><li>c</li></ul></nav>",
     ),
     (
-      @picoel.meta_property("og:title", "t"),
+      @picoel.meta_property("og:title", content="t"),
       "<meta property=\"og:title\" content=\"t\">",
     ),
     (
@@ -91,10 +91,10 @@ test "elements" {
       "<link rel=\"stylesheet\" href=\"/a.css?v=1\">",
     ),
     (
-      @picoel.icon("/favicon.svg", "image/svg+xml"),
+      @picoel.icon("/favicon.svg", mime_type="image/svg+xml"),
       "<link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\">",
     ),
-    (@picoel.meta_name("a", "b"), "<meta name=\"a\" content=\"b\">"),
+    (@picoel.meta_name("a", content="b"), "<meta name=\"a\" content=\"b\">"),
   ]
   for c in cases {
     assert_eq(@el.render_html(c.0), c.1)

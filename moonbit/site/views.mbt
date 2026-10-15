@@ -33,10 +33,10 @@ fn layout(meta : PageMeta, body : Array[@el.Node]) -> @el.Node {
   let description = plain_text(meta.description)
   let head = [
     @picoel.title(document_title(title)),
-    @picoel.meta_name("description", description),
+    @picoel.meta_name("description", content=description),
     ..ogp({ ..meta, title, description, }),
     @picoel.stylesheet(site_css_path()),
-    @picoel.icon("/favicon.svg", "image/svg+xml"),
+    @picoel.icon("/favicon.svg", mime_type="image/svg+xml"),
   ]
   @picoel.document("ja", head~, [
     @picoel.header([
@@ -69,13 +69,15 @@ fn ogp(meta : PageMeta) -> Array[@el.Node] {
   if meta.url == "" {
     return []
   }
-  let prop = @picoel.meta_property
   [
-    prop("og:title", if meta.title == "" { SITE_NAME } else { meta.title }),
-    prop("og:type", meta.type_),
-    prop("og:url", meta.url),
-    prop("og:description", meta.description),
-    prop("og:site_name", SITE_NAME),
+    @picoel.meta_property(
+      "og:title",
+      content=if meta.title == "" { SITE_NAME } else { meta.title },
+    ),
+    @picoel.meta_property("og:type", content=meta.type_),
+    @picoel.meta_property("og:url", content=meta.url),
+    @picoel.meta_property("og:description", content=meta.description),
+    @picoel.meta_property("og:site_name", content=SITE_NAME),
   ]
 }
 
@@ -121,7 +123,7 @@ fn Site::post_page(self : Site, p : Post) -> @el.Node {
     type_: "article",
   }
   layout(meta, [
-    page_header(@picoel.date(p.date), p.markdown_path(), p.file),
+    page_header(@picoel.date(p.date), href=p.markdown_path(), filename=p.file),
     @picoel.article(body),
   ])
 }
@@ -167,8 +169,8 @@ fn Site::doc_page(self : Site, d : Doc) -> @el.Node {
   layout(meta, [
     page_header(
       @picoel.small([@picoel.text(d.source)]),
-      d.markdown_path(),
-      base(d.source),
+      href=d.markdown_path(),
+      filename=base(d.source),
     ),
     @picoel.article(body),
   ])
@@ -201,11 +203,11 @@ fn Doc::markdown_path(self : Doc) -> String {
 /// right, a small link that downloads the page's Markdown source. It sits
 /// in main rather than in the article, where pico would pad it into a
 /// band.
-fn page_header(info : @el.Node, href : String, filename : String) -> @el.Node {
+fn page_header(info : @el.Node, href~ : String, filename~ : String) -> @el.Node {
   let download = @picoel.small([
-    @picoel.download_link(href, filename, [@picoel.text("Download .md")]),
+    @picoel.download_link(href, filename~, [@picoel.text("Download .md")]),
   ])
-  @picoel.inner_header([@picoel.spread([info], [download])])
+  @picoel.inner_header([@picoel.spread([info], end=[download])])
 }
 
 ///|

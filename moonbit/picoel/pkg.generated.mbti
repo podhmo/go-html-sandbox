@@ -20,7 +20,7 @@ pub fn date(String) -> @el.Node
 
 pub fn document(String, head~ : Array[@el.Node], Array[@el.Node]) -> @el.Node
 
-pub fn download_link(String, String, Array[@el.Node]) -> @el.Node
+pub fn download_link(String, filename~ : String, Array[@el.Node]) -> @el.Node
 
 pub fn footer(Array[@el.Node]) -> @el.Node
 
@@ -38,7 +38,7 @@ pub fn header(Array[@el.Node]) -> @el.Node
 
 pub fn hgroup(Array[@el.Node]) -> @el.Node
 
-pub fn icon(String, String) -> @el.Node
+pub fn icon(String, mime_type~ : String) -> @el.Node
 
 pub fn inner_header(Array[@el.Node]) -> @el.Node
 
@@ -48,9 +48,9 @@ pub fn list(Array[@el.Node]) -> @el.Node
 
 pub fn main_(Array[@el.Node]) -> @el.Node
 
-pub fn meta_name(String, String) -> @el.Node
+pub fn meta_name(String, content~ : String) -> @el.Node
 
-pub fn meta_property(String, String) -> @el.Node
+pub fn meta_property(String, content~ : String) -> @el.Node
 
 pub fn nav(Array[@el.Node]) -> @el.Node
 
@@ -62,7 +62,7 @@ pub fn section(Array[@el.Node]) -> @el.Node
 
 pub fn small(Array[@el.Node]) -> @el.Node
 
-pub fn spread(Array[@el.Node], Array[@el.Node]) -> @el.Node
+pub fn spread(Array[@el.Node], end~ : Array[@el.Node]) -> @el.Node
 
 pub fn strong(Array[@el.Node]) -> @el.Node
 
