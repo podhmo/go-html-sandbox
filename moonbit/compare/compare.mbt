@@ -20,11 +20,7 @@ pub fn default_paths() -> Array[String] {
 /// join_url appends path to base, dropping the slashes at the end of base
 /// so that both "http://h:1" and "http://h:1/" work.
 pub fn join_url(base : String, path : String) -> String {
-  let mut end = base.length()
-  while end > 0 && base.code_unit_at(end - 1) == '/' {
-    end -= 1
-  }
-  base.view(end_offset=end).to_owned() + path
+  "\{base.trim_end(chars="/")}\{path}"
 }
 
 ///|
