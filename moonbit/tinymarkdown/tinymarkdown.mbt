@@ -85,7 +85,7 @@ priv enum Flat {
 /// parse parses src. It never fails: lines it does not understand become
 /// paragraph text.
 pub fn parse(src : String) -> Document {
-  let (children, _) = nest(scan(src), 0, 0)
+  let (children, _) = nest(scan(src), from=0, level=0)
   { children, }
 }
 
@@ -247,11 +247,15 @@ fn parse_heading(line : String) -> Flat {
 
 ///|
 /// nest turns headings in flat into nested sections. It consumes blocks
-/// from flat[i:] until a heading at or above level, returning the children
+/// from flat[from:] until a heading at or above level, returning the children
 /// and the index where it stopped.
-fn nest(flat : Array[Flat], i : Int32, level : Int32) -> (Array[Block], Int32) {
+fn nest(
+  flat : Array[Flat],
+  from~ : Int32,
+  level~ : Int32,
+) -> (Array[Block], Int32) {
   let out = []
-  for i = i; i < flat.length(); {
+  for i = from; i < flat.length(); {
     match flat[i] {
       Block(b) => {
         out.push(b)
@@ -259,7 +263,7 @@ fn nest(flat : Array[Flat], i : Int32, level : Int32) -> (Array[Block], Int32) {
       }
       Heading(h, _) if h <= level => break (out, i)
       Heading(h, title) => {
-        let (children, next) = nest(flat, i + 1, h)
+        let (children, next) = nest(flat, from=i + 1, level=h)
         out.push(Section(level=h, title~, children~))
         continue next
       }
