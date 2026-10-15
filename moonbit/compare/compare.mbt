@@ -53,9 +53,9 @@ fn show_segment(s : String) -> String {
   let sb = StringBuilder()
   for c in s {
     match c {
-      '\n' => sb.write_string("\\n")
-      '\r' => sb.write_string("\\r")
-      '\t' => sb.write_string("\\t")
+      '\n' => sb <+ "\\n"
+      '\r' => sb <+ "\\r"
+      '\t' => sb <+ "\\t"
       _ => sb.write_char(c)
     }
   }
@@ -80,14 +80,13 @@ pub fn body_diff(
     }
   }
   let sb = StringBuilder()
-  sb.write_string("--- go\n+++ moonbit\n")
+  sb <+ "--- go\n+++ moonbit\n"
   for i, line in lines {
     if i >= max_lines {
-      sb.write_string("... \{lines.length() - max_lines} more lines\n")
+      sb <+ "... \{lines.length() - max_lines} more lines\n"
       break
     }
-    sb.write_string(line)
-    sb.write_char('\n')
+    sb <+ "\{line}\n"
   }
   sb.to_string()
 }
@@ -114,12 +113,12 @@ pub fn compare(
     (Ok(g), Ok(m)) => (g, m)
     _ => {
       let sb = StringBuilder()
-      sb.write_string("\{path}: error\n")
+      sb <+ "\{path}: error\n"
       if go is Err(e) {
-        sb.write_string("  go: \{e}\n")
+        sb <+ "  go: \{e}\n"
       }
       if moonbit is Err(e) {
-        sb.write_string("  moonbit: \{e}\n")
+        sb <+ "  moonbit: \{e}\n"
       }
       return { path, same: false, text: sb.to_string(), }
     }
@@ -128,22 +127,20 @@ pub fn compare(
   let details = StringBuilder()
   if g.status != m.status {
     parts.push("status")
-    details.write_string("  status: go \{g.status}, moonbit \{m.status}\n")
+    details <+ "  status: go \{g.status}, moonbit \{m.status}\n"
   }
   if g.content_type != m.content_type {
     parts.push("content-type")
-    details.write_string(
-      "  content-type: go \{g.content_type.escape()}, moonbit \{m.content_type.escape()}\n",
-    )
+    details <+
+      "  content-type: go \{g.content_type.escape()}, moonbit \{m.content_type.escape()}\n"
   }
   if g.body != m.body {
     parts.push("body")
-    details.write_string(
-      "  body: go \{g.body.length()} chars, moonbit \{m.body.length()} chars\n",
-    )
+    details <+
+      "  body: go \{g.body.length()} chars, moonbit \{m.body.length()} chars\n"
     for line in body_diff(g.body, m.body, max_lines~).split("\n") {
       if line != "" {
-        details.write_string("    \{line}\n")
+        details <+ "    \{line}\n"
       }
     }
   }
