@@ -36,11 +36,11 @@ pub extend Inline with Debug::{to_repr}
 /// inside a code span is code. Anything that does not form a link is plain
 /// text.
 pub fn inlines(s : String) -> Array[Inline] {
-  split_inlines(s, true)
+  split_inlines(s, links=true)
 }
 
 ///|
-fn split_inlines(s : String, links : Bool) -> Array[Inline] {
+fn split_inlines(s : String, links~ : Bool) -> Array[Inline] {
   let out = []
   let mut text = 0 // start of the plain text not yet emitted
   fn emit(i : Int32, inline : Inline) {
@@ -54,7 +54,7 @@ fn split_inlines(s : String, links : Bool) -> Array[Inline] {
   while i < s.length() {
     if s[i] == '`' {
       let n = backquotes(s, i)
-      let end = closing_run(s, i + n, n)
+      let end = closing_run(s, from=i + n, n~)
       if end < 0 {
         i += n
         continue
@@ -66,7 +66,7 @@ fn split_inlines(s : String, links : Bool) -> Array[Inline] {
       match link(s, i) {
         None => i += 1
         Some((label, url, end)) => {
-          emit(i, Link(children=split_inlines(label, false), url~))
+          emit(i, Link(children=split_inlines(label, links=false), url~))
           i = end
           text = i
         }
@@ -91,7 +91,7 @@ fn link(s : String, i : Int32) -> (String, String, Int32)? {
     }
     if s[j] == '`' {
       let n = backquotes(s, j)
-      let c = closing_run(s, j + n, n)
+      let c = closing_run(s, from=j + n, n~)
       continue if c >= 0 { c + n } else { j + n }
     }
   } nobreak {
@@ -120,7 +120,7 @@ fn backquotes(s : String, i : Int32) -> Int32 {
 ///|
 /// closing_run returns the index of the first run of exactly n backquotes
 /// in s[from:], or -1.
-fn closing_run(s : String, from : Int32, n : Int32) -> Int32 {
+fn closing_run(s : String, from~ : Int32, n~ : Int32) -> Int32 {
   for j = from; j < s.length(); {
     if s[j] != '`' {
       continue j + 1

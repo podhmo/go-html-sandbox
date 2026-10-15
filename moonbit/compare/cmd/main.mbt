@@ -59,9 +59,9 @@ async fn main {
   }
   let reports = []
   for path in paths {
-    let go = fetch(@compare.join_url(go_base, path))
-    let moonbit = fetch(@compare.join_url(moonbit_base, path))
-    let report = @compare.compare(path, go, moonbit, max_lines~)
+    let go = fetch(@compare.join_url(go_base, path~))
+    let moonbit = fetch(@compare.join_url(moonbit_base, path~))
+    let report = @compare.compare(path, go~, moonbit~, max_lines~)
     @stdio.stdout.write(report.text)
     reports.push(report)
   }

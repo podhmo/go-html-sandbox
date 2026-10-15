@@ -19,7 +19,7 @@ pub fn default_paths() -> Array[String] {
 ///|
 /// join_url appends path to base, dropping the slashes at the end of base
 /// so that both "http://h:1" and "http://h:1/" work.
-pub fn join_url(base : String, path : String) -> String {
+pub fn join_url(base : String, path~ : String) -> String {
   "\{base.trim_end(chars="/")}\{path}"
 }
 
@@ -63,7 +63,7 @@ fn show_segment(s : String) -> String {
 /// segments, cut after max_lines lines.
 pub fn body_diff(
   go : String,
-  moonbit : String,
+  moonbit~ : String,
   max_lines~ : Int32 = 40,
 ) -> String {
   let d = @diff.Diff(old=segments(go), new=segments(moonbit))
@@ -101,8 +101,8 @@ pub(all) struct Report {
 /// that differs (status, content-type, body) and shows a diff of the body.
 pub fn compare(
   path : String,
-  go : Result[Fetched, String],
-  moonbit : Result[Fetched, String],
+  go~ : Result[Fetched, String],
+  moonbit~ : Result[Fetched, String],
   max_lines~ : Int32 = 40,
 ) -> Report {
   let (g, m) = match (go, moonbit) {
@@ -134,7 +134,7 @@ pub fn compare(
     parts.push("body")
     details <+
       "  body: go \{g.body.length()} chars, moonbit \{m.body.length()} chars\n"
-    for line in body_diff(g.body, m.body, max_lines~).split("\n") {
+    for line in body_diff(g.body, moonbit=m.body, max_lines~).split("\n") {
       if line != "" {
         details <+ "    \{line}\n"
       }

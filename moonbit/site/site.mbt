@@ -18,8 +18,8 @@ fn write_escaped(sb : StringBuilder, s : String) -> Unit {
 /// page writes a full HTML document with title and body to sb.
 fn page(
   sb : StringBuilder,
-  title : String,
-  body : (StringBuilder) -> Unit,
+  title~ : String,
+  body~ : (StringBuilder) -> Unit,
 ) -> Unit {
   sb <+
     "<!doctype html>\n<html lang=\"ja\"><head><meta charset=\"utf-8\"><title>"
@@ -50,11 +50,13 @@ pub fn render(path : String) -> Response {
   let sb = StringBuilder()
   match path {
     "/" => {
-      page(sb, "blog", sb => sb <+ "<h1>blog</h1><p>Rendered with MoonBit.</p>")
+      page(sb, title="blog", body=sb => {
+        sb <+ "<h1>blog</h1><p>Rendered with MoonBit.</p>"
+      })
       Response::html(200, body=sb.to_string())
     }
     _ => {
-      page(sb, "Not found | blog", sb => {
+      page(sb, title="Not found | blog", body=sb => {
         sb <+ "<h1>Not found</h1><p>No page at <code>"
         write_escaped(sb, path)
         sb <+ "</code>.</p>"
