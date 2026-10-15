@@ -161,11 +161,11 @@ fn scan(src : String) -> Array[Flat] {
       }
       let rest = line[line.find(">").unwrap() + 1:]
       quote.push(rest.strip_prefix(" ").unwrap_or(rest).to_owned())
-    } else if trimmed.has_prefix("- ") {
+    } else if trimmed is [.. "- ", .. rest] {
       if !para.is_empty() || !quote.is_empty() || !table.is_empty() {
         flush()
       }
-      items.push(trim_space(trimmed[2:]))
+      items.push(trim_space(rest))
     } else if !items.is_empty() && line != trimmed && line[0] is (' ' | '\t') {
       // An indented line continues the item above it.
       items[items.length() - 1] = items[items.length() - 1] + "\n" + trimmed
