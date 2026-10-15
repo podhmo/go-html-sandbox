@@ -217,6 +217,25 @@ fn base(p : String) -> String {
 }
 
 ///|
+test "path helpers match Go's path package" {
+  let cases = [
+    ("", "."),
+    ("a/../..", ".."),
+    ("/../a", "/a"),
+    ("a//b/./c/", "a/b/c"),
+    ("../../x", "../../x"),
+    ("/", "/"),
+  ]
+  for (p, want) in cases {
+    assert_eq(clean(p), want, msg="clean(\{p})")
+  }
+  assert_eq(dir("TODO.md"), ".")
+  assert_eq(dir("docs/ja/design.md"), "docs/ja")
+  assert_eq(join([".", ""]), ".")
+  assert_eq(join(["", ""]), "")
+}
+
+///|
 /// Linker resolves the URL of a Markdown link to an href, or None when the
 /// URL must not be linked; the link text is then shown as plain text.
 type Linker = (String) -> String?
