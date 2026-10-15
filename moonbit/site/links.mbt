@@ -137,7 +137,7 @@ fn escape(s : String, fragment~ : Bool) -> String {
     if keep {
       sb.write_char(c)
     } else {
-      sb <+ "%\{hex_digits[b.to_int() >> 4]}\{hex_digits[b.to_int() & 15]}"
+      sb.write_percent_encoded(b)
     }
   }
   sb.to_string()
@@ -147,6 +147,12 @@ fn escape(s : String, fragment~ : Bool) -> String {
 let hex_digits : ReadOnlyArray[Char] = [
   '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 ]
+
+///|
+/// write_percent_encoded writes b as %XX with upper-case hex digits.
+fn StringBuilder::write_percent_encoded(self : StringBuilder, b : Byte) -> Unit {
+  self <+ "%\{hex_digits[b.to_int() >> 4]}\{hex_digits[b.to_int() & 15]}"
+}
 
 ///|
 /// clean is Go's path.Clean: the shortest path equal to p, with "." and
@@ -273,7 +279,7 @@ fn hex_escape_non_ascii(s : String) -> String {
       sb.write_char(c)
     } else {
       for b in @utf8.encode(c.to_string()) {
-        sb <+ "%\{hex_digits[b.to_int() >> 4]}\{hex_digits[b.to_int() & 15]}"
+        sb.write_percent_encoded(b)
       }
     }
   }
