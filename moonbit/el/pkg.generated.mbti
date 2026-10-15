@@ -134,11 +134,8 @@ pub let value : AttrName
 
 // Types and methods
 pub(all) struct AttrName(String) derive(Eq, @debug.Debug)
-#deprecated
 pub fn AttrName::equal(Self, Self) -> Bool
-#deprecated
 pub fn AttrName::not_equal(Self, Self) -> Bool
-#deprecated
 pub fn AttrName::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Node {
@@ -148,19 +145,13 @@ pub(all) enum Node {
   Attr(AttrName, String)
   BoolAttr(AttrName)
 } derive(Eq, @debug.Debug)
-#deprecated
 pub fn Node::equal(Self, Self) -> Bool
-#deprecated
 pub fn Node::not_equal(Self, Self) -> Bool
-#deprecated
 pub fn Node::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Tag(String) derive(Eq, @debug.Debug)
-#deprecated
 pub fn Tag::equal(Self, Self) -> Bool
-#deprecated
 pub fn Tag::not_equal(Self, Self) -> Bool
-#deprecated
 pub fn Tag::to_repr(Self) -> @debug.Repr
 
 // Type aliases

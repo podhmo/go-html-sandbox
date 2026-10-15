@@ -1,27 +1,21 @@
-// The derived Eq and Debug are meant for == and assert_eq, not as methods;
-// these declarations mark the implicitly promoted methods as unwanted
-// (warning implicit_impl_as_method), as moonbitlang/core does.
+// The derived Eq and Debug methods are declared here because the compiler
+// asks for it (warning implicit_impl_as_method). They are not deprecated
+// as in moonbitlang/core: the package is only used in this repository.
 
 ///|
-#deprecated("Use == and != instead")
 pub extend Tag with Eq::{equal, not_equal}
 
 ///|
-#deprecated("Use Debug::to_repr instead")
 pub extend Tag with Debug::{to_repr}
 
 ///|
-#deprecated("Use == and != instead")
 pub extend AttrName with Eq::{equal, not_equal}
 
 ///|
-#deprecated("Use Debug::to_repr instead")
 pub extend AttrName with Debug::{to_repr}
 
 ///|
-#deprecated("Use == and != instead")
 pub extend Node with Eq::{equal, not_equal}
 
 ///|
-#deprecated("Use Debug::to_repr instead")
 pub extend Node with Debug::{to_repr}
