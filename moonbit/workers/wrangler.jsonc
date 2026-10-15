@@ -1,7 +1,9 @@
 // Cloudflare Workers config for the MoonBit blog; see ../README.md.
 // `npx wrangler dev` builds the Wasm and serves on http://localhost:8787.
+// The Go blog's ../../go/examples/blog/workers also deploys as blog, so
+// the last deploy wins.
 {
-  "name": "blog-moonbit",
+  "name": "blog",
   "main": "./worker.mjs",
   "compatibility_date": "2026-10-01",
   "build": {
@@ -17,19 +19,6 @@
   "vars": {
     // Public origin for OGP tags, like the Go blog's -base-url. This is the
     // deployed URL, so `wrangler dev` also writes it into OGP tags.
-    "BASE_URL": "https://blog-moonbit.ababjam61.workers.dev"
-  },
-  "env": {
-    // The same Worker deployed as blog, in place of the Go blog
-    // (`make deploy-blog`). The Go blog's ../../go/examples/blog/workers
-    // also deploys as blog, so the last deploy wins.
-    "blog": {
-      // Without this, wrangler would name it blog-moonbit-blog.
-      "name": "blog",
-      // vars are not inherited by environments.
-      "vars": {
-        "BASE_URL": "https://blog.ababjam61.workers.dev"
-      }
-    }
+    "BASE_URL": "https://blog.ababjam61.workers.dev"
   }
 }

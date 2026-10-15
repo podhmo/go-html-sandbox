@@ -109,7 +109,7 @@ TODO.md の「Experiment with MoonBit's Wasm backends on Cloudflare Workers」�
 | `moonbit/moon.mod` | モジュール `podhmo/blog`。`preferred_target = "wasm-gc"` |
 | `moonbit/site/` | `render(path)`。トップページと、パスをエスケープした Not found ページを返す。`moon test` の対象 |
 | `moonbit/worker/` | Wasm の入り口。`path_push` と `serve` を export し、`host.put` を import する |
-| `moonbit/workers/` | Cloudflare Worker。`worker.mjs` と `wrangler.jsonc`（Worker 名は当面 `blog-moonbit`） |
+| `moonbit/workers/` | Cloudflare Worker。`worker.mjs` と `wrangler.jsonc`（Worker 名は、当初は `blog-moonbit`、今は `blog`） |
 
 - **`site` と `worker` を分けた理由**：`host.put` の import がテスト用のバイナリに入ると、`moon test` の実行時にその import を解決できない。`render` だけを持つ `site` をテストし、import は `worker` に閉じ込めた。
 - **`workers/` という名前**：TODO では `moonbit/worker/` と書いていたが、`worker` は MoonBit のパッケージ名で使ったので、Go 版の `go/examples/blog/workers` にそろえた。
@@ -311,6 +311,8 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 ## ブログ全体の比較とデプロイ
 
 2026-10-15 に、Go 版のルートをすべて移した MoonBit の Worker を、まず `blog-moonbit` として、続けて `make deploy-blog`（`wrangler.jsonc` の env `blog`）で `blog` としてデプロイした。`https://blog.ababjam61.workers.dev` は、TinyGo 版から MoonBit 版に置き換わった。Go 版に戻すには、`go/examples/blog/workers` でもう一度デプロイする。
+
+その後、`wrangler.jsonc` の Worker 名を `blog` にして env `blog` と `make deploy-blog` をなくし、`make deploy` がそのまま `blog` にデプロイするようにした。不要になった `blog-moonbit` の Worker は削除した。
 
 | ビルド | Wasm | wrangler の Total Upload | Worker Startup Time |
 | --- | --- | --- | --- |

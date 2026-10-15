@@ -97,7 +97,7 @@ git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
 With the Go blog and the Worker both running:
 
 ```sh
-(cd ../go && go generate ./... && go run ./examples/blog -base-url https://blog-moonbit.ababjam61.workers.dev)   # http://localhost:8080
+(cd ../go && go generate ./... && go run ./examples/blog -base-url https://blog.ababjam61.workers.dev)   # http://localhost:8080
 make dev PORT=8798                                           # the Worker
 make compare PORT=8798                                       # or GO_URL=... MOONBIT_URL=...
 make compare PORT=8798 PATHS="/posts/hello /docs/"           # only these paths
@@ -118,13 +118,6 @@ path differs. Redirects are not followed, so they are compared as they are.
 make deploy
 ```
 
-It deploys as the Worker `blog-moonbit`, apart from the Go `blog`, at
-<https://blog-moonbit.ababjam61.workers.dev>.
-
-```sh
-make deploy-blog
-```
-
-It deploys the same Wasm as the Worker `blog`, in place of the Go blog, at
+It deploys as the Worker `blog`, in place of the Go blog, at
 <https://blog.ababjam61.workers.dev>. Deploying the Go blog again puts it
 back.
