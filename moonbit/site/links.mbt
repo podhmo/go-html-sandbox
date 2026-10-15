@@ -35,10 +35,8 @@ priv struct Ref {
 /// missing scheme before ":", or a colon in the first segment of a
 /// relative path. The authority after "//" is not checked.
 fn parse_ref(raw : String) -> Ref? {
-  for c in raw {
-    if c.to_int() < 0x20 || c == '\u{7F}' {
-      return None
-    }
+  if raw.iter().any(c => c.to_int() < 0x20 || c == '\u{7F}') {
+    return None
   }
   let (rest, fragment) = match raw.find("#") {
     Some(i) => (raw[:i], unescape(raw[i + 1:]))

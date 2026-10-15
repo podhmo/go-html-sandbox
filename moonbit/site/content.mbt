@@ -138,11 +138,7 @@ fn post_name(name : String) -> (String, String)? {
 /// day.
 fn check_date(date : String) -> String? {
   let num = (s : StringView) => {
-    let mut n = 0
-    for c in s {
-      n = n * 10 + (c.to_int() - '0'.to_int())
-    }
-    n
+    s.iter().fold(init=0, (n, c) => n * 10 + (c.to_int() - '0'.to_int()))
   }
   let year = num(date[0:4])
   let month = num(date[5:7])
@@ -255,8 +251,7 @@ pub fn load_docs(
 fn walk_order(a : String, b : String) -> Int32 {
   let xs = a.split("/").to_array()
   let ys = b.split("/").to_array()
-  let n = if xs.length() < ys.length() { xs.length() } else { ys.length() }
-  for i in 0..<n {
+  for i in 0..<xs.length().min(ys.length()) {
     let c = xs[i].lexical_compare(ys[i])
     if c != 0 {
       return c

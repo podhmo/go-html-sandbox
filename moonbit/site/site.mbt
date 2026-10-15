@@ -53,10 +53,7 @@ pub fn Site::Site(
   } else {
     origin.strip_prefix("http://").unwrap_or("")
   }
-  if host == "" ||
-    host.contains("/") ||
-    host.contains("?") ||
-    host.contains("#") {
+  if host == "" || host.contains_any(chars="/?#") {
     raise LoadError(
       "base URL must be an http(s) origin such as https://example.com, got \{base_url.escape()}",
     )
