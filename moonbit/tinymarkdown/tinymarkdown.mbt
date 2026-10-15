@@ -210,18 +210,16 @@ fn cells(line : String) -> Array[String] {
   let line = line.strip_prefix("|").unwrap_or(line)
   let out = []
   let b = StringBuilder()
-  let mut i = 0
-  while i < line.length() {
+  for i = 0; i < line.length(); i = i + 1 {
     if line[i] == '\\' && i + 1 < line.length() && line[i + 1] == '|' {
       b.write_char('|')
-      i += 1
+      continue i + 2
     } else if line[i] == '|' {
       out.push(trim_space(b.to_string()))
       b.reset()
     } else {
       b.write_view(line[i:i + 1])
     }
-    i += 1
   }
   let rest = trim_space(b.to_string())
   if rest != "" {
@@ -257,20 +255,20 @@ fn parse_heading(line : String) -> Flat {
 /// and the index where it stopped.
 fn nest(flat : Array[Flat], i : Int32, level : Int32) -> (Array[Block], Int32) {
   let out = []
-  let mut i = i
-  while i < flat.length() {
+  for i = i; i < flat.length(); {
     match flat[i] {
       Block(b) => {
         out.push(b)
-        i += 1
+        continue i + 1
       }
-      Heading(h, _) if h <= level => break
+      Heading(h, _) if h <= level => break (out, i)
       Heading(h, title) => {
         let (children, next) = nest(flat, i + 1, h)
         out.push(Section(level=h, title~, children~))
-        i = next
+        continue next
       }
     }
+  } nobreak {
+    (out, i)
   }
-  (out, i)
 }

@@ -85,28 +85,28 @@ fn split_inlines(s : String, links : Bool) -> Array[Inline] {
 /// link parses a link starting at s[i] == '['. It returns the text, the
 /// URL, and the index just past the closing ")".
 fn link(s : String, i : Int32) -> (String, String, Int32)? {
-  let mut j = i + 1
-  while j < s.length() && s[j] != ']' {
+  let j = for j = i + 1; j < s.length() && s[j] != ']'; j = j + 1 {
     if s[j] == '[' {
       return None
     }
     if s[j] == '`' {
       let n = backquotes(s, j)
       let c = closing_run(s, j + n, n)
-      j = if c >= 0 { c + n - 1 } else { j + n - 1 }
+      continue if c >= 0 { c + n } else { j + n }
     }
-    j += 1
+  } nobreak {
+    j
   }
   if j + 1 >= s.length() || s[j + 1] != '(' {
     return None
   }
   let label = s[i + 1:j].to_owned()
-  let mut k = j + 2
-  while k < s.length() && s[k] != ')' {
+  let k = for k = j + 2; k < s.length() && s[k] != ')'; k = k + 1 {
     if s[k] == ' ' || s[k] == '\t' || s[k] == '\n' || s[k] == '(' {
       return None
     }
-    k += 1
+  } nobreak {
+    k
   }
   if k >= s.length() {
     return None
@@ -125,19 +125,18 @@ fn backquotes(s : String, i : Int32) -> Int32 {
 /// closing_run returns the index of the first run of exactly n backquotes
 /// in s[from:], or -1.
 fn closing_run(s : String, from : Int32, n : Int32) -> Int32 {
-  let mut j = from
-  while j < s.length() {
+  for j = from; j < s.length(); {
     if s[j] != '`' {
-      j += 1
-      continue
+      continue j + 1
     }
     let m = backquotes(s, j)
     if m == n {
       return j
     }
-    j += m
+    continue j + m
+  } nobreak {
+    -1
   }
-  -1
 }
 
 ///|
