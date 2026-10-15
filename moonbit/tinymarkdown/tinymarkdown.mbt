@@ -196,21 +196,14 @@ fn parse_table(lines : Array[String]) -> Block? {
   }
   let header = cells(lines[0])
   let delim = cells(lines[1])
-  if delim.length() != header.length() {
+  if delim.length() != header.length() || !delim.iter().all(is_delimiter) {
     return None
-  }
-  for c in delim {
-    if !is_delimiter(c) {
-      return None
-    }
   }
   let rows = []
   for line in lines[2:] {
     let row = cells(line)
-    while row.length() > header.length() {
-      row.unsafe_pop() |> ignore
-    }
-    while row.length() < header.length() {
+    row.truncate(header.length())
+    for _ in row.length()..<header.length() {
       row.push("")
     }
     rows.push(row)
