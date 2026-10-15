@@ -61,7 +61,7 @@ pub fn Site::Site(
   let by_file = Map([])
   for p in posts {
     by_slug[p.slug] = p
-    by_file[post_source(p)] = p
+    by_file[p.source()] = p
   }
   let by_path = Map([])
   let by_source = Map([])

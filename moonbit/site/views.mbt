@@ -88,7 +88,7 @@ fn Site::post_list(self : Site) -> @el.Node {
     body.push(
       @picoel.article([
         @picoel.hgroup([
-          @picoel.h2([@picoel.a(post_path(p), linked_title(p.title))]),
+          @picoel.h2([@picoel.a(p.page_path(), linked_title(p.title))]),
           @picoel.p([@picoel.date(p.date)]),
         ]),
       ]),
@@ -107,7 +107,7 @@ fn Site::post_list(self : Site) -> @el.Node {
 
 ///|
 fn Site::post_page(self : Site, p : Post) -> @el.Node {
-  let link = self.linker(post_source(p))
+  let link = self.linker(p.source())
   let body = []
   if first_title(p.doc) is None {
     // The title came from front matter only, so the body has no heading.
@@ -117,11 +117,11 @@ fn Site::post_page(self : Site, p : Post) -> @el.Node {
   let meta = PageMeta::{
     title: p.title,
     description: p.description,
-    url: "\{self.base_url}\{post_path(p)}",
+    url: "\{self.base_url}\{p.page_path()}",
     type_: "article",
   }
   layout(meta, [
-    page_header(@picoel.date(p.date), post_markdown_path(p), p.file),
+    page_header(@picoel.date(p.date), p.markdown_path(), p.file),
     @picoel.article(body),
   ])
 }
@@ -135,7 +135,7 @@ fn Site::doc_list(self : Site) -> @el.Node {
     body.push(
       @picoel.article([
         @picoel.hgroup([
-          @picoel.h2([@picoel.a(doc_path(d), linked_title(d.title))]),
+          @picoel.h2([@picoel.a(d.page_path(), linked_title(d.title))]),
           @picoel.p([@picoel.text(d.source)]),
         ]),
       ]),
@@ -161,13 +161,13 @@ fn Site::doc_page(self : Site, d : Doc) -> @el.Node {
   let meta = PageMeta::{
     title: d.title,
     description: d.description,
-    url: "\{self.base_url}\{doc_path(d)}",
+    url: "\{self.base_url}\{d.page_path()}",
     type_: "article",
   }
   layout(meta, [
     page_header(
       @picoel.small([@picoel.text(d.source)]),
-      doc_markdown_path(d),
+      d.markdown_path(),
       base(d.source),
     ),
     @picoel.article(body),
@@ -175,25 +175,25 @@ fn Site::doc_page(self : Site, d : Doc) -> @el.Node {
 }
 
 ///|
-fn post_path(p : Post) -> String {
-  "/posts/\{p.slug}"
+fn Post::page_path(self : Post) -> String {
+  "/posts/\{self.slug}"
 }
 
 ///|
-/// post_markdown_path is where the source of p is served.
-fn post_markdown_path(p : Post) -> String {
-  "\{post_path(p)}.md"
+/// Post::markdown_path is where the post's Markdown source is served.
+fn Post::markdown_path(self : Post) -> String {
+  "\{self.page_path()}.md"
 }
 
 ///|
-fn doc_path(d : Doc) -> String {
-  "/docs/\{d.path}"
+fn Doc::page_path(self : Doc) -> String {
+  "/docs/\{self.path}"
 }
 
 ///|
-/// doc_markdown_path is where the source of d is served.
-fn doc_markdown_path(d : Doc) -> String {
-  "\{doc_path(d)}.md"
+/// Doc::markdown_path is where the document's Markdown source is served.
+fn Doc::markdown_path(self : Doc) -> String {
+  "\{self.page_path()}.md"
 }
 
 ///|

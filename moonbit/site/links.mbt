@@ -14,9 +14,9 @@ const REPO_PATH = "/podhmo/html-sandbox/blob/main"
 const POSTS_DIR = "go/examples/blog/posts"
 
 ///|
-/// post_source is the file path of p in the repository.
-fn post_source(p : Post) -> String {
-  "\{POSTS_DIR}/\{p.file}"
+/// Post::source is the file path of the post in the repository.
+fn Post::source(self : Post) -> String {
+  "\{POSTS_DIR}/\{self.file}"
 }
 
 ///|
@@ -30,11 +30,11 @@ priv struct Ref {
 }
 
 ///|
-/// parse_ref parses raw as Go's url.Parse does, or returns None where it
+/// Ref::parse parses raw as Go's url.Parse does, or returns None where it
 /// fails: control characters, a "%" not followed by two hex digits, a
 /// missing scheme before ":", or a colon in the first segment of a
 /// relative path. The authority after "//" is not checked.
-fn parse_ref(raw : String) -> Ref? {
+fn Ref::parse(raw : String) -> Ref? {
   if raw.iter().any(c => c.to_int() < 0x20 || c == '\u{7F}') {
     return None
   }
@@ -227,7 +227,7 @@ type Linker = (String) -> String?
 /// linked.
 fn Site::linker(self : Site, source : String) -> Linker {
   raw => {
-    guard parse_ref(raw) is Some(u) else { return None }
+    guard Ref::parse(raw) is Some(u) else { return None }
     if u.scheme != "" {
       return if u.scheme is ("http" | "https" | "mailto") {
         Some(raw)
@@ -243,9 +243,9 @@ fn Site::linker(self : Site, source : String) -> Linker {
       return None
     }
     let href = if self.by_source.get(p) is Some(d) {
-      escape(doc_path(d), fragment=false)
+      escape(d.page_path(), fragment=false)
     } else if self.by_file.get(p) is Some(post) {
-      escape(post_path(post), fragment=false)
+      escape(post.page_path(), fragment=false)
     } else {
       // The file on the main branch on GitHub, which redirects blob/ to
       // tree/ for directories.
