@@ -47,17 +47,6 @@ each branch on top of the previous one.
   echo '{"pull_requests":[14]}' | gh api -X POST repos/podhmo/html-sandbox/stacks/<n>/add --input -
   ```
 
-## Comparing the MoonBit blog with the Go blog
-
-```sh
-(cd go && go generate ./... && go run ./examples/blog -base-url https://blog-moonbit.ababjam61.workers.dev)
-(cd moonbit && make dev PORT=8798)        # wrangler works through npx
-(cd moonbit && make compare PORT=8798)
-```
-
-Rerun `go generate ./...` after editing `TODO.md` or `docs/`, or the Go
-side serves a stale copy and the documents differ.
-
 ## Out of scope
 
 Do not deploy (`make deploy`, `wrangler deploy`) or do deploy-only tasks.
