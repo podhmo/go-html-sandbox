@@ -34,6 +34,7 @@ pub struct Site {
   by_slug : Map[String, Post]
   by_file : Map[String, Post] // by file path in the repository, for links
   docs : Array[Doc]
+  by_path : Map[String, Doc]
   by_source : Map[String, Doc]
 }
 
@@ -66,11 +67,21 @@ pub fn Site::new(
     by_slug[p.slug] = p
     by_file[post_source(p)] = p
   }
+  let by_path = Map([])
   let by_source = Map([])
   for d in docs {
+    by_path[d.path] = d
     by_source[d.source] = d
   }
-  { base_url: origin.to_owned(), posts, by_slug, by_file, docs, by_source, }
+  {
+    base_url: origin.to_owned(),
+    posts,
+    by_slug,
+    by_file,
+    docs,
+    by_path,
+    by_source,
+  }
 }
 
 ///|
@@ -92,6 +103,12 @@ pub fn Site::render(self : Site, path : String) -> Response {
       match self.by_slug.get(slug.to_owned()) {
         Some(p) => Response::page(200, self.post_page(p))
         None => Response::page(404, error_page(404, "Post not found."))
+      }
+    "/docs/" => Response::page(200, self.doc_list())
+    [.. "/docs/", .. p] =>
+      match self.by_path.get(p.to_owned()) {
+        Some(d) => Response::page(200, self.doc_page(d))
+        None => Response::page(404, error_page(404, "Document not found."))
       }
     _ => Response::page(404, error_page(404, "Page not found."))
   }
