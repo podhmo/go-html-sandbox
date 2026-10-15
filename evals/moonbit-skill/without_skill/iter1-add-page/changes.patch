@@ -1,0 +1,78 @@
+diff --git a/moonbit/README.md b/moonbit/README.md
+index 6665be7..f92593e 100644
+--- a/moonbit/README.md
++++ b/moonbit/README.md
+@@ -6,8 +6,8 @@ It is an experiment in progress; see
+ [the research notes](../docs/sketch/ja/moonbit-workers-wasm.md) and
+ `TODO.md` for what is next.
+ 
+-- `site` — `render(path)`, returning the response for a path: status,
+-  headers, and body
++- `site` — `render(path)`, returning the response for a path (`/`,
++  `/about`, or a 404 for anything else): status, headers, and body
+ - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
+   response sent back through the imported `host` functions (`status`,
+   then `put` for text one UTF-16 code unit at a time, with `header_name`
+diff --git a/moonbit/site/site.mbt b/moonbit/site/site.mbt
+index 825eece..21d1868 100644
+--- a/moonbit/site/site.mbt
++++ b/moonbit/site/site.mbt
+@@ -45,8 +45,9 @@ fn html_response(status : Int32, body : String) -> Response {
+ }
+ 
+ ///|
+-/// render answers the request for path: the top page for "/", and a 404
+-/// page saying nothing is there for any other path.
++/// render answers the request for path: the top page for "/", the about
++/// page for "/about", and a 404 page saying nothing is there for any other
++/// path.
+ pub fn render(path : String) -> Response {
+   let sb = StringBuilder()
+   match path {
+@@ -56,6 +57,16 @@ pub fn render(path : String) -> Response {
+       })
+       html_response(200, sb.to_string())
+     }
++    "/about" => {
++      page(sb, "About | blog", fn(sb) {
++        sb.write_string(
++          "<h1>About</h1><p>This blog is rendered with MoonBit, running as Wasm on Cloudflare Workers.</p><p><a href=\"/\">Back to the top</a></p>",
++        )
++      })
++      let res = html_response(200, sb.to_string())
++      res.headers.push(("cache-control", "public, max-age=60"))
++      res
++    }
+     _ => {
+       page(sb, "Not found | blog", fn(sb) {
+         sb.write_string("<h1>Not found</h1><p>No page at <code>")
+diff --git a/moonbit/site/site_test.mbt b/moonbit/site/site_test.mbt
+index ce3ecf7..a32d9f1 100644
+--- a/moonbit/site/site_test.mbt
++++ b/moonbit/site/site_test.mbt
+@@ -18,6 +18,25 @@ test "top page" {
+   assert_true(res.body.contains("<h1>blog</h1>"))
+ }
+ 
++///|
++test "about page" {
++  let res = @site.render("/about")
++  assert_eq(res.status, 200)
++  assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
++  assert_eq(header(res, "cache-control"), Some("public, max-age=60"))
++  assert_true(res.body.has_prefix("<!doctype html>\n"))
++  assert_true(res.body.contains("<title>About | blog</title>"))
++  assert_true(res.body.contains("<h1>About</h1>"))
++  assert_true(res.body.contains("<a href=\"/\">"))
++}
++
++///|
++test "only the about page is cacheable" {
++  assert_eq(header(@site.render("/"), "cache-control"), None)
++  assert_eq(header(@site.render("/about/"), "cache-control"), None)
++  assert_eq(@site.render("/about/").status, 404)
++}
++
+ ///|
+ test "not found page escapes the path" {
+   let res = @site.render("/a<b>&\"c'")

@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "make build passes from a clean checkout",
+      "passed": true,
+      "evidence": "moon build --target wasm-gc --release\n-rw-r--r--@ 1 <user>  wheel  6322 10 15 09:56 _build/wasm-gc/release/build/worker/worker.wasm\nFinished. moon: ran 3 tasks, now up to date\n"
+    },
+    {
+      "text": "make check passes (moon fmt --check, moon check, moon test)",
+      "passed": true,
+      "evidence": "moon fmt --check\nmoon check\nmoon test\nTotal tests: 4, passed: 4, failed: 0.\nFinished. moon: ran 6 tasks, now up to date\nFinished. moon: ran 4 tasks, now up to date\n"
+    },
+    {
+      "text": "Worker Wasm still exports only path_push and serve, and imports only the four host functions",
+      "passed": true,
+      "evidence": "{\"exports\": [\"path_push\", \"serve\"], \"imports\": [\"host.header_name\", \"host.header_value\", \"host.put\", \"host.status\"]}"
+    },
+    {
+      "text": "dependencies are limited to moonbitlang/core, x, async",
+      "passed": true,
+      "evidence": "moon.mod imports: []"
+    },
+    {
+      "text": "/about returns 200 with Cache-Control: public, max-age=60",
+      "passed": true,
+      "evidence": "{\"status\": 200, \"headers\": [[\"content-type\", \"text/html; charset=utf-8\"], [\"cache-control\", \"public, max-age=60\"]]}"
+    },
+    {
+      "text": "an unknown path still returns 404",
+      "passed": true,
+      "evidence": "404"
+    },
+    {
+      "text": "new tests are blackbox (_test.mbt) and call @site qualified",
+      "passed": true,
+      "evidence": "test files: ['moonbit/site/site_test.mbt']"
+    },
+    {
+      "text": "new top-level items start with ///|",
+      "passed": true,
+      "evidence": "files with an item lacking ///|: []"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}
