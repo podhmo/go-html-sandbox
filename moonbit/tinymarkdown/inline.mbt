@@ -61,7 +61,7 @@ fn split_inlines(s : String, links~ : Bool) -> Array[Inline] {
         i += n
         continue
       }
-      emit(i, Code(code_text(s[i + n:end].to_owned())))
+      emit(i, Code(code_text(s[i + n:end])))
       i = end + n
       text = i
     } else if s[i] == '[' && links {
@@ -138,11 +138,11 @@ fn closing_run(s : String, from~ : Int32, n~ : Int32) -> Int32 {
 }
 
 ///|
-fn code_text(s : String) -> String {
-  let s = s.replace_all(old="\n", new=" ")
+fn code_text(s : StringView) -> String {
+  let s = if s.contains("\n") { s.replace_all(old="\n", new=" ") } else { s }
   if s is [' ', .. inner, ' '] && inner.trim(chars=" ") != "" {
     inner.to_owned()
   } else {
-    s
+    s.to_owned()
   }
 }
