@@ -45,20 +45,16 @@ fn parse_ref(raw : String) -> Ref? {
     None => (raw, Some(""))
   }
   guard fragment is Some(fragment) else { return None }
-  let mut scheme = ""
-  let mut rest = rest
-  for i, c in rest {
+  let (scheme, rest) = for i, c in rest {
     match c {
       'a'..<='z' | 'A'..<='Z' => continue
       '0'..<='9' | '+' | '-' | '.' if i > 0 => continue
       ':' if i == 0 => return None
-      ':' => {
-        scheme = rest[:i].to_lower().to_owned()
-        rest = rest[i + 1:]
-      }
-      _ => ()
+      ':' => break (rest[:i].to_lower().to_owned(), rest[i + 1:])
+      _ => break ("", rest)
     }
-    break
+  } nobreak {
+    ("", rest)
   }
   let (rest, raw_query) = match rest.find("?") {
     Some(i) => (rest[:i], rest[i + 1:].to_owned())
@@ -95,8 +91,7 @@ fn parse_ref(raw : String) -> Ref? {
 fn unescape(s : StringView) -> String? {
   guard s.contains("%") else { return Some(s.to_owned()) }
   let bytes = Buffer()
-  let mut i = 0
-  while i < s.length() {
+  for i = 0; i < s.length(); {
     if s[i] == '%' {
       guard i + 2 < s.length() &&
         hex_value(s[i + 1]) is Some(hi) &&
@@ -104,15 +99,14 @@ fn unescape(s : StringView) -> String? {
         return None
       }
       bytes.write_byte((hi * 16 + lo).to_byte())
-      i += 3
-    } else {
-      let end = match s[i:].find("%") {
-        Some(j) => i + j
-        None => s.length()
-      }
-      bytes.write_bytes(@utf8.encode(s[i:end]))
-      i = end
+      continue i + 3
     }
+    let end = match s[i:].find("%") {
+      Some(j) => i + j
+      None => s.length()
+    }
+    bytes.write_bytes(@utf8.encode(s[i:end]))
+    continue end
   }
   Some(@utf8.decode_lossy(bytes.to_bytes()))
 }

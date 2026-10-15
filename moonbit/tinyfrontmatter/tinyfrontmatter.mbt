@@ -32,18 +32,14 @@ pub fn split(src : String) -> (Map[String, String]?, String) raise SplitError {
     return (None, src)
   }
   let meta : Map[String, String] = Map([])
-  let mut rest = rest
-  let mut lineno = 1
-  while rest != "" {
+  for rest = rest, lineno = 2; rest != ""; {
     let (raw, next) = cut_line(rest)
-    rest = next
-    lineno += 1
     let line = trim_line(raw)
     if line == DELIMITER {
-      return (Some(meta), rest.to_owned())
+      return (Some(meta), next.to_owned())
     }
     if line == "" {
-      continue
+      continue next, lineno + 1
     }
     guard line.find(":") is Some(i) else {
       raise SplitError(
@@ -62,8 +58,10 @@ pub fn split(src : String) -> (Map[String, String]?, String) raise SplitError {
       )
     }
     meta[key] = unquote(line[i + 1:].trim(chars=SPACES))
+    continue next, lineno + 1
+  } nobreak {
+    raise SplitError("tinyfrontmatter: no closing \{DELIMITER.escape()}")
   }
-  raise SplitError("tinyfrontmatter: no closing \{DELIMITER.escape()}")
 }
 
 ///|

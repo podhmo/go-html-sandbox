@@ -117,15 +117,16 @@ fn post_name(name : String) -> (String, String)? {
     ] else {
     return None
   }
-  let mut prev_dash = true
-  for c in slug {
+  let ends_with_dash = for c in slug; prev_dash = true {
     match c {
-      'a'..<='z' | '0'..<='9' => prev_dash = false
-      '-' if !prev_dash => prev_dash = true
+      'a'..<='z' | '0'..<='9' => continue false
+      '-' if !prev_dash => continue true
       _ => return None
     }
+  } nobreak {
+    prev_dash
   }
-  if prev_dash {
+  if ends_with_dash {
     return None
   }
   Some((name[:10].to_owned(), slug.to_owned()))
