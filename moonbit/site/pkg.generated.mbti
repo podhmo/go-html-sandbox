@@ -42,15 +42,7 @@ pub struct Response {
 }
 pub fn Response::text(Int, String) -> Self
 
-pub struct Site {
-  base_url : String
-  posts : Array[Post]
-  by_slug : Map[String, Post]
-  by_file : Map[String, Post]
-  docs : Array[Doc]
-  by_path : Map[String, Doc]
-  by_source : Map[String, Doc]
-}
+type Site
 pub fn Site::Site(base_url~ : String, posts~ : Array[Post], docs~ : Array[Doc]) -> Self raise LoadError
 pub fn Site::embedded(base_url~ : String) -> Self raise LoadError
 pub fn Site::render(Self, String, query? : String) -> Response
