@@ -28,19 +28,58 @@ fn put_string(s : String) -> Unit {
 let path : StringBuilder = StringBuilder()
 
 ///|
-/// path_push appends one UTF-16 code unit of the request path.
+/// path_push appends one UTF-16 code unit of the request path, or of the
+/// base URL before set_base_url.
 pub fn path_push(code : Int32) -> Unit {
   path.write_char(code.unsafe_to_char())
 }
 
 ///|
+/// base_url is the public origin set by set_base_url.
+let base_url : Ref[String] = Ref("")
+
+///|
+/// site is the content being served, loaded on the first request, or why
+/// it could not be.
+let site : Ref[Result[@site.Site, String]?] = Ref(None)
+
+///|
+/// set_base_url takes what path_push pushed as the public origin for the
+/// OGP tags (BASE_URL in wrangler.jsonc). The host calls it once, before
+/// the first serve.
+pub fn set_base_url() -> Unit {
+  base_url.val = path.to_string()
+  path.reset()
+  site.val = None
+}
+
+///|
+/// load returns the site, loading it on first use.
+fn load() -> Result[@site.Site, String] {
+  match site.val {
+    Some(s) => s
+    None => {
+      let s = Ok(@site.Site::embedded(base_url=base_url.val)) catch {
+        LoadError(msg) => Err(msg)
+      }
+      site.val = Some(s)
+      s
+    }
+  }
+}
+
+///|
 /// serve answers the pushed path, and clears it for the next request. It
 /// sends the status, then each header as a name and a value, then the
-/// body, which is what the host's buffer holds when serve returns.
+/// body, which is what the host's buffer holds when serve returns. If the
+/// embedded content cannot be loaded, every request gets a 500 saying why.
 pub fn serve() -> Unit {
   let p = path.to_string()
   path.reset()
-  let res = @site.render(p)
+  let res = match load() {
+    Ok(s) => s.render(p)
+    Err(msg) => @site.Response::text(500, "\{msg}\n")
+  }
   status(res.status)
   for h in res.headers {
     put_string(h.0)

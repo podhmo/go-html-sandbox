@@ -1,6 +1,6 @@
 // The Worker around the MoonBit Wasm (../worker). Strings cross one UTF-16
-// code unit at a time: the path through the exported path_push, the
-// response back through the imported host functions below. See
+// code unit at a time: the path (and once, BASE_URL) through the exported
+// path_push, the response back through the imported host functions below. See
 // docs/sketch/ja/moonbit-workers-wasm.md for why.
 import wasm from "./build/app.wasm";
 
@@ -25,17 +25,29 @@ const instance = new WebAssembly.Instance(wasm, {
   },
 });
 
+function push(s) {
+  for (let i = 0; i < s.length; i++) instance.exports.path_push(s.charCodeAt(i));
+}
+
+// baseURL is the BASE_URL given to the Wasm, which it reads once.
+let baseURL;
+
 // serve returns the response the Wasm builds for path.
 function serve(path) {
   res = { status: 200, headers: new Headers() };
   buf = [];
-  for (let i = 0; i < path.length; i++) instance.exports.path_push(path.charCodeAt(i));
+  push(path);
   instance.exports.serve();
   return new Response(take(), res);
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
+    if (baseURL !== env.BASE_URL) {
+      baseURL = env.BASE_URL;
+      push(baseURL ?? "");
+      instance.exports.set_base_url();
+    }
     let path;
     try {
       path = decodeURIComponent(new URL(request.url).pathname);

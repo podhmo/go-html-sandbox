@@ -280,6 +280,18 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 - **テスト**：Go のテストのケース（`Parse` 57 件、`Inlines` 31 件）を、名前、入力、期待する構文木の組の表として `moon test` に移した。手で書き直すと間違えるので、Go のリテラルを読んで MoonBit のリテラルに変換する使い捨てのスクリプトで生成し、件数を Go と比べた。Go と同じく、違うケースをすべて名前つきで報告する。`assert_eq` に `msg` を渡すと差分の表示が消えるので、`@debug.to_string` で got と want を自分で出している。
 - **サイズ**：`worker` はまだ `tinymarkdown` を使わないので、Wasm は 5,279 B のまま。
 
+## 記事
+
+`/` と `/posts/{slug}` を、Go 版のブログと同じレイアウトで返すようにした。比較スクリプトで、`/`、4 つの記事、存在しない記事と存在しないパス（どちらも 404）の 7 つが Go 版と一致した。
+
+- **移植したもの**：Go 版の `internal/site` の `posts.go`、`views.go`、`links.go`、`docs.go` のうち、記事のページに要る部分。記事が `docs/` の文書にリンクしているので、リンクの解決（`linker`）と文書の読み込みもこの段階で移した。文書のページは次の段階。
+- **`net/url` と `path`**：リンクの解決は Go の `url.Parse`、`URL.String`、`path.Join` に頼っている。MoonBit の core にはないので、使う部分だけを書いた（スキームの判定、`%XX` の解釈と書き出し、`path.Clean`）。Go の `links_test.go` のケースに、エスケープや `url.Parse` が失敗する入力のケースを足して確かめている。`//` の後の authority の検査は移していない。
+- **日付**：core に時刻の型がないので、日付はファイル名の `YYYY-MM-DD` の文字列のまま持ち、`time.Parse` と同じ言葉（`month out of range` など）で月と日を確かめる。並べ替えも文字列の比較でできる。
+- **`site.css` のハッシュ**：Go 版はページに `/site.css?v=<SHA-256 の先頭 4 バイト>` を書く。core に SHA-256 がないので、`scripts/embed-assets.sh` がビルドの前に `sha256sum`（なければ `shasum -a 256`）で計算し、`site.css` と `favicon.svg` と一緒に `assets/embedded.mbt` に書く。
+- **`BASE_URL`**：Go 版の Worker と同じく `wrangler.jsonc` の `vars` に置き、`worker.mjs` が最初のリクエストで `path_push` と新しい export の `set_base_url` で Wasm に渡す。記事は最初の `serve` で読み込み、読み込めなければすべてのリクエストに理由を書いた 500 を返す。比較では Go 版を同じ `-base-url` で起動する。
+- **文字列の比較**：`String::compare` は短い文字列を先に並べるので、Go と同じ順にするには `lexical_compare` を使う。
+- **サイズ**：記事と文書（`TODO.md` と `docs/`）をすべて埋め込んだので、Wasm は 205,578 B（gzip で 68,092 B）になった。埋め込んだソースは合わせて約 124 KB。
+
 ## 次の一歩
 
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。

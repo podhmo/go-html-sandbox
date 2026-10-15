@@ -6,6 +6,8 @@ pub fn path_push(Int) -> Unit
 
 pub fn serve() -> Unit
 
+pub fn set_base_url() -> Unit
+
 // Errors
 
 // Types and methods

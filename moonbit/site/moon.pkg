@@ -1,3 +1,10 @@
 import {
   "podhmo/blog/el",
+  "podhmo/blog/picoel",
+  "podhmo/blog/tinymarkdown",
+  "podhmo/blog/tinyfrontmatter",
+  "podhmo/blog/posts",
+  "podhmo/blog/repodocs",
+  "podhmo/blog/assets",
+  "moonbitlang/core/encoding/utf8",
 }

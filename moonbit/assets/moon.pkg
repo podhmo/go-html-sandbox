@@ -1,0 +1,16 @@
+// The Go blog's site.css and favicon.svg, embedded by
+// scripts/embed-assets.sh into embedded.mbt, which is generated and
+// ignored by git.
+rule(
+  name: "embed-assets",
+  command: "sh scripts/embed-assets.sh $output ../go/examples/blog/internal/site",
+)
+
+dev_build(
+  rule: "embed-assets",
+  input: [
+    "../../go/examples/blog/internal/site/site.css",
+    "../../go/examples/blog/internal/site/favicon.svg",
+  ],
+  output: "embedded.mbt",
+)

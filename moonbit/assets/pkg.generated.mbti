@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "podhmo/blog/assets"
+
+// Values
+pub let favicon_svg : String
+
+pub let site_css : String
+
+pub let site_css_version : String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

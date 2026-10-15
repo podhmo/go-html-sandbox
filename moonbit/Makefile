@@ -12,16 +12,19 @@ MOONBIT_URL ?= http://localhost:$(PORT)
 POSTS := ../go/examples/blog/posts
 # The repository's own documents, as the Go blog's repodocs embeds them.
 DOCS := ../TODO.md ../docs
+# The Go blog's site.css and favicon.svg.
+ASSETS := ../go/examples/blog/internal/site
 
 .PHONY: embed build test check dev deploy compare clean help
 
-## embed: regenerate posts/embedded.mbt and repodocs/embedded.mbt from the Go blog's posts and the repository's documents
-# posts/moon.pkg and repodocs/moon.pkg run the same script, but moon reruns
-# it only when a post is added or removed, or a file directly in docs/;
-# this catches edits and subdirectories too.
+## embed: regenerate the embedded.mbt files: the Go blog's posts, the repository's documents, and the Go blog's site.css and favicon.svg
+# The packages' moon.pkg run the same scripts, but moon reruns them only
+# when a post is added or removed, or a file directly in docs/; this
+# catches edits and subdirectories too.
 embed:
 	sh scripts/embed.sh posts/embedded.mbt $(POSTS)
 	sh scripts/embed.sh repodocs/embedded.mbt .. $(DOCS)
+	sh scripts/embed-assets.sh assets/embedded.mbt $(ASSETS)
 
 ## build: build the Wasm into _build/wasm-gc/release/build/worker/
 build: embed
@@ -57,7 +60,7 @@ compare:
 
 ## clean: remove the build output
 clean:
-	rm -rf _build workers/build posts/embedded.mbt repodocs/embedded.mbt
+	rm -rf _build workers/build posts/embedded.mbt repodocs/embedded.mbt assets/embedded.mbt
 
 help:
 	@sed -n 's/^## //p' $(MAKEFILE_LIST)

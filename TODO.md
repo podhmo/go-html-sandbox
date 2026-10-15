@@ -85,7 +85,7 @@
     - [x] **tinyfrontmatter**: `pkg/tinyfrontmatter` を移植する。front matter
       は構文木ではないので、Go のテストのケースと同じ結果になることを
       `moon test` で確かめる。
-  - [ ] **記事**: 埋め込んだ記事（`YYYY-MM-DD-slug.md`。タイトルと説明は
+  - [x] **記事**: 埋め込んだ記事（`YYYY-MM-DD-slug.md`。タイトルと説明は
     front matter、なければ最初の見出しと段落から）を読み込み、`/` と
     `/posts/{slug}` を Go 版のブログと同じレイアウト（pico.css、`BASE_URL`
     からの OGP タグ。`BASE_URL` は `wrangler.jsonc` から渡す）で返す。
