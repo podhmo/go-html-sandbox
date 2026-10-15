@@ -15,6 +15,9 @@ It is an experiment in progress; see
   body)
 - `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for each
   request, and `wrangler.jsonc` builds it
+- `compare` — compares the Go blog with the Worker path by path (status,
+  `Content-Type`, and a diff of the body); `compare/cmd` is its native
+  CLI, built on `moonbitlang/async`, and the only package that uses it
 
 Strings cross between JS and Wasm one code unit at a time because Workers
 compiles imported Wasm modules without the JS string builtins, which
@@ -27,8 +30,12 @@ From `moonbit/` (`make help` lists the targets):
 ```sh
 make test     # moon test
 make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm
-make check    # before every commit: moon fmt --check, moon check, moon test
+make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test
 ```
+
+`worker` is built for wasm-gc only (its host imports do not compile on
+native) and `compare/cmd` for native only (async's I/O is native only),
+so the CLI and its dependency stay out of the Wasm.
 
 Needs `moon` on `PATH`, and Node.js for wrangler.
 
@@ -41,6 +48,24 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 Then open <http://localhost:8787>. wrangler's build command runs
 `moon build` and copies the Wasm to `workers/build/app.wasm`, ignored by
 git, and `wrangler dev` rebuilds when `site/` or `worker/` changes.
+
+## Comparing with the Go blog
+
+With the Go blog and the Worker both running:
+
+```sh
+(cd ../go && go generate ./... && go run ./examples/blog)   # http://localhost:8080
+make dev PORT=8798                                           # the Worker
+make compare PORT=8798                                       # or GO_URL=... MOONBIT_URL=...
+make compare PORT=8798 PATHS="/posts/hello /docs/"           # only these paths
+```
+
+`go generate` copies `TODO.md` and `docs/` into the Go blog; without it
+the Go side serves no documents. For each path `compare` prints `same`, or
+which of status, `Content-Type`, and body differ with a unified diff of
+the body (split after each `>` and newline, since the pages are mostly on
+one line; `--lines N` caps it, 40 by default). It exits non-zero when any
+path differs. Redirects are not followed, so they are compared as they are.
 
 ## Deploying
 

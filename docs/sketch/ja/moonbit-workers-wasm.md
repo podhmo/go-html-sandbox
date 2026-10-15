@@ -224,6 +224,28 @@ binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけ�
 - `-all` だと、V8 がまだ対応していない機能も有効になり、出力が読み込めなくなる（`invalid heap type 'exact'`、`--disable-custom-descriptors` を足しても `unknown import kind 0x7e`）。
 - `--enable-gc --enable-reference-types --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int --enable-mutable-globals --enable-multivalue` と、使う機能だけを指定すると通った。
 
+## Go 版との比較スクリプト
+
+ブログを移植するあいだの物差しとして、Go 版のブログと MoonBit の Worker に同じパスを取りにいき、ステータス、`Content-Type`、本文を比べる CLI を MoonBit で書いた（`moonbit/compare`）。`make compare` で動く。
+
+- 比べる処理（`compare` パッケージ）はターゲットを問わない純粋な関数にして、`moon test` で確かめている。本文の差分は core の `@diff`（Myers 法）で取る。Go 版はページの大半を 1 行に書くので、行単位だとページ全体が 1 つの変更になってしまう。そこで、改行と `>` の後ろで区切った単位で比べる。
+- HTTP の取得は `moonbitlang/async@0.22.5` の `@http.get` を使う実行ファイル（`compare/cmd`）に分けた。async の I/O は native でしか動かないので、`compare/cmd` は `supported_targets = "+native"`、ホストの import が native でコンパイルできない `worker` は `"+wasm-gc"` にした。これで、`moon.mod` に async を足しても Worker の Wasm は 5,279 B のまま、バイト単位で変わらない（export は `path_push` と `serve`、import は `host` の 4 つのまま）。`make check` には `moon check --target native` を足した。
+- `@http.get` はリダイレクトを追わないので、リダイレクトはそのまま比べられる。
+- `/`、`/posts/hello`、`/docs/ja/design`、`/docs/`、`/favicon.svg`、`/no-such-page` を既定のパスにした。Go 版は `go generate` で `TODO.md` と `docs/` をコピーしてから起動しないと文書を返さない。
+
+今の結果は、予想どおり 6 つとも違う。
+
+| パス | 違うところ |
+| --- | --- |
+| `/` | 本文 |
+| `/posts/hello` | ステータス（Go 200、MoonBit 404）、本文 |
+| `/docs/ja/design` | ステータス（Go 200、MoonBit 404）、本文 |
+| `/docs/` | ステータス（Go 200、MoonBit 404）、本文 |
+| `/favicon.svg` | ステータス、`Content-Type`（Go `image/svg+xml`、MoonBit `text/html; charset=utf-8`）、本文 |
+| `/no-such-page` | 本文（どちらも 404） |
+
+Go 版どうしを比べると 6 つとも `same` になり、終了コードは 0 だった。
+
 ## 未確認のこと
 
 - **記事の埋め込み**：MoonBit に `go:embed` に当たる仕組みがあるかは調べていない。なければ、Markdown を MoonBit のソースに変換するコード生成を挟む。
@@ -235,7 +257,8 @@ binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけ�
 3. （済み）`moonbit/Makefile` に `build`、`test`、`dev`、`deploy` を用意する。「Makefile」の節を参照。
 4. （済み）本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。「デプロイ」の節を参照。
 5. （済み）`wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。「計測」の節を参照。
-6. ブログ全体を移植し、Go 版とサイズを比べて、このレポートに追記する。手順は TODO.md の「Reimplement the blog in MoonBit」の子タスクに分けた（Go 版との比較スクリプト、記事と文書の埋め込み、HTML ビルダー、Markdown、記事、文書とリンク、残りのルート、比較と記録）。
+6. （済み）Go 版のブログと、パスごとにステータス、`Content-Type`、本文を比べる CLI を `moonbit/compare` に置く。「Go 版との比較スクリプト」の節を参照。
+7. ブログ全体を移植し、Go 版とサイズを比べて、このレポートに追記する。手順は TODO.md の「Reimplement the blog in MoonBit」の子タスクに分けた（Go 版との比較スクリプト、記事と文書の埋め込み、HTML ビルダー、Markdown、記事、文書とリンク、残りのルート、比較と記録）。
 
 ## spike のコード
 

@@ -2,6 +2,11 @@ import {
   "podhmo/blog/site",
 }
 
+// Only wasm-gc: the host imports do not compile on native, where the
+// comparison CLI in compare/cmd is built.
+
+supported_targets = "+wasm-gc"
+
 options(
   link: { "wasm-gc": { "exports": [ "path_push", "serve" ] } },
 )

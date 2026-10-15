@@ -13,3 +13,7 @@ keywords = [ ]
 preferred_target = "wasm-gc"
 
 description = "The blog of html-sandbox, served from Wasm on Cloudflare Workers."
+
+import {
+  "moonbitlang/async@0.22.5",
+}

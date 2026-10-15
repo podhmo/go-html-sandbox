@@ -45,7 +45,7 @@
     で）を測る。両方を調査メモに記録し、呼び出しが遅ければ、UTF-8 のバイト列を
     線形メモリ越しに渡す ABI を検討する。
 
-- [ ] **ブログを MoonBit で作り直す**: 同じサイトをトップレベルの `moonbit/`
+- [-] **ブログを MoonBit で作り直す**: 同じサイトをトップレベルの `moonbit/`
   に作り、Wasm として Cloudflare Workers で動かして、Wasm のサイズを Go 版と
   比べる（TinyGo で約 2 MiB / gzip 後 760 KiB、標準 Go で約 8 MiB。
   [レポート](docs/sketch/ja/blog-tinygo-workers.md)を参照）。`pkg/*`（HTML
@@ -54,7 +54,7 @@
   `make dev` で確認でき、`make deploy` でデプロイできる状態で終える。対象は
   Worker が配信するものだけで、`-debug` や `-watch` は移植しない。
   [実験](docs/sketch/ja/moonbit-workers-wasm.md)の続き。
-  - [ ] **Go 版のブログと比べる**: Go 版のブログ（`go run ./examples/blog`）と
+  - [x] **Go 版のブログと比べる**: Go 版のブログ（`go run ./examples/blog`）と
     MoonBit の Worker（`make dev`）から同じパスを取得し、レスポンスごとに
     ステータス、`Content-Type`、本文の差分を取るスクリプトを `moonbit/` に
     置く。完了の条件: `/`、記事 1 つ、文書 1 つ、`/docs/`、`/favicon.svg`、
