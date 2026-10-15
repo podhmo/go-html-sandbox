@@ -42,21 +42,21 @@ skill はこのリポジトリにも個人の環境にもインストールせ�
 
 | commit | 種類 | 内容 |
 | --- | --- | --- |
-| 16ad098 | 警告 `unnecessary_view_op` | view が期待される場所の `[:]` を削除 |
-| 860e083 | 警告 `unqualified_record` | `let` に束縛する struct リテラルを `LineWriter::{ .. }` のように型名付きにした |
-| c670be4 | 構文 | 匿名関数 `fn(sb) { .. }` をアロー関数 `sb => ..` に |
-| ce2881a | `<+` | builder に文字列リテラルやテンプレート文字列を書く `write_string` を `sb <+ ".."` に |
-| 864eef9 | core の関数 | `join_url` の末尾の `/` を落とすループを `trim_end` に、区切り行の判定を `Iter::all` に、行の長さ合わせを `Array::truncate` と range の `for` に |
-| 673ff02 | Option | `match x.strip_prefix(..) { Some(v) => v; None => x }` を `x.strip_prefix(..).unwrap_or(x)` に |
-| ce221a8 | core の関数 | 先頭の `#` やバッククォートを数えるループを `trim_start` との長さの差に |
-| dc93f4d | functional-for | `cells`、`nest`、`link`、`closing_run` の `let mut` + `while` を、`continue` と `nobreak` を使う functional-for に |
-| a7255b3 | is-pattern | `c == '\n' \|\| c == '>'` を `c is ('\n' \| '>')` に |
-| 61b365a | guard | `parse_table` と `link` の前提条件を `guard .. else { return None }` に |
-| e7c776f | core の関数 | `filter(..).length()` を `count_if` に |
-| 2f36799 | method | `is_void`、`is_block`（`Tag`）、`is_attr`、`write_html`、`write_plain`（`Node`）を method に。`html_response` は名前空間付きの constructor `Response::html(status, body~)` に |
-| aa3c81b | ラベル付き引数 | 取り違えやすい先頭以外の引数にラベルを付けた（`compare(path, go~, moonbit~)`、`body_diff(go, moonbit~)`、`join_url(base, path~)`、`page(sb, title~, body~)`、`split_inlines(s, links~)`、`nest(flat, from~, level~)`、`closing_run(s, from~, n~)`） |
-| 67a25f2 | 可視性 | 外のパッケージで構築していない `Response` と `Report` を `pub(all) struct` から `pub struct`（外からは読み取り専用）に |
-| 9799259 | 慣用表現 | `xs.length() > 0` を `!xs.is_empty()` に（`compare` パッケージの書き方に揃えた） |
+| 85ed177 | 警告 `unnecessary_view_op` | view が期待される場所の `[:]` を削除 |
+| d4c45c7 | 警告 `unqualified_record` | `let` に束縛する struct リテラルを `LineWriter::{ .. }` のように型名付きにした |
+| e1e9f8c | 構文 | 匿名関数 `fn(sb) { .. }` をアロー関数 `sb => ..` に |
+| d1e314e | `<+` | builder に文字列リテラルやテンプレート文字列を書く `write_string` を `sb <+ ".."` に |
+| 19afdde | core の関数 | `join_url` の末尾の `/` を落とすループを `trim_end` に、区切り行の判定を `Iter::all` に、行の長さ合わせを `Array::truncate` と range の `for` に |
+| 163154c | Option | `match x.strip_prefix(..) { Some(v) => v; None => x }` を `x.strip_prefix(..).unwrap_or(x)` に |
+| c5c2d32 | core の関数 | 先頭の `#` やバッククォートを数えるループを `trim_start` との長さの差に |
+| 1b5db40 | functional-for | `cells`、`nest`、`link`、`closing_run` の `let mut` + `while` を、`continue` と `nobreak` を使う functional-for に |
+| 8d70346 | is-pattern | `c == '\n' \|\| c == '>'` を `c is ('\n' \| '>')` に |
+| 04766d7 | guard | `parse_table` と `link` の前提条件を `guard .. else { return None }` に |
+| 6ac8b8a | core の関数 | `filter(..).length()` を `count_if` に |
+| 2bfe25b | method | `is_void`、`is_block`（`Tag`）、`is_attr`、`write_html`、`write_plain`（`Node`）を method に。`html_response` は名前空間付きの constructor `Response::html(status, body~)` に |
+| 9b7efdc | ラベル付き引数 | 取り違えやすい先頭以外の引数にラベルを付けた（`compare(path, go~, moonbit~)`、`body_diff(go, moonbit~)`、`join_url(base, path~)`、`page(sb, title~, body~)`、`split_inlines(s, links~)`、`nest(flat, from~, level~)`、`closing_run(s, from~, n~)`） |
+| d1dbfb7 | 可視性 | 外のパッケージで構築していない `Response` と `Report` を `pub(all) struct` から `pub struct`（外からは読み取り専用）に |
+| 057cb5a | 慣用表現 | `xs.length() > 0` を `!xs.is_empty()` に（`compare` パッケージの書き方に揃えた） |
 
 ## 方針を決めたもの
 
@@ -69,7 +69,7 @@ skill はこのリポジトリにも個人の環境にもインストールせ�
 
 - **`scan` と `split_inlines` のループ。** `split_inlines` は、ローカル関数 `emit` が可変の `text` を書き換えている。`scan` は `in_code` の状態を多くの分岐にまたがって持っている。functional-for にすると、`continue` のたびにすべての状態を書き並べることになり、元の方が読みやすい。
 - **`compare/cmd` の `fetch` の `try { .. } catch`。** ブロックの中で `@http.get` と `body.text()` の 2 つが raise する。postfix の `f() catch { .. }` にすると catch が 2 つに分かれ、冗長になる。
-- **`is_heading` を functional-for にすること。** 一度書いてみたが、本体が空の `for .. { } nobreak { n }` になって読みにくかったので、`trim_start` との長さの差で数える形（ce221a8）にした。
+- **`is_heading` を functional-for にすること。** 一度書いてみたが、本体が空の `for .. { } nobreak { n }` になって読みにくかったので、`trim_start` との長さの差で数える形（c5c2d32）にした。
 - **`body_diff` の 2 重ループのリスト内包表記化。** 内包表記は入れ子にできず（skill の pitfall にある）、`flat_map` で書いても読みやすくならない。
 - **`Type::new`。** 該当する関数がなかった。
 
