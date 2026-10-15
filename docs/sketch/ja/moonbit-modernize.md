@@ -300,3 +300,62 @@ skill の Step 0 に従い、`moonbit-refactoring` の「Local refactoring」よ
 - **ラベル付きの引数を持つ関数は、ローカル変数に束縛して呼べない。** `let prop = @picoel.meta_property` の後に `prop(.., content=..)` と書くと、エラー 4117「Function with labelled arguments can only be applied directly」になる。`ogp` は `@picoel.meta_property(..)` を直接呼ぶ形にした。
 - **内包表記の `for` も、for-in と同じくタプルのパターンを取れる。** `[for (name, _) in @posts.files => name]` と書けた。
 - **for-in の分解は、1 つのコミットで拾い切れなかった。** 最初の grep は `for c in xs {` の次の行の `let (..) = c` だけを探していて、本体で `c.0` を直接読む形を見落とした。`[^a-zA-Z_.][a-z_]+\.[0-9]\b` で探し直して見つけた。
+
+## 追記: language-changes-catalog を全項目当てはめたパス
+
+2 回目のパスの後、`language-changes-catalog` の `references/language-changes.md`（テーマ別カタログ）と `references/about-idiomatic-code.md`（個人ポリシー）を全項目コードに当てはめ、使えるものを適用した。
+どこまで使えるかを試すための好奇心によるパスで、2 回目のパスと同じく書き換えの種類ごとに 1 コミットにした。
+
+なお、2 回目のパスの「結論」に、書き換えはすべて skill の catalog、grep、`.mbti` から見つけたと書いた。これは正確ではない。3627e2a（外部型へのローカルメソッド）は、2 回目のパスの終わりに `language-changes.md` のテーマ別カタログを流し読みして見つけたもの。ただしそのときは、項目ごとの記録まではしていない。
+
+### 適用したもの
+
+| commit | 出どころ | 内容 |
+| --- | --- | --- |
+| add4ddc | 個人ポリシー「エラー設計」 | `LoadError` と `SplitError` の payload をラベル付きの `message~` にし、メッセージだけを書く `impl Show` と `derive(Debug)` を足した。メッセージだけが欲しい catch は `e => "\{e}"` になった。自動で生えるメソッドには、`el` と同じく `#deprecated` を付けた `pub extend` を書いた |
+| 7d31abc | パターンマッチング「Map パターン」 | `match meta.get("title") { Some(t) if t != "" => .. }` を `match meta { { "title": t, .. } if t != "" => .. }` に |
+| 874c41b | パターンマッチング「正規表現マッチ」 | slug を判定する `prev_dash` のループを `guard slug =~ re"^[a-z0-9]+(-[a-z0-9]+)*$"` に |
+| a7fd3fc | テスト・ドキュメント「`mbt check`」 | `tinyfrontmatter.split` の doc コメントに、`moon test` で実行される例を書いた |
+| 0effb6d | 個人ポリシー「テストの置き場」 | `clean`、`dir`、`join` のテストを、`site_wbtest.mbt` から実装の隣（`links.mbt`）のインラインテストに移した |
+| 0aae5c5 | 関数定義・呼び出し「カスケード `..`」 | `el` の `write_html` で属性を書く 3 回の書き込みを `sb..write_string(..)..write_escaped(v).write_char('"')` に |
+| 46ae520 | 文字列「複数行文字列 `#\|`」 | `site_test.mbt` で共有している Markdown のフィクスチャを `#\|` に |
+
+どのコミットも、`make check` と `moon check --target all --deny-warn` を通した（テストは 60 件）。
+
+### 当てはまらなかったもの、見送ったもの
+
+- **使う場面がなかった:** `defer` / `errdefer`、`<?`、ラベル付きブロック、`[| .. |]`、ビット列パターン、or-pattern の `with`、`extenum`、ローカル型、phantom type、`using`、`#as_free_fn`、`#non_exhaustive`。
+- **`lexscan` による `tinymarkdown` のインライン解析の書き直し:** 1 回目のパスと同じく、書き直しが大きいので見送った。
+- **`Post` と `Doc` の一部のフィールドを `priv` にすること:** 外から読まれていないフィールドもあるが、読み取り専用のデータとして公開しておく方が自然なので見送った。
+- **個人ポリシー「主要な引数以外はラベル付きにする」:** `el` / `picoel` の DSL の子要素は位置引数のまま、という 1 回目のパスの方針を変えていない。
+- **表形式のテストケースの `#|` 化:** 1 行に 1 ケースを並べた方が入力を見比べやすいので、`#|` にしたのは文書まるごとのフィクスチャだけ。
+
+### 気づいたこと
+
+- **`=~` のコストは小さかった。** release の `worker.wasm` は 234,123 バイトから 234,164 バイトになり、41 バイトしか増えなかった。
+- **Map パターンの値の位置には、値そのものを書く。** `{ "title": Some(t) }` と書くと型エラー（4014）になり、`{ "title": t, .. }` と書く。
+- **suberror の `impl Show` で、`logger <+ message` は parse error になる。** skill の Pitfalls にあるとおり、`<+` の右辺はテンプレート文字列でなければならない。`logger.write_string(message)` と書いた。Show のメソッドにも警告 `implicit_impl_as_method` が出るので、`pub extend .. with Show::{to_string, output}` も足した。
+- **カスケードの最後の呼び出しを `..` にすると、警告 `deprecated_syntax` が出る。** 結果を黙って捨てることになるため。最後だけ `.` にする。
+- **doc コメントの `mbt check` の例は、`moon test` のテストとして数えられる。** 期待値をわざと壊すと失敗することも確かめた。
+- **`moon fmt` は、タプルの中の `#|` のブロックを括弧で包む。** 値は元の `\n` を使った文字列と同じで、最後の行の後に改行は付かない。一時的なテストで、元のリテラルと等しいことを確かめた。
+- **作業の途中まで、検証用のスクリプトが警告を見落としていた。** `make check` の `moon check` は `--deny-warn` を付けていないので、警告があっても失敗しない。途中から、警告が出たら失敗するようにスクリプトを直した。直した後のスクリプトで、HEAD に警告がないことを確かめた。
+
+### handbook に戻したもの
+
+[podhmo/moonbit-individual-handbook#64](https://github.com/podhmo/moonbit-individual-handbook/pull/64) に draft として出した。
+
+2 回目のパスで得たものは、次の 3 つ。
+
+- 更新節のない 2 部形式の functional-for で、`continue` を書き忘れた経路があると、警告なしで無限ループになるという Pitfall。
+- `UInt16` のコード単位にも、Char のリテラルの範囲パターンが使えること。
+- 内包表記もタプルのパターンを取れること。`c.0` / `c.1` を読む形も、for-in の分解の候補になること。
+
+このパスからは、初めて読む人にも読みやすく、コードの意味もはっきりする 2 つを、`moonbit-modernize` の Step 2 に足した。
+
+- 文字列の形を確かめるだけのループを、正規表現 `=~` に。
+- 文書まるごとの `\n` 入りのリテラルを、`#|` に。
+
+ほかは次の理由で入れていない。
+
+- Map パターンとカスケード: 元の書き方より読みやすくならないか、初見で分かりにくい規則がある。
+- suberror の `impl Show`、インラインテスト、`mbt check`: 設計やテスト方針の判断を含むので、カタログと個人ポリシーの側に置いたままにした。
