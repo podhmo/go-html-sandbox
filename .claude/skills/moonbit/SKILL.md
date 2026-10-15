@@ -33,11 +33,18 @@ library sources** rather than writing from memory.
   `moon.mod.json` / `moon.pkg.json`. `~/.moon/AGENTS.md` and the
   `AGENTS.md` that `moon new` writes still describe the JSON format;
   ignore those parts.
-- For language reference, read the official agent guide, which is up to
-  date with the DSL:
-  `~/ghq/github.com/moonbitlang/moonbit-agent-guide/moonbit-agent-guide/SKILL.md`
-  (and its `references/`). Read the relevant section rather than the whole
-  file; it is long.
+- First run `.claude/skills/moonbit/scripts/sync-refs.sh`. It lines the
+  reference clones under `~/ghq/github.com/moonbitlang/` up with what you
+  build against: x and async at the tags in `moonbit/moon.mod`,
+  moonbit-docs at the tag of `moonc`'s version (or its main while that
+  tag does not exist yet). Reading a clone at another version shows APIs
+  and syntax that may not compile.
+- For language and config reference, read the official docs at that
+  version: `moonbit-docs/next/toolchain/moon/{module,package}.md` for
+  `moon.mod` / `moon.pkg`, `next/language/` for the language. The agent
+  guide (`moonbit-agent-guide/moonbit-agent-guide/SKILL.md`) is shorter
+  and written for agents, but it has no tags and can lag the toolchain;
+  when it disagrees with the docs, the docs win.
 
 The DSL shapes used here (all verified to build):
 
@@ -113,23 +120,23 @@ Do not guess names or signatures — confirm them, in this order:
    one pinned: with async@0.22.5 in `moon.mod` (after `moon update`) it
    printed `// moonbitlang/async@0.21.3`. Check the version in its first line, and
    use the sources (step 2) for x and async.
-2. **The library sources, at the version you build against.** Run
-   `.claude/skills/moonbit/scripts/sync-refs.sh` (reads the versions in
-   `moonbit/moon.mod`; or pass `async@0.22.5` to look at a candidate).
-   It clones/fetches `~/ghq/github.com/moonbitlang/{x,async}` and checks out
-   the tag `v<version>`, so the source you read is the source you compile.
-   Then:
-   - `core`: read `~/.moon/lib/core` — the copy shipped with the toolchain,
-     which is exactly what compiles. The `core` clone has no tags; use it
-     only for `git log`.
+2. **The library sources, at the version you build against.** After
+   `sync-refs.sh` (pass `async@<version>` for a library you are about to
+   add, since it is not in `moon.mod` yet), the clone's checkout is the
+   source you compile; confirm with `git -C <clone> describe --tags`
+   before trusting what you read.
+   - `core`: read `~/.moon/lib/core`, the copy shipped with the toolchain.
+     The shipped commit is not in the public repository, so the `core`
+     clone cannot be lined up; use it only for `git log`.
    - Public API per package: `src/<pkg>/pkg.generated.mbti` in async,
      `<pkg>/pkg.generated.mbti` in core and x.
    - Usage examples: the package's `*_test.mbt`, and for async,
      `examples/` (`cat`, `xargs`, `curl`, `http_file_server`, ...).
 3. **Hard-won notes**: `~/ghq/github.com/podhmo/moonbit-individual-handbook/docs/knowledge.md`
    records surprises found by actually running things (where stdin lives,
-   deprecated APIs, target differences). The ones that matter most here
-   are in [references/pitfalls.md](references/pitfalls.md).
+   target differences), on the moon of its time — re-check before relying
+   on an entry. The ones that matter most here are in
+   [references/pitfalls.md](references/pitfalls.md).
 4. Diagnostics: `moon explain --diagnostic <code>`.
 
 Docs and memory lose to the toolchain whenever they disagree; if a fact

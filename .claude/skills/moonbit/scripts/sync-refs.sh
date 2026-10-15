@@ -7,9 +7,12 @@
 #   sync-refs.sh async@0.22.4    # a version you are considering adding
 #
 # x and async are checked out at the tag v<version> (detached HEAD; the
-# clones are read-only references). core has no tags: the toolchain ships
-# its own copy in ~/.moon/lib/core, which is the exact source to read, so
-# the core clone is only fetched, for `git log`. The agent guide is pulled.
+# clones are read-only references). moonbit-docs is tagged with moonc's
+# version: it is checked out at that tag, or at origin/main while the
+# tag does not exist yet (main is then the docs for the newest release).
+# core cannot be lined up: the toolchain ships a commit that is not in the
+# public repository, so read its own copy in ~/.moon/lib/core; the clone
+# is only fetched, for `git log`. The agent guide has no tags and is pulled.
 set -eu
 
 ROOT=${GHQ_ROOT:-$HOME/ghq}/github.com/moonbitlang
@@ -42,6 +45,17 @@ done
 clone core
 echo "core: read ~/.moon/lib/core ($(sed -n 's/^version = "\(.*\)"/\1/p' "$HOME/.moon/lib/core/moon.mod"), shipped with $(moon version | head -1))"
 
-if [ -d "$ROOT/moonbit-agent-guide" ]; then
-  git -C "$ROOT/moonbit-agent-guide" pull -q --ff-only || echo "moonbit-agent-guide: pull failed; reading it as is" >&2
+# `moonc v0.10.15+943464bfa (2026-10-12) ...` -> v0.10.15
+moonc=$(moon version --all | sed -n 's/^moonc \(v[0-9.]*\).*/\1/p')
+clone moonbit-docs
+if git -C "$ROOT/moonbit-docs" rev-parse -q --verify "refs/tags/$moonc" >/dev/null; then
+  git -C "$ROOT/moonbit-docs" -c advice.detachedHead=false checkout -q "$moonc"
+  echo "moonbit-docs: $moonc at $ROOT/moonbit-docs"
+else
+  git -C "$ROOT/moonbit-docs" -c advice.detachedHead=false checkout -q --detach origin/main
+  echo "moonbit-docs: no tag $moonc yet; origin/main ($(git -C "$ROOT/moonbit-docs" log -1 --format=%cs)) at $ROOT/moonbit-docs"
 fi
+
+clone moonbit-agent-guide
+git -C "$ROOT/moonbit-agent-guide" -c advice.detachedHead=false checkout -q --detach origin/HEAD
+echo "moonbit-agent-guide: origin/HEAD ($(git -C "$ROOT/moonbit-agent-guide" log -1 --format=%cs)); no tags, may lag the toolchain"
