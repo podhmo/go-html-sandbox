@@ -28,7 +28,7 @@ pub fn Response::text(status : Int32, body : String) -> Response {
 
 ///|
 /// Site is the content being served.
-pub struct Site {
+struct Site {
   base_url : String // absolute, without a trailing slash
   posts : Array[Post]
   by_slug : Map[String, Post]
