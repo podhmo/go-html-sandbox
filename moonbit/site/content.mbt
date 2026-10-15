@@ -134,18 +134,7 @@ fn post_name(name : String) -> (String, String)? {
     ] else {
     return None
   }
-  let ends_with_dash = for c in slug; prev_dash = true {
-    match c {
-      'a'..<='z' | '0'..<='9' => continue false
-      '-' if !prev_dash => continue true
-      _ => return None
-    }
-  } nobreak {
-    prev_dash
-  }
-  if ends_with_dash {
-    return None
-  }
+  guard slug =~ re"^[a-z0-9]+(-[a-z0-9]+)*$" else { return None }
   Some((name[:10].to_owned(), slug.to_owned()))
 }
 
