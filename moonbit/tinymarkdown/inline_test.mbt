@@ -5,8 +5,7 @@ fn run_inlines(
   cases : Array[(String, String, Array[@tinymarkdown.Inline])],
 ) -> Unit raise {
   let failures = []
-  for c in cases {
-    let (name, src, want) = c
+  for (name, src, want) in cases {
     let got = @tinymarkdown.inlines(src)
     if got != want {
       failures.push(

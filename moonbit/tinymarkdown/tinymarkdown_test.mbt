@@ -5,8 +5,7 @@ fn run(
   cases : Array[(String, String, Array[@tinymarkdown.Block])],
 ) -> Unit raise {
   let failures = []
-  for c in cases {
-    let (name, src, want) = c
+  for (name, src, want) in cases {
     let got = @tinymarkdown.parse(src)
     let want = @tinymarkdown.Document::{ children: want, }
     if got != want {
