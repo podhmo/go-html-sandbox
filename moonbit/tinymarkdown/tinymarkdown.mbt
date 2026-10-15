@@ -18,10 +18,16 @@ pub(all) struct Document {
   children : Array[Block]
 } derive(Eq, Debug)
 
+// The derived Eq and Debug are meant for == and assert_eq, not as methods;
+// the #deprecated extends below (and in inline.mbt) mark the implicitly
+// promoted methods as unwanted (warning implicit_impl_as_method), as el does.
+
 ///|
+#deprecated("Use == and != instead")
 pub extend Document with Eq::{not_equal, equal}
 
 ///|
+#deprecated("Use Debug::to_repr instead")
 pub extend Document with Debug::{to_repr}
 
 ///|
@@ -50,9 +56,11 @@ pub(all) enum Block {
 } derive(Eq, Debug)
 
 ///|
+#deprecated("Use == and != instead")
 pub extend Block with Eq::{not_equal, equal}
 
 ///|
+#deprecated("Use Debug::to_repr instead")
 pub extend Block with Debug::{to_repr}
 
 ///|

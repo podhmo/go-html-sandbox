@@ -14,9 +14,11 @@ pub(all) enum Inline {
 } derive(Eq, Debug)
 
 ///|
+#deprecated("Use == and != instead")
 pub extend Inline with Eq::{not_equal, equal}
 
 ///|
+#deprecated("Use Debug::to_repr instead")
 pub extend Inline with Debug::{to_repr}
 
 ///|
