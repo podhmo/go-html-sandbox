@@ -187,9 +187,15 @@ Follow what `moonbit/site/site.mbt` and `moonbit/worker/worker.mbt` do:
 - Adding a package that the Worker uses? Add its directory to
   `build.watch_dir` in `workers/wrangler.jsonc`, or `make dev` will not
   rebuild when it changes.
-- Embedding files: there is no `go:embed`. `moon.pkg` supports pre-build
-  commands (`:embed`); check the agent guide's `references/advanced-moonbit-build.md`
-  for the current DSL syntax before relying on it.
+- Generated sources (e.g. embedding files; there is no `go:embed`): keep
+  them out of git, and make plain `moon check` / `moon test` work in a
+  fresh clone, not only `make` — editors and agents run moon directly.
+  `moon.pkg`'s `rule(...)` + `dev_build(rule:, input:, output:)` runs a
+  generator before moon builds the package. Its paths are relative to the
+  package directory while the command runs in the module root, and a
+  directory as `input` reruns only when files are added or removed, not
+  edited — so have `make` run the generator too. Read
+  `moonbit-docs/next/toolchain/moon/package.md` for the syntax.
 - Size is the experiment's metric. Note the Wasm size
   (`make build` prints it) when a change could move it, and record it in
   `docs/` when the step asks for it. `wasm-opt` is not in the build; if you
@@ -235,7 +241,9 @@ From `moonbit/`, run `make check` (`moon fmt --check`, `moon check`,
 `moon test`) and make it pass; if you touched a native-only package, also
 `moon check --target native`. If the change affects what the Worker
 serves, try it with `make dev` (`make dev PORT=8798` if 8787 is taken by
-the Go Worker). Then follow the repo's usual rules: English commit
+the Go Worker). Stop only the processes you started, by PID (or the
+`make dev` job you launched); the user usually has their own
+`wrangler dev` running, and `pkill -f workerd` / `pkill wrangler` kill it. Then follow the repo's usual rules: English commit
 messages prefixed with `moonbit:`, TODO.md updated through the `todo-md`
 skill, and findings recorded in `docs/sketch/ja/moonbit-workers-wasm.md`
 (Japanese).

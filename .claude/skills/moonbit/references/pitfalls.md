@@ -45,6 +45,11 @@ the toolchain or a pinned dependency moves.
 - `StringBuilder` is for characters, `Buffer` for bytes. `Buffer`'s
   `to_string` reads its bytes as UTF-16LE, so mixing them garbles
   non-ASCII text; ASCII-only tests pass by accident.
+- `String`'s `compare` (so `<`, `sort()`) orders shorter strings first:
+  `"b" < "aa"` is true and `["b", "aa", "ab"].sort()` gives
+  `[b, aa, ab]`. Use `a.lexical_compare(b)` for dictionary order, e.g.
+  `sort_by((a, b) => a.lexical_compare(b))`, when the order must match
+  Go's `sort.Strings` or file listings.
 - `String::split` returns `Iter[StringView]`; `to_owned()` makes Strings.
 
 ## Library behavior
