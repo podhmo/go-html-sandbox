@@ -15,8 +15,9 @@ It is an experiment in progress; see
 - `site` — the blog, ported from the Go blog's `internal/site`:
   `load_posts` and `load_docs` read the embedded files, and
   `Site::render(path)` returns the response for a path (status, headers,
-  and body) with the same pages as the Go blog; so far `/` and
-  `/posts/{slug}`, and 404 pages for the rest
+  and body) with the same pages as the Go blog; so far `/`,
+  `/posts/{slug}`, `/docs/`, and `/docs/{path}`, and 404 pages for the
+  rest
 - `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
   `site.css` that pages put in its URL, generated into
   `assets/embedded.mbt` by `scripts/embed-assets.sh`

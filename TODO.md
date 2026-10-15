@@ -90,7 +90,7 @@
     `/posts/{slug}` を Go 版のブログと同じレイアウト（pico.css、`BASE_URL`
     からの OGP タグ。`BASE_URL` は `wrangler.jsonc` から渡す）で返す。
     完了の条件: 比較スクリプトで、`/` とすべての記事が Go 版と一致する。
-  - [ ] **文書とリンク**: `/docs/` と `/docs/{path}` を返し、Markdown の相対
+  - [x] **文書とリンク**: `/docs/` と `/docs/{path}` を返し、Markdown の相対
     リンクを Go 版と同じように解決する（`/docs/` や `/posts/` のページへ、
     GitHub へ、またはリンクにしない）。完了の条件: 比較で、すべての文書が
     一致する。

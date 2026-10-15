@@ -212,6 +212,16 @@ fn dir(p : String) -> String {
 }
 
 ///|
+/// base is Go's path.Base for the file paths the site holds: the last
+/// element of p.
+fn base(p : String) -> String {
+  match p.rev_find("/") {
+    Some(i) => p[i + 1:].to_owned()
+    None => p
+  }
+}
+
+///|
 /// Linker resolves the URL of a Markdown link to an href, or None when the
 /// URL must not be linked; the link text is then shown as plain text.
 type Linker = (String) -> String?

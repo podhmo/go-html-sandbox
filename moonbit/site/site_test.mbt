@@ -319,3 +319,45 @@ test "the embedded posts and documents load" {
   assert_contains(body(s, "/"), ["<a href=\"/posts/hello\">"])
   assert_contains(body(s, "/posts/hello"), ["<h1>Hello</h1>"])
 }
+
+///|
+test "two files for one document path" {
+  let msg = try
+    @site.load_docs([("TODO.md", "a"), ("docs/TODO.md", "b")])
+  catch {
+    LoadError(msg) => msg
+  } noraise {
+    _ => fail("want an error for two files mapped to /docs/TODO")
+  }
+  assert_true(msg.contains("/docs/TODO is already used by TODO.md"), msg~)
+}
+
+///|
+test "doc pages" {
+  let s = new_site(test_posts)
+  assert_contains(body(s, "/docs/"), [
+    "<a href=\"/docs/TODO\">TODO</a>", "<a href=\"/docs/ja/design\">Design &lt;x&gt;</a>",
+    "<p>docs/ja/design.md</p>",
+  ])
+  assert_contains(body(s, "/docs/TODO"), [
+    "<li>[ ] **task**: first line\nsecond line</li>", "<blockquote><p>note</p></blockquote>",
+  ])
+  assert_contains(body(s, "/docs/ja/design"), [
+    "<h2>Use <code>el</code></h2><ul><li>run <code>go test</code></li><li><code>a ` b</code></li></ul>",
+    "<ul><li><small><a href=\"/docs/ja/design.md\" download=\"design.md\" class=\"secondary\">Download .md</a></small></li></ul></nav></header><article>",
+  ])
+  assert_contains(body(s, "/docs/notes"), [
+    "<h1>docs/notes.md</h1><p>no heading</p>",
+  ])
+  for p in ["/docs/nope", "/docs/image", "/docs/image.svg"] {
+    assert_contains(body(s, p, want=404), ["Document not found."])
+  }
+}
+
+///|
+test "the embedded documents have pages" {
+  let s = @site.Site::embedded(base_url="https://example.com")
+  for p in ["/docs/TODO", "/docs/ja/design", "/docs/sketch/ja/blog"] {
+    assert_true(body(s, p).contains("<article>"), msg=p)
+  }
+}

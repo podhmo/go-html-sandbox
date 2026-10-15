@@ -127,6 +127,54 @@ fn Site::post_page(self : Site, p : Post) -> @el.Node {
 }
 
 ///|
+/// doc_list links to every repository document, showing its file path
+/// below the title.
+fn Site::doc_list(self : Site) -> @el.Node {
+  let body = [@picoel.h1([@picoel.text("Docs")])]
+  for d in self.docs {
+    body.push(
+      @picoel.article([
+        @picoel.hgroup([
+          @picoel.h2([@picoel.a(doc_path(d), linked_title(d.title))]),
+          @picoel.p([@picoel.text(d.source)]),
+        ]),
+      ]),
+    )
+  }
+  let meta = PageMeta::{
+    title: "Docs",
+    description: "Documents of this repository.",
+    url: "\{self.base_url}/docs/",
+    type_: "website",
+  }
+  layout(meta, body)
+}
+
+///|
+fn Site::doc_page(self : Site, d : Doc) -> @el.Node {
+  let link = self.linker(d.source)
+  let body = []
+  if first_title(d.doc) is None {
+    body.push(@picoel.h1(render_inlines(@tinymarkdown.inlines(d.title), link)))
+  }
+  body.push_iter(render_blocks(d.doc.children, link).iter())
+  let meta = PageMeta::{
+    title: d.title,
+    description: d.description,
+    url: "\{self.base_url}\{doc_path(d)}",
+    type_: "article",
+  }
+  layout(meta, [
+    page_header(
+      @picoel.small([@picoel.text(d.source)]),
+      doc_markdown_path(d),
+      base(d.source),
+    ),
+    @picoel.article(body),
+  ])
+}
+
+///|
 fn post_path(p : Post) -> String {
   "/posts/\{p.slug}"
 }
@@ -140,6 +188,12 @@ fn post_markdown_path(p : Post) -> String {
 ///|
 fn doc_path(d : Doc) -> String {
   "/docs/\{d.path}"
+}
+
+///|
+/// doc_markdown_path is where the source of d is served.
+fn doc_markdown_path(d : Doc) -> String {
+  "\{doc_path(d)}.md"
 }
 
 ///|
