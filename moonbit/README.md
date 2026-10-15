@@ -14,6 +14,10 @@ It is an experiment in progress; see
 - `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)
   as pairs of file name and content, generated into `posts/embedded.mbt`
   (ignored by git) by `scripts/embed.sh`
+- `tinymarkdown` — a port of `go/pkg/tinymarkdown`: `parse(src)` into a
+  tree of sections, paragraphs, lists, quotes, tables, and code blocks, and
+  `inlines(text)` into text, code spans, and links; its tests are the Go
+  test cases
 - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
   response sent back through the imported `host` functions (`status`,
   then `put` for text one UTF-16 code unit at a time, with `header_name`

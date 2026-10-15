@@ -269,6 +269,17 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 - **警告 `implicit_impl_as_method`**：moonc v0.10.15 では、公開した型に `derive(Eq, Debug)` を付けるだけで、`equal` などがメソッドに昇格することへの警告が出る。core（`cmp/extends.mbt`）にならい、`#deprecated` を付けた `pub extend ... with Eq::{equal, not_equal}` を書いて消した（`el/extends.mbt`）。
 - `worker` はまだ `el` を使っていないので、Wasm は 5,279 B のまま。
 
+## Markdown の移植
+
+`go/pkg/tinymarkdown` を `moonbit/tinymarkdown` に移植した（`pkg/tinyfrontmatter` はまだ）。
+
+- **構文木**：Go の `Block` / `Inline` インターフェースと構造体は、MoonBit の enum 1 つずつにした（`Section(level~, title~, children~)`、`Paragraph(String)` など）。`derive(Eq, Debug)` で比べて表示できる。見出しを入れ子にする前の平らな列は、Go では非公開の `heading` 型を `Block` に混ぜていたが、MoonBit では非公開の enum `Flat`（`Block(Block)` と `Heading(Int, String)`）で表した。
+- **インデックス**：Go は文字列をバイトで、MoonBit は UTF-16 のコード単位で数える。パーサーが探す文字はすべて ASCII なので、同じ位置で切れる。`` s[i] == '`' `` のように、コード単位と文字リテラルをそのまま比べられる。
+- **空白の除去**：`String::trim()` の既定は `"\t\n\r "` だけで、Go の `strings.TrimSpace`（`unicode.IsSpace`、U+00A0 なども含む）より狭い。同じ文字の集合を定数にして `trim(chars=...)` に渡した。
+- **derive の警告**：公開する型に `derive(Eq, Debug)` を付けると、生成したメソッドが暗黙にメソッドになるのは非推奨だという警告（`implicit_impl_as_method`）が出る。公式ドキュメントの例と同じく `pub extend Block with Eq::{not_equal, equal}` と `pub extend Block with Debug::{to_repr}` を書いた。`pub` を付けない `extend` では、今度は未使用の警告が出る。
+- **テスト**：Go のテストのケース（`Parse` 57 件、`Inlines` 31 件）を、名前、入力、期待する構文木の組の表として `moon test` に移した。手で書き直すと間違えるので、Go のリテラルを読んで MoonBit のリテラルに変換する使い捨てのスクリプトで生成し、件数を Go と比べた。Go と同じく、違うケースをすべて名前つきで報告する。`assert_eq` に `msg` を渡すと差分の表示が消えるので、`@debug.to_string` で got と want を自分で出している。
+- **サイズ**：`worker` はまだ `tinymarkdown` を使わないので、Wasm は 5,279 B のまま。
+
 ## 次の一歩
 
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。

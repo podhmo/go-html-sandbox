@@ -75,11 +75,16 @@
     うち当てはまるケースを `moon test` で、同じ出力で確かめている。
     - [x] **el**: `pkg/el` を `moonbit/el` に移植する。
     - [ ] **picoel**: `pkg/picoel` のうちページで使う部分を移植する。
-  - [ ] **front matter と Markdown**: `pkg/tinyfrontmatter` と
+  - [-] **front matter と Markdown**: `pkg/tinyfrontmatter` と
     `pkg/tinymarkdown`（`#####` までのセクション、リスト、段落、引用、
     フェンスで囲んだコード、表。インラインのコードとリンク）を移植する。
     完了の条件: Go のテストのケースを `moon test` で、同じ構文木で確かめて
     いる。
+    - [x] **tinymarkdown**: `pkg/tinymarkdown` を `moonbit/tinymarkdown` に
+      移植する。
+    - [ ] **tinyfrontmatter**: `pkg/tinyfrontmatter` を移植する。front matter
+      は構文木ではないので、Go のテストのケースと同じ結果になることを
+      `moon test` で確かめる。
   - [ ] **記事**: 埋め込んだ記事（`YYYY-MM-DD-slug.md`。タイトルと説明は
     front matter、なければ最初の見出しと段落から）を読み込み、`/` と
     `/posts/{slug}` を Go 版のブログと同じレイアウト（pico.css、`BASE_URL`
