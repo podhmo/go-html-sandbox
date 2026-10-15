@@ -24,5 +24,5 @@ test "not found page escapes the path" {
   assert_eq(res.status, 404)
   assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
   assert_true(res.body.contains("<title>Not found | blog</title>"))
-  assert_true(res.body.contains("<code>/a&lt;b&gt;&amp;&quot;c&#39;</code>"))
+  assert_true(res.body.contains("<code>/a&lt;b&gt;&amp;&#34;c&#39;</code>"))
 }

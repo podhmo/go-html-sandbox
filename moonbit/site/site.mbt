@@ -1,32 +1,15 @@
 ///|
-/// write_escaped writes s with the characters special in HTML replaced by
-/// entities.
-fn StringBuilder::write_escaped(self : StringBuilder, s : String) -> Unit {
-  for c in s {
-    match c {
-      '<' => self <+ "&lt;"
-      '>' => self <+ "&gt;"
-      '&' => self <+ "&amp;"
-      '"' => self <+ "&quot;"
-      '\'' => self <+ "&#39;"
-      _ => self.write_char(c)
-    }
-  }
-}
-
-///|
-/// page writes a full HTML document with title and body to sb.
-fn page(
-  sb : StringBuilder,
-  title~ : String,
-  body~ : (StringBuilder) -> Unit,
-) -> Unit {
-  sb <+
-    "<!doctype html>\n<html lang=\"ja\"><head><meta charset=\"utf-8\"><title>"
-  sb.write_escaped(title)
-  sb <+ "</title></head><body>"
-  body(sb)
-  sb <+ "</body></html>"
+/// page returns a full HTML document with title and body, as HTML.
+fn page(title~ : String, body~ : Array[@el.Node]) -> String {
+  let doc = @el.el(@el.html, [
+    @el.Attr(@el.lang, "ja"),
+    @el.el(@el.head, [
+      @el.el(@el.meta, [@el.Attr(@el.charset, "utf-8")]),
+      @el.el(@el.title, [@el.Text(title)]),
+    ]),
+    @el.el(@el.body, body),
+  ])
+  "<!doctype html>\n\{@el.render_html(doc)}"
 }
 
 ///|
@@ -47,21 +30,26 @@ fn Response::html(status : Int32, body~ : String) -> Response {
 /// render answers the request for path: the top page for "/", and a 404
 /// page saying nothing is there for any other path.
 pub fn render(path : String) -> Response {
-  let sb = StringBuilder()
   match path {
-    "/" => {
-      page(sb, title="blog", body=sb => {
-        sb <+ "<h1>blog</h1><p>Rendered with MoonBit.</p>"
-      })
-      Response::html(200, body=sb.to_string())
-    }
-    _ => {
-      page(sb, title="Not found | blog", body=sb => {
-        sb <+ "<h1>Not found</h1><p>No page at <code>"
-        sb.write_escaped(path)
-        sb <+ "</code>.</p>"
-      })
-      Response::html(404, body=sb.to_string())
-    }
+    "/" =>
+      Response::html(
+        200,
+        body=page(title="blog", body=[
+          @el.el(@el.h1, [@el.Text("blog")]),
+          @el.el(@el.p, [@el.Text("Rendered with MoonBit.")]),
+        ]),
+      )
+    _ =>
+      Response::html(
+        404,
+        body=page(title="Not found | blog", body=[
+          @el.el(@el.h1, [@el.Text("Not found")]),
+          @el.el(@el.p, [
+            @el.Text("No page at "),
+            @el.el(@el.code, [@el.Text(path)]),
+            @el.Text("."),
+          ]),
+        ]),
+      )
   }
 }
