@@ -9,6 +9,9 @@ It is an experiment in progress; see
 - `el` — the HTML builder ported from `go/pkg/el`: nodes as plain data,
   `render_html` (escaping like Go's `html.EscapeString`) and
   `render_plain`
+- `picoel` — the part of `go/pkg/picoel` the blog's pages use: pages
+  styled by pico.css v2 (`document`, `header`, `main_`, `nav`, `article`,
+  `table`, ...) as `el` nodes; `date` takes a `YYYY-MM-DD` string
 - `site` — `render(path)`, returning the response for a path: status,
   headers, and body
 - `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)

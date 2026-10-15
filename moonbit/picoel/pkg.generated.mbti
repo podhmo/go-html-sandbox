@@ -1,0 +1,83 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "podhmo/blog/picoel"
+
+import {
+  "podhmo/blog/el",
+}
+
+// Values
+pub const STYLESHEET_URL : String = "https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+
+pub fn a(String, Array[@el.Node]) -> @el.Node
+
+pub fn article(Array[@el.Node]) -> @el.Node
+
+pub fn blockquote(Array[@el.Node]) -> @el.Node
+
+pub fn code(String) -> @el.Node
+
+pub fn date(String) -> @el.Node
+
+pub fn document(String, head~ : Array[@el.Node], Array[@el.Node]) -> @el.Node
+
+pub fn download_link(String, String, Array[@el.Node]) -> @el.Node
+
+pub fn footer(Array[@el.Node]) -> @el.Node
+
+pub fn h1(Array[@el.Node]) -> @el.Node
+
+pub fn h2(Array[@el.Node]) -> @el.Node
+
+pub fn h3(Array[@el.Node]) -> @el.Node
+
+pub fn h4(Array[@el.Node]) -> @el.Node
+
+pub fn h5(Array[@el.Node]) -> @el.Node
+
+pub fn header(Array[@el.Node]) -> @el.Node
+
+pub fn hgroup(Array[@el.Node]) -> @el.Node
+
+pub fn icon(String, String) -> @el.Node
+
+pub fn inner_header(Array[@el.Node]) -> @el.Node
+
+pub fn li(Array[@el.Node]) -> @el.Node
+
+pub fn list(Array[@el.Node]) -> @el.Node
+
+pub fn main_(Array[@el.Node]) -> @el.Node
+
+pub fn meta_name(String, String) -> @el.Node
+
+pub fn meta_property(String, String) -> @el.Node
+
+pub fn nav(Array[@el.Node]) -> @el.Node
+
+pub fn p(Array[@el.Node]) -> @el.Node
+
+pub fn pre(String) -> @el.Node
+
+pub fn section(Array[@el.Node]) -> @el.Node
+
+pub fn small(Array[@el.Node]) -> @el.Node
+
+pub fn spread(Array[@el.Node], Array[@el.Node]) -> @el.Node
+
+pub fn strong(Array[@el.Node]) -> @el.Node
+
+pub fn stylesheet(String) -> @el.Node
+
+pub fn table(Array[Array[@el.Node]], Array[Array[Array[@el.Node]]]) -> @el.Node
+
+pub fn text(String) -> @el.Node
+
+pub fn title(String) -> @el.Node
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
