@@ -59,14 +59,17 @@
     ステータス、`Content-Type`、本文の差分を取るスクリプトを `moonbit/` に
     置く。完了の条件: `/`、記事 1 つ、文書 1 つ、`/docs/`、`/favicon.svg`、
     存在しないパスに対して実行でき、どれが違うかを報告する（最初は全部違う）。
-  - [ ] **記事と文書を埋め込む**: MoonBit には `go:embed` がない。moon の
-    ビルド前処理（例: `:embed` コマンド）でファイルを MoonBit のソースに
-    変換できるかを確かめ、できなければ、`make` と wrangler のビルドから実行
-    するスクリプトで生成する。Go 版のブログの記事
-    （`go/examples/blog/posts/*.md`）、`TODO.md`、`docs/**/*.md` を、ファイル
-    パスと内容の組として使い、生成したソースはコミットしない。完了の条件:
-    `moon test` ですべてがそろっていることを確かめ、clone 直後の状態から
-    `make build` が通る。
+  - [-] **記事と文書を埋め込む**: MoonBit には `go:embed` がない。Go 版の
+    ブログの記事、`TODO.md`、`docs/**/*.md` を、ファイルパスと内容の組として
+    使い、生成したソースはコミットしない。完了の条件: `moon test` ですべてが
+    そろっていることを確かめ、clone 直後の状態から `make build` が通る。
+    - [x] **記事**: `go/examples/blog/posts/*.md` を `moonbit/posts` の
+      `files` として埋め込む（`scripts/embed.sh` を `moon.pkg` の
+      `dev_build` と `make` から実行）。
+    - [ ] **文書**: `TODO.md` と `docs/**/*.md` を同じように埋め込む。
+      `scripts/embed.sh` はディレクトリ直下の `*.md` しか扱わず、moon の
+      `dev_build` はディレクトリの mtime しか見ないので、サブディレクトリの
+      扱いを決める。
   - [ ] **HTML ビルダー**: `pkg/el`（ノード、エスケープ、レンダリング）と、
     `pkg/picoel` のうちページで使う部分を移植する。完了の条件: Go のテストの
     うち当てはまるケースを `moon test` で、同じ出力で確かめている。

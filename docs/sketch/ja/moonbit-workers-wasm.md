@@ -246,9 +246,17 @@ binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけ�
 
 Go 版どうしを比べると 6 つとも `same` になり、終了コードは 0 だった。
 
-## 未確認のこと
+## 記事の埋め込み
 
-- **記事の埋め込み**：MoonBit に `go:embed` に当たる仕組みがあるかは調べていない。なければ、Markdown を MoonBit のソースに変換するコード生成を挟む。
+MoonBit に `go:embed` はないが、`moon.pkg` の `rule` と `dev_build` で、`moon check`・`moon build`・`moon test` の前にコマンドを実行してソースを生成できる（moon 0.1.20261012 で確認）。組み込みの `:embed`（`moon tool embed`）は 1 ファイルを 1 つの `String` にするだけなので、`go/examples/blog/posts/*.md` をまとめて `(ファイル名, 本文)` の配列にするスクリプト `moonbit/scripts/embed.sh` を書き、本文の変換には `moon tool embed --text` を使った。生成先の `moonbit/posts/embedded.mbt` は git に入れない。
+
+試して分かったこと。
+
+- `dev_build` の `input` と `output` は、ドキュメントにある module のルートではなく、パッケージのディレクトリからの相対パスとして解決される。コマンドは module のルートで実行され、`$input` は `./../go/...` の形で渡る。`output` をパッケージの外に置くと、コンパイル対象に入らないという警告が出る。
+- `input` には配列も書けるが、glob（`*.md`）は使えない（そのままのファイル名として探して missing になる）。ディレクトリを渡すと、ディレクトリの mtime しか見ないので、記事の追加と削除では再生成されるが、既存の記事の編集では再生成されない。
+- そこで `make build`・`make test`・`make check` からも毎回スクリプトを実行する（内容が変わったときだけ書き換えるので、変わらなければ再ビルドは起きない）。wrangler のビルドコマンドは `moon build` から `make build` に変え、`watch_dir` に記事のディレクトリを足した。`make dev` 中に記事を編集すると、再ビルドで `embedded.mbt` が更新されることを確かめた。
+- まだ `site` から使っていないので、Worker の Wasm は 5,279 B のまま変わらない。試しに `site` から 1 記事を出力すると 15,687 B になり、記事の編集が `make build` で Wasm に反映された。
+- clone した直後（`embedded.mbt` がない状態）から、`make build` も素の `moon test` も通る。
 
 ## 次の一歩
 

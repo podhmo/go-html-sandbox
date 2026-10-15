@@ -5,8 +5,9 @@
   "main": "./worker.mjs",
   "compatibility_date": "2026-10-01",
   "build": {
-    "command": "cd .. && moon build --target wasm-gc --release && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
-    // Rebuild when the MoonBit sources change under `wrangler dev`.
-    "watch_dir": ["../site", "../worker"]
+    "command": "cd .. && make build && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
+    // Rebuild when the MoonBit sources or the embedded posts change under
+    // `wrangler dev`. Not ../posts: the build writes embedded.mbt there.
+    "watch_dir": ["../site", "../worker", "../../go/examples/blog/posts"]
   }
 }

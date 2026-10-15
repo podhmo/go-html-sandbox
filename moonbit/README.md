@@ -8,6 +8,9 @@ It is an experiment in progress; see
 
 - `site` — `render(path)`, returning the response for a path: status,
   headers, and body
+- `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)
+  as pairs of file name and content, generated into `posts/embedded.mbt`
+  (ignored by git) by `scripts/embed.sh`
 - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
   response sent back through the imported `host` functions (`status`,
   then `put` for text one UTF-16 code unit at a time, with `header_name`
@@ -37,6 +40,13 @@ make check    # before every commit: moon fmt --check, moon check (wasm-gc and n
 native) and `compare/cmd` for native only (async's I/O is native only),
 so the CLI and its dependency stay out of the Wasm.
 
+MoonBit has no `go:embed`, so `scripts/embed.sh` writes the posts into
+`posts/embedded.mbt` as MoonBit source. `posts/moon.pkg` runs it before
+every `moon check`, `moon build`, and `moon test`, but moon reruns it only
+when a post is added or removed, not when one is edited; `make build`,
+`make test`, and `make check` run it every time (`make embed` alone), so
+use them after editing a post.
+
 Needs `moon` on `PATH`, and Node.js for wrangler.
 
 ## Running on Workers locally
@@ -46,8 +56,9 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 ```
 
 Then open <http://localhost:8787>. wrangler's build command runs
-`moon build` and copies the Wasm to `workers/build/app.wasm`, ignored by
-git, and `wrangler dev` rebuilds when `site/` or `worker/` changes.
+`make build` and copies the Wasm to `workers/build/app.wasm`, ignored by
+git, and `wrangler dev` rebuilds when `site/`, `worker/`, or the posts in
+`go/examples/blog/posts/` change.
 
 ## Comparing with the Go blog
 
