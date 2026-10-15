@@ -98,7 +98,7 @@ test "load posts errors" {
   ]
   for (name, files, want) in cases {
     let msg = try @site.load_posts(files) catch {
-      LoadError(msg) => msg
+      e => "\{e}"
     } noraise {
       _ => fail("\{name}: want an error")
     }
@@ -322,7 +322,7 @@ test "two files for one document path" {
   let msg = try
     @site.load_docs([("TODO.md", "a"), ("docs/TODO.md", "b")])
   catch {
-    LoadError(msg) => msg
+    e => "\{e}"
   } noraise {
     _ => fail("want an error for two files mapped to /docs/TODO")
   }

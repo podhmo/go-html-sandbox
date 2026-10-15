@@ -54,7 +54,7 @@ pub fn Site::Site(
   }
   if host == "" || host.contains_any(chars="/?#") {
     raise LoadError(
-      "base URL must be an http(s) origin such as https://example.com, got \{base_url.escape()}",
+      message="base URL must be an http(s) origin such as https://example.com, got \{base_url.escape()}",
     )
   }
   let by_slug = Map([])

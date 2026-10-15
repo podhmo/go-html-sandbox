@@ -59,7 +59,7 @@ test "split" {
   ]
   for (name, src, want_meta, want_body) in cases {
     let (got_meta, got_body) = @tinyfrontmatter.split(src) catch {
-      SplitError(msg) => fail("\{name}: \{msg}")
+      e => fail("\{name}: \{e}")
     }
     assert_eq(got_meta, want_meta, msg="\{name}: meta")
     assert_eq(got_body, want_body, msg="\{name}: body")
@@ -86,7 +86,7 @@ test "split errors" {
   ]
   for (name, src, want) in cases {
     let msg = try @tinyfrontmatter.split(src) catch {
-      SplitError(msg) => msg
+      e => "\{e}"
     } noraise {
       _ => fail("\{name}: want an error")
     }
