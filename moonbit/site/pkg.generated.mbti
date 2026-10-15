@@ -51,8 +51,8 @@ pub struct Site {
   by_path : Map[String, Doc]
   by_source : Map[String, Doc]
 }
+pub fn Site::Site(base_url~ : String, posts~ : Array[Post], docs~ : Array[Doc]) -> Self raise LoadError
 pub fn Site::embedded(base_url~ : String) -> Self raise LoadError
-pub fn Site::new(base_url~ : String, posts~ : Array[Post], docs~ : Array[Doc]) -> Self raise LoadError
 pub fn Site::render(Self, String, query? : String) -> Response
 
 // Type aliases
