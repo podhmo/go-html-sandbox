@@ -1,0 +1,11 @@
+// The repository's own documents, TODO.md and docs/**/*.md, embedded by
+// scripts/embed.sh into embedded.mbt, which is generated and ignored by
+// git. moon sees edits to TODO.md and files added to or removed from docs/
+// itself; `make` regenerates it for the rest.
+rule(name: "embed-md", command: "sh scripts/embed.sh $output .. $input")
+
+dev_build(
+  rule: "embed-md",
+  input: [ "../../TODO.md", "../../docs" ],
+  output: "embedded.mbt",
+)

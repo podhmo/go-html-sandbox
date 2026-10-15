@@ -10,14 +10,18 @@ WRANGLER ?= npx wrangler@4
 GO_URL ?= http://localhost:8080
 MOONBIT_URL ?= http://localhost:$(PORT)
 POSTS := ../go/examples/blog/posts
+# The repository's own documents, as the Go blog's repodocs embeds them.
+DOCS := ../TODO.md ../docs
 
 .PHONY: embed build test check dev deploy compare clean help
 
-## embed: regenerate posts/embedded.mbt from the Go blog's posts
-# posts/moon.pkg runs the same script, but moon reruns it only when a post
-# is added or removed; this catches edits to a post too.
+## embed: regenerate posts/embedded.mbt and repodocs/embedded.mbt from the Go blog's posts and the repository's documents
+# posts/moon.pkg and repodocs/moon.pkg run the same script, but moon reruns
+# it only when a post is added or removed, or a file directly in docs/;
+# this catches edits and subdirectories too.
 embed:
 	sh scripts/embed.sh posts/embedded.mbt $(POSTS)
+	sh scripts/embed.sh repodocs/embedded.mbt .. $(DOCS)
 
 ## build: build the Wasm into _build/wasm-gc/release/build/worker/
 build: embed
@@ -53,7 +57,7 @@ compare:
 
 ## clean: remove the build output
 clean:
-	rm -rf _build workers/build posts/embedded.mbt
+	rm -rf _build workers/build posts/embedded.mbt repodocs/embedded.mbt
 
 help:
 	@sed -n 's/^## //p' $(MAKEFILE_LIST)

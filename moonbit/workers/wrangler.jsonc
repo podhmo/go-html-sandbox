@@ -6,8 +6,9 @@
   "compatibility_date": "2026-10-01",
   "build": {
     "command": "cd .. && make build && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
-    // Rebuild when the MoonBit sources or the embedded posts change under
-    // `wrangler dev`. Not ../posts: the build writes embedded.mbt there.
-    "watch_dir": ["../site", "../worker", "../../go/examples/blog/posts"]
+    // Rebuild when the MoonBit sources or the embedded posts and documents
+    // change under `wrangler dev`. Not ../posts or ../repodocs: the build
+    // writes embedded.mbt there.
+    "watch_dir": ["../site", "../worker", "../../go/examples/blog/posts", "../../docs"]
   }
 }
