@@ -98,19 +98,19 @@ fn scan(src : String) -> Array[Flat] {
   let quote : Array[String] = []
   let table : Array[String] = []
   fn flush() {
-    if para.length() > 0 {
+    if !para.is_empty() {
       out.push(Block(Paragraph(para.join("\n"))))
       para.clear()
     }
-    if items.length() > 0 {
+    if !items.is_empty() {
       out.push(Block(List(items.copy())))
       items.clear()
     }
-    if quote.length() > 0 {
+    if !quote.is_empty() {
       out.push(Block(Quote(parse(quote.join("\n")).children)))
       quote.clear()
     }
-    if table.length() > 0 {
+    if !table.is_empty() {
       match parse_table(table) {
         Some(t) => out.push(Block(t))
         None => out.push(Block(Paragraph(table.join("\n"))))
@@ -143,26 +143,26 @@ fn scan(src : String) -> Array[Flat] {
       flush()
       out.push(parse_heading(trimmed))
     } else if trimmed.has_prefix("|") {
-      if para.length() > 0 || items.length() > 0 || quote.length() > 0 {
+      if !para.is_empty() || !items.is_empty() || !quote.is_empty() {
         flush()
       }
       table.push(trimmed)
     } else if trimmed.has_prefix(">") {
-      if para.length() > 0 || items.length() > 0 || table.length() > 0 {
+      if !para.is_empty() || !items.is_empty() || !table.is_empty() {
         flush()
       }
       let rest = line[line.find(">").unwrap() + 1:]
       quote.push(rest.strip_prefix(" ").unwrap_or(rest).to_owned())
     } else if trimmed.has_prefix("- ") {
-      if para.length() > 0 || quote.length() > 0 || table.length() > 0 {
+      if !para.is_empty() || !quote.is_empty() || !table.is_empty() {
         flush()
       }
       items.push(trim_space(trimmed[2:]))
-    } else if items.length() > 0 && line != trimmed && line[0] is (' ' | '\t') {
+    } else if !items.is_empty() && line != trimmed && line[0] is (' ' | '\t') {
       // An indented line continues the item above it.
       items[items.length() - 1] = items[items.length() - 1] + "\n" + trimmed
     } else {
-      if items.length() > 0 || quote.length() > 0 || table.length() > 0 {
+      if !items.is_empty() || !quote.is_empty() || !table.is_empty() {
         flush()
       }
       para.push(trimmed)
