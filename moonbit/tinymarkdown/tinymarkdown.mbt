@@ -168,7 +168,7 @@ fn scan(src : String) -> Array[Flat] {
       items.push(trim_space(rest))
     } else if !items.is_empty() && line != trimmed && line[0] is (' ' | '\t') {
       // An indented line continues the item above it.
-      items[items.length() - 1] = items[items.length() - 1] + "\n" + trimmed
+      items[items.length() - 1] += "\n\{trimmed}"
     } else {
       if !items.is_empty() || !quote.is_empty() || !table.is_empty() {
         flush()
