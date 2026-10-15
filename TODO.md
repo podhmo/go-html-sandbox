@@ -102,7 +102,7 @@
     ページで `serve` にかかる時間とともに調査メモに記録する。どちらの実装を
     `blog` としてデプロイするかを決める。
 
-- [ ] **`moonbit/site` のエスケープを Go 版に揃える**: `site` の
+- [x] **`moonbit/site` のエスケープを Go 版に揃える**: `site` の
   `write_escaped` は `"` を `&quot;` にするが、Go 版（`moonbit/el` も同じ）は
   `html.EscapeString` に倣って `&#34;` にするので、`"` を含むパスの 404 ページが
   Go 版と違う。`site` を `el` で組み立て直し、`write_escaped` を消す。
