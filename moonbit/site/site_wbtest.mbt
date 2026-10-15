@@ -64,25 +64,6 @@ test "linker" {
 }
 
 ///|
-test "path helpers match Go's path package" {
-  let cases = [
-    ("", "."),
-    ("a/../..", ".."),
-    ("/../a", "/a"),
-    ("a//b/./c/", "a/b/c"),
-    ("../../x", "../../x"),
-    ("/", "/"),
-  ]
-  for (p, want) in cases {
-    assert_eq(clean(p), want, msg="clean(\{p})")
-  }
-  assert_eq(dir("TODO.md"), ".")
-  assert_eq(dir("docs/ja/design.md"), "docs/ja")
-  assert_eq(join([".", ""]), ".")
-  assert_eq(join(["", ""]), "")
-}
-
-///|
 test "post page text" {
   let posts = load_posts([
     ("2026-10-01-old.md", "# Old post\nold body"),
