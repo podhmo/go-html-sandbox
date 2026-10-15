@@ -15,7 +15,7 @@ DOCS := ../TODO.md ../docs
 # The Go blog's site.css and favicon.svg.
 ASSETS := ../go/examples/blog/internal/site
 
-.PHONY: embed build test check dev deploy compare clean help
+.PHONY: embed build test check dev deploy deploy-blog compare clean help
 
 ## embed: regenerate the embedded.mbt files: the Go blog's posts, the repository's documents, and the Go blog's site.css and favicon.svg
 # The packages' moon.pkg run the same scripts, but moon reruns them only
@@ -53,6 +53,10 @@ dev:
 ## deploy: deploy the Worker as blog-moonbit
 deploy:
 	cd workers && $(WRANGLER) deploy
+
+## deploy-blog: deploy the Worker as blog, replacing the Go blog
+deploy-blog:
+	cd workers && $(WRANGLER) deploy --env blog
 
 ## compare: compare the Go blog at GO_URL with the Worker at MOONBIT_URL (PATHS= to pick paths)
 compare:

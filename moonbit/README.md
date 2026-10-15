@@ -120,3 +120,11 @@ make deploy
 
 It deploys as the Worker `blog-moonbit`, apart from the Go `blog`, at
 <https://blog-moonbit.ababjam61.workers.dev>.
+
+```sh
+make deploy-blog
+```
+
+It deploys the same Wasm as the Worker `blog`, in place of the Go blog, at
+<https://blog.ababjam61.workers.dev>. Deploying the Go blog again puts it
+back.
