@@ -3,7 +3,7 @@
 
 ///|
 test "linker" {
-  let s = Site::new(
+  let s = Site(
     base_url="https://example.com",
     posts=load_posts([
       ("2026-10-01-old.md", "# Old post\nold body"),
@@ -91,7 +91,7 @@ test "post page text" {
       "2026-10-14-hello.md", "# Hello <script>\n\nfirst\n## Points\n- one\n- two\n```\nx := <1>\n```",
     ),
   ])
-  let s = Site::new(base_url="https://example.com", posts~, docs=[])
+  let s = Site(base_url="https://example.com", posts~, docs=[])
   let got = @el.render_plain(s.post_page(posts[0]))
   assert_eq(
     got,

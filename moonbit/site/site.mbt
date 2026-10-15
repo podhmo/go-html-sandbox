@@ -39,10 +39,10 @@ pub struct Site {
 }
 
 ///|
-/// Site::new serves posts and docs. base_url is the public origin used for
+/// Site::Site serves posts and docs. base_url is the public origin used for
 /// absolute URLs in OGP tags, e.g. "https://example.com". Path prefixes
 /// are rejected because links inside the site are root-relative.
-pub fn Site::new(
+pub fn Site::Site(
   base_url~ : String,
   posts~ : Array[Post],
   docs~ : Array[Doc],
@@ -87,7 +87,7 @@ pub fn Site::new(
 ///|
 /// Site::embedded serves the posts and documents built into the Wasm.
 pub fn Site::embedded(base_url~ : String) -> Site raise LoadError {
-  Site::new(
+  Site(
     base_url~,
     posts=load_posts(@posts.files),
     docs=load_docs(@repodocs.files),

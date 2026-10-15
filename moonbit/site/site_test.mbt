@@ -23,7 +23,7 @@ let test_posts : ReadOnlyArray[(String, String)] = [
 fn new_site(
   posts : ReadOnlyArray[(String, String)],
 ) -> @site.Site raise @site.LoadError {
-  @site.Site::new(
+  @site.Site(
     base_url="https://example.com",
     posts=@site.load_posts(posts),
     docs=@site.load_docs(test_docs),
@@ -245,7 +245,7 @@ test "base url" {
   ]
   for c in cases {
     let (base_url, want) = c
-    let s = @site.Site::new(base_url~, posts~, docs=[]) catch {
+    let s = @site.Site(base_url~, posts~, docs=[]) catch {
       LoadError(_) => {
         assert_eq(want, "", msg="\{base_url}: want no error")
         continue
