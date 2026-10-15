@@ -14,6 +14,10 @@ It is an experiment in progress; see
 - `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)
   as pairs of file name and content, generated into `posts/embedded.mbt`
   (ignored by git) by `scripts/embed.sh`
+- `repodocs` — `files`, the repository's own `TODO.md` and
+  `docs/**/*.md` as pairs of path (from the repository root) and content,
+  generated into `repodocs/embedded.mbt` the same way, as the Go blog's
+  `repodocs` embeds them
 - `tinymarkdown` — a port of `go/pkg/tinymarkdown`: `parse(src)` into a
   tree of sections, paragraphs, lists, quotes, tables, and code blocks, and
   `inlines(text)` into text, code spans, and links; its tests are the Go
@@ -48,11 +52,15 @@ native) and `compare/cmd` for native only (async's I/O is native only),
 so the CLI and its dependency stay out of the Wasm.
 
 MoonBit has no `go:embed`, so `scripts/embed.sh` writes the posts into
-`posts/embedded.mbt` as MoonBit source. `posts/moon.pkg` runs it before
-every `moon check`, `moon build`, and `moon test`, but moon reruns it only
-when a post is added or removed, not when one is edited; `make build`,
-`make test`, and `make check` run it every time (`make embed` alone), so
-use them after editing a post.
+`posts/embedded.mbt`, and `TODO.md` and `docs/**/*.md` into
+`repodocs/embedded.mbt`, as MoonBit source. `posts/moon.pkg` and
+`repodocs/moon.pkg` run it before every `moon check`, `moon build`, and
+`moon test`, but moon looks only at the mtime of its inputs: it reruns
+the script when a post or a file directly in `docs/` is added or removed,
+or `TODO.md` is edited, not when a post or document is edited or a file
+in a subdirectory of `docs/` changes. `make build`, `make test`, and
+`make check` run it every time (`make embed` alone), so use them after
+editing a post or a document.
 
 Needs `moon` on `PATH`, and Node.js for wrangler.
 
@@ -64,8 +72,8 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 
 Then open <http://localhost:8787>. wrangler's build command runs
 `make build` and copies the Wasm to `workers/build/app.wasm`, ignored by
-git, and `wrangler dev` rebuilds when `site/`, `worker/`, or the posts in
-`go/examples/blog/posts/` change.
+git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
+`go/examples/blog/posts/`, or the documents in `docs/` change.
 
 ## Comparing with the Go blog
 
