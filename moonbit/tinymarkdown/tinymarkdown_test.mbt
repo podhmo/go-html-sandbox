@@ -8,7 +8,7 @@ fn run(
   for c in cases {
     let (name, src, want) = c
     let got = @tinymarkdown.parse(src)
-    let want : @tinymarkdown.Document = { children: want, }
+    let want = @tinymarkdown.Document::{ children: want, }
     if got != want {
       failures.push(
         "\{name}: parse(\{@debug.to_string(src)})\ngot  \{@debug.to_string(got)}\nwant \{@debug.to_string(want)}",
