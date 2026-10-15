@@ -33,8 +33,7 @@ pub fn load_posts(
 ) -> Array[Post] raise LoadError {
   let seen : Map[String, String] = Map([]) // slug -> file name
   let posts = []
-  for f in files {
-    let (name, src) = f
+  for (name, src) in files {
     guard name.has_suffix(".md") else { continue }
     guard post_name(name) is Some((date, slug)) else {
       raise LoadError(
@@ -229,8 +228,7 @@ pub fn load_docs(
   }
   let seen : Map[String, String] = Map([]) // path -> source
   let docs = []
-  for f in sources {
-    let (name, src) = f
+  for (name, src) in sources {
     let p = name.strip_suffix(".md").unwrap_or(name)
     let p = p.strip_prefix("docs/").unwrap_or(p).to_owned()
     if seen.get(p) is Some(prev) {

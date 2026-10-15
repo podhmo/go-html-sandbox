@@ -57,8 +57,7 @@ test "linker" {
     ("TODO.md", ":x", ""),
     ("TODO.md", "a\u{7F}b", ""),
   ]
-  for c in cases {
-    let (source, url, want) = c
+  for (source, url, want) in cases {
     let got = s.linker(source)(url).unwrap_or("")
     assert_eq(got, want, msg="\{source}: link \{url}")
   }
