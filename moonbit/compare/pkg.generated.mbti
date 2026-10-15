@@ -21,7 +21,7 @@ pub(all) struct Fetched {
   body : String
 }
 
-pub(all) struct Report {
+pub struct Report {
   path : String
   same : Bool
   text : String

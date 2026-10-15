@@ -31,7 +31,7 @@ fn page(
 
 ///|
 /// Response is what the site answers to a request.
-pub(all) struct Response {
+pub struct Response {
   status : Int32
   headers : Array[(String, String)]
   body : String
