@@ -117,3 +117,46 @@ test "summary counts the paths that differ" {
   ]
   assert_eq(@compare.summary(reports), "1 of 2 paths differ\n")
 }
+
+///|
+test "a trailing fragment with neither a newline nor '>' is its own segment" {
+  assert_eq(
+    @compare.body_diff("<p>a</p>tail", moonbit="<p>a</p>TAIL"),
+    (
+      #|--- go
+      #|+++ moonbit
+      #|@@ -1,3 +1,3 @@
+      #| <p>
+      #| a</p>
+      #|-tail
+      #|+TAIL
+      #|
+    ),
+  )
+}
+
+///|
+test "the body diff shows CR and tab as escapes" {
+  assert_eq(
+    @compare.body_diff("a\r\n", moonbit="a\t\n"),
+    (
+      #|--- go
+      #|+++ moonbit
+      #|@@ -1 +1 @@
+      #|-a\r\n
+      #|+a\t\n
+      #|
+    ),
+  )
+}
+
+///|
+test "a fetch failing on the MoonBit side only is reported as an error" {
+  let r = @compare.compare(
+    "/",
+    go=html(200, ""),
+    moonbit=Err("connection refused"),
+  )
+  assert_false(r.same)
+  assert_eq(r.text, "/: error\n  moonbit: connection refused\n")
+}
