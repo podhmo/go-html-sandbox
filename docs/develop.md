@@ -1,8 +1,5 @@
 # Development setup
 
-What a fresh environment (such as a Claude Code cloud session) needs
-before working on this repository.
-
 ## MoonBit toolchain
 
 ```sh
@@ -10,10 +7,6 @@ curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
 export PATH=$HOME/.moon/bin:$PATH
 moon update   # the registry index; without it `moon check` cannot find moonbitlang/async
 ```
-
-Then, from `moonbit/`, `make check` must pass before every commit (it fails
-when `moon info` changed a `.mbti` that is not staged: `git add` it and
-run it again).
 
 ## Stacked PRs with gh-stack
 
