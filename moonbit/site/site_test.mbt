@@ -3,9 +3,27 @@
 
 ///|
 let test_docs : ReadOnlyArray[(String, String)] = [
-  ("TODO.md", "# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line"),
   (
-    "docs/ja/design.md", "# Design <x>\n\nwhy\n## Use `el`\n- run `go test`\n- ``a ` b``",
+    "TODO.md",
+    (
+      #|# TODO
+      #|
+      #|> note
+      #|
+      #|- [ ] **task**: first line
+      #|  second line
+    ),
+  ),
+  (
+    "docs/ja/design.md",
+    (
+      #|# Design <x>
+      #|
+      #|why
+      #|## Use `el`
+      #|- run `go test`
+      #|- ``a ` b``
+    ),
   ),
   ("docs/notes.md", "no heading"),
   ("docs/image.svg", "<svg/>"),
@@ -15,7 +33,18 @@ let test_docs : ReadOnlyArray[(String, String)] = [
 let test_posts : ReadOnlyArray[(String, String)] = [
   ("2026-10-01-old.md", "# Old post\nold body"),
   (
-    "2026-10-14-hello.md", "# Hello <script>\n\nfirst\n## Points\n- one\n- two\n```\nx := <1>\n```",
+    "2026-10-14-hello.md",
+    (
+      #|# Hello <script>
+      #|
+      #|first
+      #|## Points
+      #|- one
+      #|- two
+      #|```
+      #|x := <1>
+      #|```
+    ),
   ),
 ]
 
