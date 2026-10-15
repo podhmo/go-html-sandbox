@@ -1,0 +1,63 @@
+diff --git a/moonbit/site/site.mbt b/moonbit/site/site.mbt
+index 825eece..aa4bdaa 100644
+--- a/moonbit/site/site.mbt
++++ b/moonbit/site/site.mbt
+@@ -45,8 +45,9 @@ fn html_response(status : Int32, body : String) -> Response {
+ }
+ 
+ ///|
+-/// render answers the request for path: the top page for "/", and a 404
+-/// page saying nothing is there for any other path.
++/// render answers the request for path: the top page for "/", the about
++/// page for "/about", and a 404 page saying nothing is there for any other
++/// path.
+ pub fn render(path : String) -> Response {
+   let sb = StringBuilder()
+   match path {
+@@ -56,6 +57,17 @@ pub fn render(path : String) -> Response {
+       })
+       html_response(200, sb.to_string())
+     }
++    "/about" => {
++      page(sb, "About | blog", fn(sb) {
++        sb.write_string(
++          "<h1>About</h1><p>This blog is rendered by MoonBit compiled to Wasm and served from Cloudflare Workers.</p>",
++        )
++      })
++      let res = html_response(200, sb.to_string())
++      // The page only changes on deploy, so let caches keep it briefly.
++      res.headers.push(("cache-control", "public, max-age=60"))
++      res
++    }
+     _ => {
+       page(sb, "Not found | blog", fn(sb) {
+         sb.write_string("<h1>Not found</h1><p>No page at <code>")
+diff --git a/moonbit/site/site_test.mbt b/moonbit/site/site_test.mbt
+index ce3ecf7..3254fa4 100644
+--- a/moonbit/site/site_test.mbt
++++ b/moonbit/site/site_test.mbt
+@@ -18,6 +18,24 @@ test "top page" {
+   assert_true(res.body.contains("<h1>blog</h1>"))
+ }
+ 
++///|
++test "about page" {
++  let res = @site.render("/about")
++  assert_eq(res.status, 200)
++  assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
++  assert_eq(header(res, "cache-control"), Some("public, max-age=60"))
++  assert_true(res.body.has_prefix("<!doctype html>\n"))
++  assert_true(res.body.contains("<title>About | blog</title>"))
++  assert_true(res.body.contains("<h1>About</h1>"))
++}
++
++///|
++test "other pages are not cached" {
++  assert_eq(header(@site.render("/"), "cache-control"), None)
++  assert_eq(header(@site.render("/about/"), "cache-control"), None)
++  assert_eq(@site.render("/about/").status, 404)
++}
++
+ ///|
+ test "not found page escapes the path" {
+   let res = @site.render("/a<b>&\"c'")

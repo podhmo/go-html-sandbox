@@ -1,0 +1,312 @@
+diff --git a/.claude/skills/moonbit/SKILL.md b/.claude/skills/moonbit/SKILL.md
+index 5aa47a9..92ba2cc 100644
+--- a/.claude/skills/moonbit/SKILL.md
++++ b/.claude/skills/moonbit/SKILL.md
+@@ -187,9 +187,12 @@ Follow what `moonbit/site/site.mbt` and `moonbit/worker/worker.mbt` do:
+ - Adding a package that the Worker uses? Add its directory to
+   `build.watch_dir` in `workers/wrangler.jsonc`, or `make dev` will not
+   rebuild when it changes.
+-- Embedding files: there is no `go:embed`. `moon.pkg` supports pre-build
+-  commands (`:embed`); check the agent guide's `references/advanced-moonbit-build.md`
+-  for the current DSL syntax before relying on it.
++- Embedding files: there is no `go:embed`. `posts/` shows how it is done
++  here: `rule` + `dev_build` in `moon.pkg` run `scripts/embed.sh`, and the
++  output is git-ignored. `dev_build` paths are relative to the package
++  directory (the docs say the module root), and the command runs in the
++  module root. A directory as `input` reruns only when files are added or
++  removed, so the Makefile runs the script too.
+ - Size is the experiment's metric. Note the Wasm size
+   (`make build` prints it) when a change could move it, and record it in
+   `docs/` when the step asks for it. `wasm-opt` is not in the build; if you
+diff --git a/.claude/skills/moonbit/references/pitfalls.md b/.claude/skills/moonbit/references/pitfalls.md
+index d2e8386..71f104c 100644
+--- a/.claude/skills/moonbit/references/pitfalls.md
++++ b/.claude/skills/moonbit/references/pitfalls.md
+@@ -52,6 +52,9 @@ the toolchain or a pinned dependency moves.
+ - `Array::sort` is not stable; `stable_sort` exists only on
+   `MutArrayView` and `FixedArray`.
+ - `Map` keeps insertion order.
++- `String::compare` (so `sort()` and `<` on strings) puts shorter strings
++  first: `"b" < "aa"`. Use `lexical_compare` for dictionary order, e.g.
++  `sort_by((a, b) => a.lexical_compare(b))`.
+ - `derive(ToJson)` on enums is externally tagged
+   (`["Axes",{"x":-1,"y":1}]` for labelled arguments), unlike what
+   `derive.md` shows; the tag key cannot be renamed through derive.
+diff --git a/TODO.md b/TODO.md
+index 94f98cb..271a171 100644
+--- a/TODO.md
++++ b/TODO.md
+@@ -59,14 +59,17 @@
+     ステータス、`Content-Type`、本文の差分を取るスクリプトを `moonbit/` に
+     置く。完了の条件: `/`、記事 1 つ、文書 1 つ、`/docs/`、`/favicon.svg`、
+     存在しないパスに対して実行でき、どれが違うかを報告する（最初は全部違う）。
+-  - [ ] **記事と文書を埋め込む**: MoonBit には `go:embed` がない。moon の
+-    ビルド前処理（例: `:embed` コマンド）でファイルを MoonBit のソースに
+-    変換できるかを確かめ、できなければ、`make` と wrangler のビルドから実行
+-    するスクリプトで生成する。Go 版のブログの記事
+-    （`go/examples/blog/posts/*.md`）、`TODO.md`、`docs/**/*.md` を、ファイル
+-    パスと内容の組として使い、生成したソースはコミットしない。完了の条件:
+-    `moon test` ですべてがそろっていることを確かめ、clone 直後の状態から
+-    `make build` が通る。
++  - [-] **記事と文書を埋め込む**: MoonBit には `go:embed` がない。Go 版の
++    ブログの記事、`TODO.md`、`docs/**/*.md` を、ファイルパスと内容の組として
++    使い、生成したソースはコミットしない。完了の条件: `moon test` ですべてが
++    そろっていることを確かめ、clone 直後の状態から `make build` が通る。
++    - [x] **記事**: `go/examples/blog/posts/*.md` を `moonbit/posts` の
++      `files` として埋め込む（`scripts/embed.sh` を `moon.pkg` の
++      `dev_build` と `make` から実行）。
++    - [ ] **文書**: `TODO.md` と `docs/**/*.md` を同じように埋め込む。
++      `scripts/embed.sh` はディレクトリ直下の `*.md` しか扱わず、moon の
++      `dev_build` はディレクトリの mtime しか見ないので、サブディレクトリの
++      扱いを決める。
+   - [ ] **HTML ビルダー**: `pkg/el`（ノード、エスケープ、レンダリング）と、
+     `pkg/picoel` のうちページで使う部分を移植する。完了の条件: Go のテストの
+     うち当てはまるケースを `moon test` で、同じ出力で確かめている。
+diff --git a/docs/sketch/ja/moonbit-workers-wasm.md b/docs/sketch/ja/moonbit-workers-wasm.md
+index b2387f9..6386c88 100644
+--- a/docs/sketch/ja/moonbit-workers-wasm.md
++++ b/docs/sketch/ja/moonbit-workers-wasm.md
+@@ -224,9 +224,17 @@ binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけ
+ - `-all` だと、V8 がまだ対応していない機能も有効になり、出力が読み込めなくなる（`invalid heap type 'exact'`、`--disable-custom-descriptors` を足しても `unknown import kind 0x7e`）。
+ - `--enable-gc --enable-reference-types --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int --enable-mutable-globals --enable-multivalue` と、使う機能だけを指定すると通った。
+ 
+-## 未確認のこと
++## 記事の埋め込み
+ 
+-- **記事の埋め込み**：MoonBit に `go:embed` に当たる仕組みがあるかは調べていない。なければ、Markdown を MoonBit のソースに変換するコード生成を挟む。
++MoonBit に `go:embed` はないが、`moon.pkg` の `rule` と `dev_build` で、`moon check`・`moon build`・`moon test` の前にコマンドを実行してソースを生成できる（moon 0.1.20261012 で確認）。組み込みの `:embed`（`moon tool embed`）は 1 ファイルを 1 つの `String` にするだけなので、`go/examples/blog/posts/*.md` をまとめて `(ファイル名, 本文)` の配列にするスクリプト `moonbit/scripts/embed.sh` を書き、本文の変換には `moon tool embed --text` を使った。生成先の `moonbit/posts/embedded.mbt` は git に入れない。
++
++試して分かったこと。
++
++- `dev_build` の `input` と `output` は、ドキュメントにある module のルートではなく、パッケージのディレクトリからの相対パスとして解決される。コマンドは module のルートで実行され、`$input` は `./../go/...` の形で渡る。`output` をパッケージの外に置くと、コンパイル対象に入らないという警告が出る。
++- `input` には配列も書けるが、glob（`*.md`）は使えない（そのままのファイル名として探して missing になる）。ディレクトリを渡すと、ディレクトリの mtime しか見ないので、記事の追加と削除では再生成されるが、既存の記事の編集では再生成されない。
++- そこで `make build`・`make test`・`make check` からも毎回スクリプトを実行する（内容が変わったときだけ書き換えるので、変わらなければ再ビルドは起きない）。wrangler のビルドコマンドは `moon build` から `make build` に変え、`watch_dir` に記事のディレクトリを足した。`make dev` 中に記事を編集すると、再ビルドで `embedded.mbt` が更新されることを確かめた。
++- まだ `site` から使っていないので、Worker の Wasm は 5,279 B のまま変わらない。試しに `site` から 1 記事を出力すると 15,687 B になり、記事の編集が `make build` で Wasm に反映された。
++- clone した直後（`embedded.mbt` がない状態）から、`make build` も素の `moon test` も通る。
+ 
+ ## 次の一歩
+ 
+diff --git a/moonbit/.gitignore b/moonbit/.gitignore
+index efd7430..ca5f3f4 100644
+--- a/moonbit/.gitignore
++++ b/moonbit/.gitignore
+@@ -5,3 +5,6 @@ _build/
+ # The Wasm copied in by the Workers build, and wrangler's local state.
+ workers/build/
+ workers/.wrangler/
++
++# Generated by scripts/embed.sh before every build.
++posts/embedded.mbt
+diff --git a/moonbit/Makefile b/moonbit/Makefile
+index 66ffce2..582f7d4 100644
+--- a/moonbit/Makefile
++++ b/moonbit/Makefile
+@@ -5,20 +5,27 @@
+ WASM := _build/wasm-gc/release/build/worker/worker.wasm
+ PORT ?= 8787
+ WRANGLER ?= npx wrangler@4
++POSTS := ../go/examples/blog/posts
+ 
+-.PHONY: build test check dev deploy clean help
++.PHONY: embed build test check dev deploy clean help
++
++## embed: regenerate posts/embedded.mbt from the Go blog's posts
++# posts/moon.pkg runs the same script, but moon reruns it only when a post
++# is added or removed; this catches edits to a post too.
++embed:
++	sh scripts/embed.sh posts/embedded.mbt $(POSTS)
+ 
+ ## build: build the Wasm into _build/wasm-gc/release/build/worker/
+-build:
++build: embed
+ 	moon build --target wasm-gc --release
+ 	@ls -l $(WASM)
+ 
+ ## test: run the tests
+-test:
++test: embed
+ 	moon test
+ 
+ ## check: what to run before every commit (moon fmt, moon check, moon test)
+-check:
++check: embed
+ 	moon fmt --check
+ 	moon check
+ 	moon test
+@@ -33,7 +40,7 @@ deploy:
+ 
+ ## clean: remove the build output
+ clean:
+-	rm -rf _build workers/build
++	rm -rf _build workers/build posts/embedded.mbt
+ 
+ help:
+ 	@sed -n 's/^## //p' $(MAKEFILE_LIST)
+diff --git a/moonbit/README.md b/moonbit/README.md
+index 6665be7..de8be68 100644
+--- a/moonbit/README.md
++++ b/moonbit/README.md
+@@ -8,6 +8,9 @@ It is an experiment in progress; see
+ 
+ - `site` — `render(path)`, returning the response for a path: status,
+   headers, and body
++- `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)
++  as pairs of file name and content, generated into `posts/embedded.mbt`
++  (ignored by git) by `scripts/embed.sh`
+ - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
+   response sent back through the imported `host` functions (`status`,
+   then `put` for text one UTF-16 code unit at a time, with `header_name`
+@@ -30,6 +33,13 @@ make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm
+ make check    # before every commit: moon fmt --check, moon check, moon test
+ ```
+ 
++MoonBit has no `go:embed`, so `scripts/embed.sh` writes the posts into
++`posts/embedded.mbt` as MoonBit source. `posts/moon.pkg` runs it before
++every `moon check`, `moon build`, and `moon test`, but moon reruns it only
++when a post is added or removed, not when one is edited; `make build`,
++`make test`, and `make check` run it every time (`make embed` alone), so
++use them after editing a post.
++
+ Needs `moon` on `PATH`, and Node.js for wrangler.
+ 
+ ## Running on Workers locally
+@@ -39,8 +49,9 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
+ ```
+ 
+ Then open <http://localhost:8787>. wrangler's build command runs
+-`moon build` and copies the Wasm to `workers/build/app.wasm`, ignored by
+-git, and `wrangler dev` rebuilds when `site/` or `worker/` changes.
++`make build` and copies the Wasm to `workers/build/app.wasm`, ignored by
++git, and `wrangler dev` rebuilds when `site/`, `worker/`, or the posts in
++`go/examples/blog/posts/` change.
+ 
+ ## Deploying
+ 
+diff --git a/moonbit/posts/moon.pkg b/moonbit/posts/moon.pkg
+new file mode 100644
+index 0000000..877912e
+--- /dev/null
++++ b/moonbit/posts/moon.pkg
+@@ -0,0 +1,9 @@
++// The posts of the Go blog, embedded by scripts/embed.sh into embedded.mbt,
++// which is generated and ignored by git.
++rule(name: "embed-md", command: "sh scripts/embed.sh $output $input")
++
++dev_build(
++  rule: "embed-md",
++  input: "../../go/examples/blog/posts",
++  output: "embedded.mbt",
++)
+diff --git a/moonbit/posts/posts_test.mbt b/moonbit/posts/posts_test.mbt
+new file mode 100644
+index 0000000..74a3940
+--- /dev/null
++++ b/moonbit/posts/posts_test.mbt
+@@ -0,0 +1,32 @@
++///|
++test "every post is embedded with its file name" {
++  let names = @posts.files.iter().map(f => f.0).collect()
++  let want = [
++    "2026-10-14-hello.md", "2026-10-15-tinymarkdown.md", "2026-10-16-mobile-first.md",
++    "2026-10-17-workers-wasm.md",
++  ]
++  for name in want {
++    assert_true(names.contains(name), msg="missing \{name}")
++  }
++}
++
++///|
++test "files are sorted by name and hold the whole file" {
++  let names = @posts.files.iter().map(f => f.0).collect()
++  // String::compare puts shorter strings first; file names sort by
++  // characters, as go:embed does.
++  assert_eq(names, names.copy()..sort_by((a, b) => a.lexical_compare(b)))
++  let hello = @posts.files.iter().find_first(f => f.0 == "2026-10-14-hello.md")
++  guard hello is Some((_, content)) else { fail("no hello post") }
++  assert_true(content.has_prefix("# Hello\n\n"))
++  assert_true(content.has_suffix("embeds the posts with go:embed.\n"))
++}
++
++///|
++test "non-ASCII text survives embedding" {
++  let tiny = @posts.files
++    .iter()
++    .find_first(f => f.0 == "2026-10-15-tinymarkdown.md")
++  guard tiny is Some((_, content)) else { fail("no tinymarkdown post") }
++  assert_true(content.has_prefix("# tinymarkdown で書けること\n"))
++}
+diff --git a/moonbit/scripts/embed.sh b/moonbit/scripts/embed.sh
+new file mode 100644
+index 0000000..bceab2d
+--- /dev/null
++++ b/moonbit/scripts/embed.sh
+@@ -0,0 +1,52 @@
++#!/bin/sh
++# embed.sh writes OUT, a MoonBit source holding every *.md file directly in
++# DIR as `files`, an array of (file name, content) pairs sorted by name, the
++# way go:embed gives the Go blog its posts.
++#
++#   sh scripts/embed.sh posts/embedded.mbt ../go/examples/blog/posts
++#
++# moon runs it before building through dev_build in posts/moon.pkg, and the
++# Makefile runs it too: moon reruns it only when DIR itself changes (a file
++# added or removed), not when a file in it is edited. OUT is rewritten only
++# when its content changes, so running it again rebuilds nothing.
++set -eu
++
++out=$1
++# moon passes DIR as ./DIR; drop that so both callers write the same file.
++dir=${2#./}
++tmp=$out.tmp
++trap 'rm -f "$tmp" "$tmp.one"' EXIT
++
++LC_ALL=C
++export LC_ALL
++
++{
++  echo "// Code generated by scripts/embed.sh from $dir; DO NOT EDIT."
++  i=0
++  for f in "$dir"/*.md; do
++    [ -f "$f" ] || continue
++    # moon tool embed is what moon.pkg's :embed runs; drop its header.
++    moon tool embed --text -i "$f" -o "$tmp.one" --name "file_$i"
++    echo
++    sed -n '/^\/\/\/|$/,$p' "$tmp.one"
++    i=$((i + 1))
++  done
++  echo
++  echo '///|'
++  echo "/// files holds every *.md file in $dir as pairs of"
++  echo '/// the file name and its content, sorted by name.'
++  echo 'pub let files : ReadOnlyArray[(String, String)] = ['
++  i=0
++  for f in "$dir"/*.md; do
++    [ -f "$f" ] || continue
++    echo "  (\"${f##*/}\", file_$i),"
++    i=$((i + 1))
++  done
++  echo ']'
++} >"$tmp"
++
++if cmp -s "$tmp" "$out"; then
++  rm -f "$tmp"
++else
++  mv "$tmp" "$out"
++fi
+diff --git a/moonbit/workers/wrangler.jsonc b/moonbit/workers/wrangler.jsonc
+index 53d06f8..d69d37c 100644
+--- a/moonbit/workers/wrangler.jsonc
++++ b/moonbit/workers/wrangler.jsonc
+@@ -5,8 +5,9 @@
+   "main": "./worker.mjs",
+   "compatibility_date": "2026-10-01",
+   "build": {
+-    "command": "cd .. && moon build --target wasm-gc --release && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
+-    // Rebuild when the MoonBit sources change under `wrangler dev`.
+-    "watch_dir": ["../site", "../worker"]
++    "command": "cd .. && make build && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
++    // Rebuild when the MoonBit sources or the embedded posts change under
++    // `wrangler dev`. Not ../posts: the build writes embedded.mbt there.
++    "watch_dir": ["../site", "../worker", "../../go/examples/blog/posts"]
+   }
+ }

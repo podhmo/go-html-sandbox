@@ -1,0 +1,580 @@
+diff --git a/TODO.md b/TODO.md
+index 94f98cb..074d98f 100644
+--- a/TODO.md
++++ b/TODO.md
+@@ -45,7 +45,7 @@
+     で）を測る。両方を調査メモに記録し、呼び出しが遅ければ、UTF-8 のバイト列を
+     線形メモリ越しに渡す ABI を検討する。
+ 
+-- [ ] **ブログを MoonBit で作り直す**: 同じサイトをトップレベルの `moonbit/`
++- [-] **ブログを MoonBit で作り直す**: 同じサイトをトップレベルの `moonbit/`
+   に作り、Wasm として Cloudflare Workers で動かして、Wasm のサイズを Go 版と
+   比べる（TinyGo で約 2 MiB / gzip 後 760 KiB、標準 Go で約 8 MiB。
+   [レポート](docs/sketch/ja/blog-tinygo-workers.md)を参照）。`pkg/*`（HTML
+@@ -54,7 +54,7 @@
+   `make dev` で確認でき、`make deploy` でデプロイできる状態で終える。対象は
+   Worker が配信するものだけで、`-debug` や `-watch` は移植しない。
+   [実験](docs/sketch/ja/moonbit-workers-wasm.md)の続き。
+-  - [ ] **Go 版のブログと比べる**: Go 版のブログ（`go run ./examples/blog`）と
++  - [x] **Go 版のブログと比べる**: Go 版のブログ（`go run ./examples/blog`）と
+     MoonBit の Worker（`make dev`）から同じパスを取得し、レスポンスごとに
+     ステータス、`Content-Type`、本文の差分を取るスクリプトを `moonbit/` に
+     置く。完了の条件: `/`、記事 1 つ、文書 1 つ、`/docs/`、`/favicon.svg`、
+diff --git a/docs/sketch/ja/moonbit-workers-wasm.md b/docs/sketch/ja/moonbit-workers-wasm.md
+index b2387f9..6950c5c 100644
+--- a/docs/sketch/ja/moonbit-workers-wasm.md
++++ b/docs/sketch/ja/moonbit-workers-wasm.md
+@@ -224,6 +224,28 @@ binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけ
+ - `-all` だと、V8 がまだ対応していない機能も有効になり、出力が読み込めなくなる（`invalid heap type 'exact'`、`--disable-custom-descriptors` を足しても `unknown import kind 0x7e`）。
+ - `--enable-gc --enable-reference-types --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int --enable-mutable-globals --enable-multivalue` と、使う機能だけを指定すると通った。
+ 
++## Go 版との比較スクリプト
++
++ブログを移植するあいだの物差しとして、Go 版のブログと MoonBit の Worker に同じパスを取りにいき、ステータス、`Content-Type`、本文を比べる CLI を MoonBit で書いた（`moonbit/compare`）。`make compare` で動く。
++
++- 比べる処理（`compare` パッケージ）はターゲットを問わない純粋な関数にして、`moon test` で確かめている。本文の差分は core の `@diff`（Myers 法）で取る。Go 版はページの大半を 1 行に書くので、行単位だとページ全体が 1 つの変更になってしまう。そこで、改行と `>` の後ろで区切った単位で比べる。
++- HTTP の取得は `moonbitlang/async@0.22.5` の `@http.get` を使う実行ファイル（`compare/cmd`）に分けた。async の I/O は native でしか動かないので、`compare/cmd` は `supported_targets = "+native"`、ホストの import が native でコンパイルできない `worker` は `"+wasm-gc"` にした。これで、`moon.mod` に async を足しても Worker の Wasm は 5,279 B のまま、バイト単位で変わらない（export は `path_push` と `serve`、import は `host` の 4 つのまま）。`make check` には `moon check --target native` を足した。
++- `@http.get` はリダイレクトを追わないので、リダイレクトはそのまま比べられる。
++- `/`、`/posts/hello`、`/docs/ja/design`、`/docs/`、`/favicon.svg`、`/no-such-page` を既定のパスにした。Go 版は `go generate` で `TODO.md` と `docs/` をコピーしてから起動しないと文書を返さない。
++
++今の結果は、予想どおり 6 つとも違う。
++
++| パス | 違うところ |
++| --- | --- |
++| `/` | 本文 |
++| `/posts/hello` | ステータス（Go 200、MoonBit 404）、本文 |
++| `/docs/ja/design` | ステータス（Go 200、MoonBit 404）、本文 |
++| `/docs/` | ステータス（Go 200、MoonBit 404）、本文 |
++| `/favicon.svg` | ステータス、`Content-Type`（Go `image/svg+xml`、MoonBit `text/html; charset=utf-8`）、本文 |
++| `/no-such-page` | 本文（どちらも 404） |
++
++Go 版どうしを比べると 6 つとも `same` になり、終了コードは 0 だった。
++
+ ## 未確認のこと
+ 
+ - **記事の埋め込み**：MoonBit に `go:embed` に当たる仕組みがあるかは調べていない。なければ、Markdown を MoonBit のソースに変換するコード生成を挟む。
+@@ -235,7 +257,8 @@ binaryen の `wasm-opt`（version 132、`npx -p binaryen` で実行）をかけ
+ 3. （済み）`moonbit/Makefile` に `build`、`test`、`dev`、`deploy` を用意する。「Makefile」の節を参照。
+ 4. （済み）本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。「デプロイ」の節を参照。
+ 5. （済み）`wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。「計測」の節を参照。
+-6. ブログ全体を移植し、Go 版とサイズを比べて、このレポートに追記する。手順は TODO.md の「Reimplement the blog in MoonBit」の子タスクに分けた（Go 版との比較スクリプト、記事と文書の埋め込み、HTML ビルダー、Markdown、記事、文書とリンク、残りのルート、比較と記録）。
++6. （済み）Go 版のブログと、パスごとにステータス、`Content-Type`、本文を比べる CLI を `moonbit/compare` に置く。「Go 版との比較スクリプト」の節を参照。
++7. ブログ全体を移植し、Go 版とサイズを比べて、このレポートに追記する。手順は TODO.md の「Reimplement the blog in MoonBit」の子タスクに分けた（Go 版との比較スクリプト、記事と文書の埋め込み、HTML ビルダー、Markdown、記事、文書とリンク、残りのルート、比較と記録）。
+ 
+ ## spike のコード
+ 
+diff --git a/moonbit/Makefile b/moonbit/Makefile
+index 66ffce2..efd741a 100644
+--- a/moonbit/Makefile
++++ b/moonbit/Makefile
+@@ -5,8 +5,12 @@
+ WASM := _build/wasm-gc/release/build/worker/worker.wasm
+ PORT ?= 8787
+ WRANGLER ?= npx wrangler@4
++# compare's base URLs: the Go blog (`go run ./examples/blog` in ../go) and
++# the Worker (`make dev`).
++GO_URL ?= http://localhost:8080
++MOONBIT_URL ?= http://localhost:$(PORT)
+ 
+-.PHONY: build test check dev deploy clean help
++.PHONY: build test check dev deploy compare clean help
+ 
+ ## build: build the Wasm into _build/wasm-gc/release/build/worker/
+ build:
+@@ -17,10 +21,11 @@ build:
+ test:
+ 	moon test
+ 
+-## check: what to run before every commit (moon fmt, moon check, moon test)
++## check: what to run before every commit (moon fmt, moon check on wasm-gc and native, moon test)
+ check:
+ 	moon fmt --check
+ 	moon check
++	moon check --target native
+ 	moon test
+ 
+ ## dev: serve the Worker on localhost:PORT (default 8787), rebuilding on changes
+@@ -31,6 +36,10 @@ dev:
+ deploy:
+ 	cd workers && $(WRANGLER) deploy
+ 
++## compare: compare the Go blog at GO_URL with the Worker at MOONBIT_URL (PATHS= to pick paths)
++compare:
++	moon run --target native compare/cmd -- $(GO_URL) $(MOONBIT_URL) $(PATHS)
++
+ ## clean: remove the build output
+ clean:
+ 	rm -rf _build workers/build
+diff --git a/moonbit/README.md b/moonbit/README.md
+index 6665be7..1ce6d53 100644
+--- a/moonbit/README.md
++++ b/moonbit/README.md
+@@ -15,6 +15,9 @@ It is an experiment in progress; see
+   body)
+ - `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for each
+   request, and `wrangler.jsonc` builds it
++- `compare` — compares the Go blog with the Worker path by path (status,
++  `Content-Type`, and a diff of the body); `compare/cmd` is its native
++  CLI, built on `moonbitlang/async`, and the only package that uses it
+ 
+ Strings cross between JS and Wasm one code unit at a time because Workers
+ compiles imported Wasm modules without the JS string builtins, which
+@@ -27,9 +30,13 @@ From `moonbit/` (`make help` lists the targets):
+ ```sh
+ make test     # moon test
+ make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm
+-make check    # before every commit: moon fmt --check, moon check, moon test
++make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test
+ ```
+ 
++`worker` is built for wasm-gc only (its host imports do not compile on
++native) and `compare/cmd` for native only (async's I/O is native only),
++so the CLI and its dependency stay out of the Wasm.
++
+ Needs `moon` on `PATH`, and Node.js for wrangler.
+ 
+ ## Running on Workers locally
+@@ -42,6 +49,24 @@ Then open <http://localhost:8787>. wrangler's build command runs
+ `moon build` and copies the Wasm to `workers/build/app.wasm`, ignored by
+ git, and `wrangler dev` rebuilds when `site/` or `worker/` changes.
+ 
++## Comparing with the Go blog
++
++With the Go blog and the Worker both running:
++
++```sh
++(cd ../go && go generate ./... && go run ./examples/blog)   # http://localhost:8080
++make dev PORT=8798                                           # the Worker
++make compare PORT=8798                                       # or GO_URL=... MOONBIT_URL=...
++make compare PORT=8798 PATHS="/posts/hello /docs/"           # only these paths
++```
++
++`go generate` copies `TODO.md` and `docs/` into the Go blog; without it
++the Go side serves no documents. For each path `compare` prints `same`, or
++which of status, `Content-Type`, and body differ with a unified diff of
++the body (split after each `>` and newline, since the pages are mostly on
++one line; `--lines N` caps it, 40 by default). It exits non-zero when any
++path differs. Redirects are not followed, so they are compared as they are.
++
+ ## Deploying
+ 
+ ```sh
+diff --git a/moonbit/compare/cmd/main.mbt b/moonbit/compare/cmd/main.mbt
+new file mode 100644
+index 0000000..4981c48
+--- /dev/null
++++ b/moonbit/compare/cmd/main.mbt
+@@ -0,0 +1,73 @@
++///|
++/// fetch gets url and keeps what the comparison looks at, or why the
++/// request failed. Redirects are not followed, so they compare as they are.
++async fn fetch(url : String) -> Result[@compare.Fetched, String] {
++  try {
++    let (res, body) = @http.get(url)
++    let content_type = res.headers
++      .get(@http.CaseInsensitiveString("content-type"))
++      .unwrap_or("")
++    Ok({ status: res.code, content_type, body: body.text(), })
++  } catch {
++    e => Err(e.to_string())
++  }
++}
++
++///|
++/// main fetches each path from the Go blog and the MoonBit Worker, prints
++/// a report per path and a summary, and fails when any path differs.
++async fn main {
++  let matches = @argparse.Command(
++    "compare",
++    about="Compare the Go blog and the MoonBit Worker path by path: status, Content-Type and body",
++    options=[
++      OptionArg(
++        "lines",
++        long="lines",
++        about="show at most this many lines of each body diff",
++        default_values=["40"],
++      ),
++    ],
++    positionals=[
++      PositionArg(
++        "go",
++        about="base URL of the Go blog, e.g. http://localhost:8080",
++        num_args=@argparse.ValueRange::single(),
++      ),
++      PositionArg(
++        "moonbit",
++        about="base URL of the MoonBit Worker, e.g. http://localhost:8787",
++        num_args=@argparse.ValueRange::single(),
++      ),
++      PositionArg(
++        "path",
++        about="paths to compare (default: /, a post, a document, /docs/, /favicon.svg and a missing path)",
++        num_args=@argparse.ValueRange(lower=0),
++      ),
++    ],
++  ).parse()
++  guard matches.values is { "go": [go_base], "moonbit": [moonbit_base], .. } else {
++    fail("need the base URLs of the Go blog and the MoonBit Worker")
++  }
++  let paths = match matches.values {
++    { "path": [_, ..] as paths, .. } => paths
++    _ => @compare.default_paths()
++  }
++  let max_lines = match matches.values {
++    { "lines": [n], .. } => @string.parse_int(n)
++    _ => 40
++  }
++  let reports = []
++  for path in paths {
++    let go = fetch(@compare.join_url(go_base, path))
++    let moonbit = fetch(@compare.join_url(moonbit_base, path))
++    let report = @compare.compare(path, go, moonbit, max_lines~)
++    @stdio.stdout.write(report.text)
++    reports.push(report)
++  }
++  let summary = @compare.summary(reports)
++  @stdio.stdout.write(summary)
++  if reports.any(r => !r.same) {
++    fail(summary.trim_end())
++  }
++}
+diff --git a/moonbit/compare/cmd/moon.pkg b/moonbit/compare/cmd/moon.pkg
+new file mode 100644
+index 0000000..b0eb125
+--- /dev/null
++++ b/moonbit/compare/cmd/moon.pkg
+@@ -0,0 +1,12 @@
++import {
++  "podhmo/blog/compare",
++  "moonbitlang/core/argparse",
++  "moonbitlang/core/string",
++  "moonbitlang/async",
++  "moonbitlang/async/http",
++  "moonbitlang/async/stdio",
++}
++
++supported_targets = "+native"
++
++pkgtype(kind: "executable")
+diff --git a/moonbit/compare/compare.mbt b/moonbit/compare/compare.mbt
+new file mode 100644
+index 0000000..d948eba
+--- /dev/null
++++ b/moonbit/compare/compare.mbt
+@@ -0,0 +1,162 @@
++///|
++/// Fetched is what a server answered for one path.
++pub(all) struct Fetched {
++  status : Int32
++  content_type : String
++  body : String
++}
++
++///|
++/// default_paths are the paths compared when none are given: the top
++/// page, a post, a document, the document index, the favicon, and a path
++/// that exists on neither side.
++pub fn default_paths() -> Array[String] {
++  [
++    "/", "/posts/hello", "/docs/ja/design", "/docs/", "/favicon.svg", "/no-such-page",
++  ]
++}
++
++///|
++/// join_url appends path to base, dropping the slashes at the end of base
++/// so that both "http://h:1" and "http://h:1/" work.
++pub fn join_url(base : String, path : String) -> String {
++  let mut end = base.length()
++  while end > 0 && base.code_unit_at(end - 1) == '/' {
++    end -= 1
++  }
++  base.view(end_offset=end).to_owned() + path
++}
++
++///|
++/// segments splits body into the units the body diff works on: a segment
++/// ends after each newline and after each '>'. The Go blog writes most of
++/// a page on one line, so lines alone would make the whole page one change.
++fn segments(body : String) -> Array[String] {
++  let out = []
++  let sb = StringBuilder()
++  for c in body {
++    sb.write_char(c)
++    if c == '\n' || c == '>' {
++      out.push(sb.to_string())
++      sb.reset()
++    }
++  }
++  if sb.to_string() != "" {
++    out.push(sb.to_string())
++  }
++  out
++}
++
++///|
++/// show_segment makes a segment fit on one line of the report.
++fn show_segment(s : String) -> String {
++  let sb = StringBuilder()
++  for c in s {
++    match c {
++      '\n' => sb.write_string("\\n")
++      '\r' => sb.write_string("\\r")
++      '\t' => sb.write_string("\\t")
++      _ => sb.write_char(c)
++    }
++  }
++  sb.to_string()
++}
++
++///|
++/// body_diff returns a unified diff from go to moonbit, split into
++/// segments, cut after max_lines lines.
++pub fn body_diff(
++  go : String,
++  moonbit : String,
++  max_lines~ : Int32 = 40,
++) -> String {
++  let d = @diff.Diff(old=segments(go)[:], new=segments(moonbit)[:])
++  let lines = []
++  for h in d.group(context=2) {
++    for line in h.render(show=show_segment).split("\n") {
++      if line != "" {
++        lines.push(line.to_owned())
++      }
++    }
++  }
++  let sb = StringBuilder()
++  sb.write_string("--- go\n+++ moonbit\n")
++  for i, line in lines {
++    if i >= max_lines {
++      sb.write_string("... \{lines.length() - max_lines} more lines\n")
++      break
++    }
++    sb.write_string(line)
++    sb.write_char('\n')
++  }
++  sb.to_string()
++}
++
++///|
++/// Report is the result of comparing one path.
++pub(all) struct Report {
++  path : String
++  same : Bool
++  text : String
++}
++
++///|
++/// compare compares what the Go blog and the MoonBit Worker answered for
++/// path, where Err holds why fetching failed. The report names each part
++/// that differs (status, content-type, body) and shows a diff of the body.
++pub fn compare(
++  path : String,
++  go : Result[Fetched, String],
++  moonbit : Result[Fetched, String],
++  max_lines~ : Int32 = 40,
++) -> Report {
++  let (g, m) = match (go, moonbit) {
++    (Ok(g), Ok(m)) => (g, m)
++    _ => {
++      let sb = StringBuilder()
++      sb.write_string("\{path}: error\n")
++      if go is Err(e) {
++        sb.write_string("  go: \{e}\n")
++      }
++      if moonbit is Err(e) {
++        sb.write_string("  moonbit: \{e}\n")
++      }
++      return { path, same: false, text: sb.to_string(), }
++    }
++  }
++  let parts = []
++  let details = StringBuilder()
++  if g.status != m.status {
++    parts.push("status")
++    details.write_string("  status: go \{g.status}, moonbit \{m.status}\n")
++  }
++  if g.content_type != m.content_type {
++    parts.push("content-type")
++    details.write_string(
++      "  content-type: go \{g.content_type.escape()}, moonbit \{m.content_type.escape()}\n",
++    )
++  }
++  if g.body != m.body {
++    parts.push("body")
++    details.write_string(
++      "  body: go \{g.body.length()} chars, moonbit \{m.body.length()} chars\n",
++    )
++    for line in body_diff(g.body, m.body, max_lines~).split("\n") {
++      if line != "" {
++        details.write_string("    \{line}\n")
++      }
++    }
++  }
++  if parts.is_empty() {
++    return { path, same: true, text: "\{path}: same\n", }
++  }
++  let header = "\{path}: differs (\{parts.join(", ")})\n"
++  { path, same: false, text: header + details.to_string(), }
++}
++
++///|
++/// summary is the last line of the output: how many paths differ.
++pub fn summary(reports : Array[Report]) -> String {
++  let differ = reports.filter(r => !r.same).length()
++  "\{differ} of \{reports.length()} paths differ\n"
++}
+diff --git a/moonbit/compare/compare_test.mbt b/moonbit/compare/compare_test.mbt
+new file mode 100644
+index 0000000..3485772
+--- /dev/null
++++ b/moonbit/compare/compare_test.mbt
+@@ -0,0 +1,111 @@
++///|
++fn html(status : Int32, body : String) -> Result[@compare.Fetched, String] {
++  Ok({ status, content_type: "text/html; charset=utf-8", body, })
++}
++
++///|
++test "default paths cover the routes the step asks for" {
++  assert_eq(@compare.default_paths(), [
++    "/", "/posts/hello", "/docs/ja/design", "/docs/", "/favicon.svg", "/no-such-page",
++  ])
++}
++
++///|
++test "join_url drops the slashes at the end of the base" {
++  assert_eq(
++    @compare.join_url("http://localhost:8080", "/a"),
++    "http://localhost:8080/a",
++  )
++  assert_eq(
++    @compare.join_url("http://localhost:8080//", "/a"),
++    "http://localhost:8080/a",
++  )
++}
++
++///|
++test "same responses" {
++  let r = @compare.compare("/", html(200, "<p>x</p>"), html(200, "<p>x</p>"))
++  assert_true(r.same)
++  assert_eq(r.text, "/: same\n")
++}
++
++///|
++test "every part that differs is named" {
++  let r = @compare.compare(
++    "/favicon.svg",
++    Ok({ status: 200, content_type: "image/svg+xml", body: "<svg></svg>", }),
++    html(404, "<h1>Not found</h1>"),
++  )
++  assert_false(r.same)
++  assert_eq(
++    r.text,
++    (
++      #|/favicon.svg: differs (status, content-type, body)
++      #|  status: go 200, moonbit 404
++      #|  content-type: go "image/svg+xml", moonbit "text/html; charset=utf-8"
++      #|  body: go 11 chars, moonbit 18 chars
++      #|    --- go
++      #|    +++ moonbit
++      #|    @@ -1,2 +1,2 @@
++      #|    -<svg>
++      #|    -</svg>
++      #|    +<h1>
++      #|    +Not found</h1>
++      #|
++    ),
++  )
++}
++
++///|
++test "the body diff splits after '>' and newlines, and keeps context" {
++  let go = "<ul>\n<li>a</li><li>b</li><li>c</li><li>d</li></ul>"
++  let moonbit = "<ul>\n<li>a</li><li>B</li><li>c</li><li>d</li></ul>"
++  assert_eq(
++    @compare.body_diff(go, moonbit),
++    (
++      #|--- go
++      #|+++ moonbit
++      #|@@ -4,5 +4,5 @@
++      #| a</li>
++      #| <li>
++      #|-b</li>
++      #|+B</li>
++      #| <li>
++      #| c</li>
++      #|
++    ),
++  )
++}
++
++///|
++test "the body diff is cut after max_lines" {
++  let out = @compare.body_diff("a\nb\nc\n", "x\ny\nz\n", max_lines=3)
++  assert_eq(
++    out,
++    (
++      #|--- go
++      #|+++ moonbit
++      #|@@ -1,3 +1,3 @@
++      #|-a\n
++      #|-b\n
++      #|... 4 more lines
++      #|
++    ),
++  )
++}
++
++///|
++test "a failed fetch is reported as an error" {
++  let r = @compare.compare("/", Err("connection refused"), html(200, ""))
++  assert_false(r.same)
++  assert_eq(r.text, "/: error\n  go: connection refused\n")
++}
++
++///|
++test "summary counts the paths that differ" {
++  let reports = [
++    @compare.compare("/", html(200, "a"), html(200, "a")),
++    @compare.compare("/x", html(200, "a"), html(404, "a")),
++  ]
++  assert_eq(@compare.summary(reports), "1 of 2 paths differ\n")
++}
+diff --git a/moonbit/compare/moon.pkg b/moonbit/compare/moon.pkg
+new file mode 100644
+index 0000000..e4042af
+--- /dev/null
++++ b/moonbit/compare/moon.pkg
+@@ -0,0 +1,3 @@
++import {
++  "moonbitlang/core/diff",
++}
+diff --git a/moonbit/moon.mod b/moonbit/moon.mod
+index 84d24d7..995317b 100644
+--- a/moonbit/moon.mod
++++ b/moonbit/moon.mod
+@@ -13,3 +13,7 @@ keywords = [ ]
+ preferred_target = "wasm-gc"
+ 
+ description = "The blog of html-sandbox, served from Wasm on Cloudflare Workers."
++
++import {
++  "moonbitlang/async@0.22.5",
++}
+diff --git a/moonbit/worker/moon.pkg b/moonbit/worker/moon.pkg
+index b64c62c..eed6a95 100644
+--- a/moonbit/worker/moon.pkg
++++ b/moonbit/worker/moon.pkg
+@@ -2,6 +2,11 @@ import {
+   "podhmo/blog/site",
+ }
+ 
++// Only wasm-gc: the host imports do not compile on native, where the
++// comparison CLI in compare/cmd is built.
++
++supported_targets = "+wasm-gc"
++
+ options(
+   link: { "wasm-gc": { "exports": [ "path_push", "serve" ] } },
+ )
