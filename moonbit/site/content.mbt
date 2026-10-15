@@ -21,7 +21,7 @@ pub struct Post {
 }
 
 ///|
-/// FRONT_MATTER_KEYS are the keys a post may set; others are reported as
+/// front_matter_keys are the keys a post may set; others are reported as
 /// typos.
 let front_matter_keys : ReadOnlyArray[String] = ["title", "description"]
 
@@ -201,7 +201,7 @@ pub struct Doc {
 }
 
 ///|
-/// DOC_SOURCES are the files and directories of the repository that hold
+/// doc_sources are the files and directories of the repository that hold
 /// documents, in the order they are listed.
 let doc_sources : ReadOnlyArray[String] = ["TODO.md", "docs"]
 
