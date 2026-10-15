@@ -12,8 +12,14 @@ It is an experiment in progress; see
 - `picoel` — the part of `go/pkg/picoel` the blog's pages use: pages
   styled by pico.css v2 (`document`, `header`, `main_`, `nav`, `article`,
   `table`, ...) as `el` nodes; `date` takes a `YYYY-MM-DD` string
-- `site` — `render(path)`, returning the response for a path: status,
-  headers, and body
+- `site` — the blog, ported from the Go blog's `internal/site`:
+  `load_posts` and `load_docs` read the embedded files, and
+  `Site::render(path)` returns the response for a path (status, headers,
+  and body) with the same pages as the Go blog; so far `/` and
+  `/posts/{slug}`, and 404 pages for the rest
+- `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
+  `site.css` that pages put in its URL, generated into
+  `assets/embedded.mbt` by `scripts/embed-assets.sh`
 - `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)
   as pairs of file name and content, generated into `posts/embedded.mbt`
   (ignored by git) by `scripts/embed.sh`
@@ -29,7 +35,9 @@ It is an experiment in progress; see
   into the `key: value` pairs of a leading `---` block (`None` without
   one) and the rest, raising `SplitError` on a malformed block; its tests
   are the Go test cases
-- `worker` — the Wasm entry point: `path_push` and `serve` exported, the
+- `worker` — the Wasm entry point: `path_push`, `set_base_url`, and
+  `serve` exported (the host pushes `BASE_URL` once and calls
+  `set_base_url`, then pushes each path and calls `serve`), the
   response sent back through the imported `host` functions (`status`,
   then `put` for text one UTF-16 code unit at a time, with `header_name`
   and `header_value` taking what was put as a header; the rest is the
@@ -87,14 +95,16 @@ git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
 With the Go blog and the Worker both running:
 
 ```sh
-(cd ../go && go generate ./... && go run ./examples/blog)   # http://localhost:8080
+(cd ../go && go generate ./... && go run ./examples/blog -base-url https://blog-moonbit.ababjam61.workers.dev)   # http://localhost:8080
 make dev PORT=8798                                           # the Worker
 make compare PORT=8798                                       # or GO_URL=... MOONBIT_URL=...
 make compare PORT=8798 PATHS="/posts/hello /docs/"           # only these paths
 ```
 
 `go generate` copies `TODO.md` and `docs/` into the Go blog; without it
-the Go side serves no documents. For each path `compare` prints `same`, or
+the Go side serves no documents. `-base-url` gives the Go blog the
+Worker's `BASE_URL` (from `workers/wrangler.jsonc`), so that the OGP tags
+match. For each path `compare` prints `same`, or
 which of status, `Content-Type`, and body differ with a unified diff of
 the body (split after each `>` and newline, since the pages are mostly on
 one line; `--lines N` caps it, 40 by default). It exits non-zero when any

@@ -6,9 +6,17 @@
   "compatibility_date": "2026-10-01",
   "build": {
     "command": "cd .. && make build && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
-    // Rebuild when the MoonBit sources or the embedded posts and documents
-    // change under `wrangler dev`. Not ../posts or ../repodocs: the build
+    // Rebuild when the MoonBit sources or the embedded files change under
+    // `wrangler dev`. Not ../posts, ../repodocs, or ../assets: the build
     // writes embedded.mbt there.
-    "watch_dir": ["../site", "../worker", "../../go/examples/blog/posts", "../../docs"]
+    "watch_dir": [
+      "../el", "../picoel", "../tinymarkdown", "../tinyfrontmatter", "../site", "../worker",
+      "../../go/examples/blog/posts", "../../go/examples/blog/internal/site", "../../docs"
+    ]
+  },
+  "vars": {
+    // Public origin for OGP tags, like the Go blog's -base-url. This is the
+    // deployed URL, so `wrangler dev` also writes it into OGP tags.
+    "BASE_URL": "https://blog-moonbit.ababjam61.workers.dev"
   }
 }

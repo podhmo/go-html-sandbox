@@ -1,17 +1,58 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "podhmo/blog/site"
 
+import {
+  "podhmo/blog/tinymarkdown",
+}
+
 // Values
-pub fn render(String) -> Response
+pub fn load_docs(ReadOnlyArray[(String, String)]) -> Array[Doc] raise LoadError
+
+pub fn load_posts(ReadOnlyArray[(String, String)]) -> Array[Post] raise LoadError
 
 // Errors
+pub(all) suberror LoadError {
+  LoadError(String)
+}
 
 // Types and methods
+pub struct Doc {
+  path : String
+  source : String
+  title : String
+  description : String
+  doc : @tinymarkdown.Document
+  markdown : String
+}
+
+pub struct Post {
+  slug : String
+  file : String
+  date : String
+  title : String
+  description : String
+  doc : @tinymarkdown.Document
+  markdown : String
+}
+
 pub struct Response {
   status : Int
   headers : Array[(String, String)]
   body : String
 }
+pub fn Response::text(Int, String) -> Self
+
+pub struct Site {
+  base_url : String
+  posts : Array[Post]
+  by_slug : Map[String, Post]
+  by_file : Map[String, Post]
+  docs : Array[Doc]
+  by_source : Map[String, Doc]
+}
+pub fn Site::embedded(base_url~ : String) -> Self raise LoadError
+pub fn Site::new(base_url~ : String, posts~ : Array[Post], docs~ : Array[Doc]) -> Self raise LoadError
+pub fn Site::render(Self, String) -> Response
 
 // Type aliases
 
