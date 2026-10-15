@@ -1,15 +1,15 @@
 ///|
-/// escape_to writes s to sb escaped the way Go's html.EscapeString does,
-/// so that pages match the Go blog byte for byte.
-fn escape_to(sb : StringBuilder, s : String) -> Unit {
+/// write_escaped writes s escaped the way Go's html.EscapeString does, so
+/// that pages match the Go blog byte for byte.
+fn StringBuilder::write_escaped(self : StringBuilder, s : String) -> Unit {
   for c in s {
     match c {
-      '<' => sb <+ "&lt;"
-      '>' => sb <+ "&gt;"
-      '&' => sb <+ "&amp;"
-      '\'' => sb <+ "&#39;"
-      '"' => sb <+ "&#34;"
-      _ => sb.write_char(c)
+      '<' => self <+ "&lt;"
+      '>' => self <+ "&gt;"
+      '&' => self <+ "&amp;"
+      '\'' => self <+ "&#39;"
+      '"' => self <+ "&#34;"
+      _ => self.write_char(c)
     }
   }
 }
@@ -47,11 +47,11 @@ fn Node::is_attr(self : Node) -> Bool {
 /// write_html writes self to sb as HTML5.
 fn Node::write_html(self : Node, sb : StringBuilder) -> Unit {
   match self {
-    Text(s) => escape_to(sb, s)
+    Text(s) => sb.write_escaped(s)
     Raw(s) => sb.write_string(s)
     Attr(AttrName(k), v) => {
       sb <+ " \{k}=\""
-      escape_to(sb, v)
+      sb.write_escaped(v)
       sb.write_char('"')
     }
     BoolAttr(AttrName(k)) => sb <+ " \{k}"

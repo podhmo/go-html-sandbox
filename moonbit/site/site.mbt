@@ -1,15 +1,15 @@
 ///|
-/// write_escaped writes s to sb with the characters special in HTML
-/// replaced by entities.
-fn write_escaped(sb : StringBuilder, s : String) -> Unit {
+/// write_escaped writes s with the characters special in HTML replaced by
+/// entities.
+fn StringBuilder::write_escaped(self : StringBuilder, s : String) -> Unit {
   for c in s {
     match c {
-      '<' => sb <+ "&lt;"
-      '>' => sb <+ "&gt;"
-      '&' => sb <+ "&amp;"
-      '"' => sb <+ "&quot;"
-      '\'' => sb <+ "&#39;"
-      _ => sb.write_char(c)
+      '<' => self <+ "&lt;"
+      '>' => self <+ "&gt;"
+      '&' => self <+ "&amp;"
+      '"' => self <+ "&quot;"
+      '\'' => self <+ "&#39;"
+      _ => self.write_char(c)
     }
   }
 }
@@ -23,7 +23,7 @@ fn page(
 ) -> Unit {
   sb <+
     "<!doctype html>\n<html lang=\"ja\"><head><meta charset=\"utf-8\"><title>"
-  write_escaped(sb, title)
+  sb.write_escaped(title)
   sb <+ "</title></head><body>"
   body(sb)
   sb <+ "</body></html>"
@@ -58,7 +58,7 @@ pub fn render(path : String) -> Response {
     _ => {
       page(sb, title="Not found | blog", body=sb => {
         sb <+ "<h1>Not found</h1><p>No page at <code>"
-        write_escaped(sb, path)
+        sb.write_escaped(path)
         sb <+ "</code>.</p>"
       })
       Response::html(404, body=sb.to_string())
