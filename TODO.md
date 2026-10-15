@@ -11,6 +11,20 @@
 
 ## To Be Implemented
 
+- [ ] **MoonBit 版のブログで、記事や文書を足しても Wasm が太らないようにする**:
+  今は記事、`TODO.md`、`docs/**/*.md` を Wasm に埋め込んでいるので、書くたびに
+  Wasm が大きくなる（249 KB のうち、埋め込んだ文章が約 134 KB）。`wrangler deploy`
+  と `make dev` だけで済む今の手軽さを保ったまま、文章を Wasm の外に出す。
+  第一候補は Workers の Static Assets（`wrangler.jsonc` の `assets`。同じ
+  `wrangler deploy` でアップロードされ、`wrangler dev` でも動き、R2 や KV のような
+  別の手順が要らない）。一覧に要るタイトルと説明は、ビルド時に目録として作る。
+  - 決めること: 文章を Wasm にどう渡すか（`serve` は同期なので、JS が先に取って
+    渡すか、Wasm が要るファイルを返して呼び直すか）。下の Future work の
+    アダプターの見直しと関わる。
+  - 完了の条件: `make compare` で Go 版と一致したまま、記事を 1 本足しても Wasm の
+    サイズが変わらない。サイズと処理時間の変化を
+    [調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
+
 ### Future work
 
 - [ ] **MoonBit の Workers 用アダプターを最適な形に磨く**: 今のアダプター
