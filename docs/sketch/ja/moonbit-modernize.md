@@ -80,3 +80,69 @@ skill はこのリポジトリにも個人の環境にもインストールせ�
 - **`String` は `StringView` が期待される場所で暗黙に変換される。** `line.strip_prefix("|").unwrap_or(line)` は、`strip_prefix` が `StringView?` を返し `line` は `String` だが、そのまま型が合った。
 - **core の関数の細かい挙動は、`~/.moon/lib/core` の `pkg.generated.mbti` と実装を読んで確かめるのが早い。** `Array::truncate` は、指定した長さが今の長さ以上なら何もしないことを、実装で確かめてから使った。
 - **`el` と `tinymarkdown` で、`derive` で生えるメソッドを打ち消す書き方が違う。** `el/extends.mbt` は `#deprecated` を付けて `pub extend` しているが、`tinymarkdown` は付けていない。modernize の catalog の範囲外なので、揃えてはいない。
+
+## 追記: moonbit-refactoring skill の前半による見直し
+
+[moonbitlang/moonbit-agent-guide の moonbit-refactoring skill](https://github.com/moonbitlang/moonbit-agent-guide/blob/main/moonbit-refactoring/SKILL.md) のうち、「Local refactoring」より前の節（Intent、Workflow、Improve Package Architecture、Minimize Public API and Modularize）に照らして、modernize の後のコード全体を見直した。
+この節の内容は見直しの結果だけで、コードは変えていない。
+
+skill の Workflow は「まず全体の構造を見て、構造が固まるまで局所的な書き換え（名前の変更やパターンマッチ）は避ける」としている。
+一方、`moonbit-modernize` は局所的な書き換えのカタログで、今回はこれとは逆の順に進めた。
+そこで、後からではあるが、全体の構造に問題がないかを確かめた。
+
+### 結論
+
+- パッケージの構成と依存関係に問題はなく、局所的な書き換えを先にしたことで困ることはなかった。
+- 公開 API は、ほぼ呼び出し側が必要とするものだけになっている。`internal/` パッケージに分ける必要もない。
+- skill の Intent にある「view 型でコピーを避ける」は、`tinymarkdown` にまだ余地がある。
+- テストのカバレッジは 386/411 行。残りは主に `worker`（テストなし）と `compare` のエラー経路。公開 API に、doc コメント中のテスト（`mbt check` のコードブロック）はない。
+
+### パッケージ構成と依存関係
+
+| パッケージ | ソース（行） | テスト（行） | import しているもの | 使っているパッケージ |
+| --- | --- | --- | --- | --- |
+| `el` | 441 | 163 | なし | なし（テストのみ） |
+| `tinymarkdown` | 423 | 403 | `core/debug`（テストのみ） | なし（テストのみ） |
+| `posts` | 生成物 200 | 32 | なし | なし（テストのみ） |
+| `site` | 67 | 28 | なし | `worker` |
+| `worker` | 52 | 0 | `site` | Workers の JS |
+| `compare` | 155 | 119 | `core/diff` | `compare/cmd` |
+| `compare/cmd` | 73 | 0 | `compare`、`core/argparse`、`core/string`、`moonbitlang/async` | なし（実行ファイル） |
+
+- 依存関係に循環はなく、上位のパッケージが下位を import する向きだけになっている。
+- 規模は skill の目安（パッケージ 1 万行、ファイル 2 千行、関数 200 行）よりずっと小さい。一番長い関数は `tinymarkdown` の `scan` で 84 行。
+- `el`、`tinymarkdown`、`posts` は、まだどのパッケージからも使われていない。`site` がこれらを使うのは TODO.md の「ブログを MoonBit で作り直す」の残りのステップで、移植の途中だから。
+- そのため `site` には、`el` のエスケープと同じ役割の `write_escaped` が別にある。エスケープ結果も違い、`"` を `el` は Go の `html.EscapeString` と同じ `&#34;` に、`site` は `&quot;` にする。`site` を `el` で書き直せば、この重複はなくなる。
+- バックエンドの切り替えは、どちらも `moon.pkg` の `supported_targets` で揃っている（`worker` は wasm-gc のみ、`compare/cmd` は native のみ）。ファイル名の接尾辞や `#cfg` は使っていない。
+
+### 公開 API
+
+- `site` の `Response::html`、`el` の各ヘルパー、`tinymarkdown` の `scan`、`nest`、`cells` などは、すべてパッケージ内に閉じている。
+- `worker` の `path_push` と `serve` は、Wasm から export するために `pub` が必要。
+- `compare` の `body_diff` を使っているのは、`compare` 自身とテストだけ。`pub` を外すこともできる。ただしその場合、ブラックボックステストからは `compare` 経由でしか確かめられなくなる。skill はブラックボックステストを勧めているので、`pub` のままにした。
+- `el` の `const.mbt` にある要素名や属性名（`div`、`href` など）は、ほとんどがまだ使われていない。HTML を組み立てる DSL の語彙なので、そのまま残す。
+- 呼び出し元の洗い出しには `moon ide find-references` を使った。このコマンドは `--target` を付けないと `moon.mod` の `preferred_target`（wasm-gc）で解析する。そのため、native でしかビルドしない `compare/cmd` からの参照が出てこない。たとえば `default_paths` は、そのままだとテストの 1 件しか見つからず、`--target native` を付けて初めて `compare/cmd/main.mbt` の参照が見つかった。
+
+### view 型とコピー
+
+skill の Intent は「view 型（`StringView` など）でコピーを避ける」としている。
+modernize のコミットでは、`[:]` を削り、`strip_prefix` の結果を view のまま扱うところまでで止めた。`tinymarkdown` には、まだ `to_owned()` が 9 箇所ある。
+
+- `trim_space` は `StringView` を受け取るが、`String` を返す。`cells(line : String)` と `code_text(s : String)` も `String` を受け取るので、呼び出し側が先に `to_owned()` している。
+- `split_inlines` と `link` は、`Text`、`Code`、`Link` に入れる部分文字列を切り出すたびにコピーしている。
+
+`Block` と `Inline` は `String` を持つので、木に入れる時点でのコピーは必要になる。
+減らせるのは、途中のヘルパーが `String` を受け取っているために起きるコピーで、`cells` と `code_text` が `StringView` を受け取るようにすれば減る。
+ただ、`tinymarkdown` の目的は Go 版と同じ挙動の移植で、性能の問題もまだない。そのため手を付けていない。
+
+### テストとドキュメント
+
+`moon test --enable-coverage` の結果は 386/411 行。主な残りは次のとおり。
+
+- `worker`（0/18 行）: host の import を呼ぶので、`moon test` では確かめられない。`make dev` と `make compare` で確かめている。
+- `compare`（53/59 行）: 改行も `>` もない末尾の断片、`\r` と `\t` の表示、MoonBit 側だけの取得失敗。
+- `tinymarkdown/inline.mbt`（71/72 行）: 1 行。
+
+公開 API に、doc コメント中のテスト（`mbt check` のコードブロック）はない。
+テストはすべて、Go のテストケースを移したブラックボックステスト（`*_test.mbt`）になっている。
+modernize で変えた公開 API（`compare` のラベル、`Response` と `Report` の可視性）は README に書かれておらず、README を直す必要はなかった。
