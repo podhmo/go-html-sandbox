@@ -17,6 +17,7 @@ spike はリポジトリには入れておらず、要点のコードを末尾�
 - **コード単位の ABI は、時間の約 8 割を JS との受け渡しに使うが、51 KB のページでも 1 リクエスト 0.4 ms 前後で済む**（「計測」の節）。今のところ、受け渡し方を変える必要はない。
 - `wasm-opt -Oz` をかけると 5,279 B が 4,021 B になる（gzip 後は 2,744 B が 2,110 B）。差は 600 B ほどなので、ビルドには入れていない。
 - 移植は **wasm-gc（builtin string なし）+ コード単位の ABI** から始めるのがよい。サイズが小さく、GC を Wasm 側で持たずに済む。
+- **ブログ全体を移植すると、アップロードは 237.41 KiB（gzip 後 78.50 KiB）、起動時間は 2 ms で、TinyGo 版（2117.89 KiB、8 ms）より小さく速い。** 出力は Go 版と同じなので、2026-10-15 に `blog` を MoonBit 版に置き換えた（「ブログ全体の比較とデプロイ」の節）。
 
 ## 環境
 
@@ -307,6 +308,22 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 - **リダイレクトの本文**：Go の `http.Redirect` は GET に `<a href="...">Temporary Redirect</a>.` と改行 2 つの本文を付ける。比較は本文も見るので、同じ本文を返す。`Location` のクエリーを保つため、`worker.mjs` はクエリーを新しい export の `set_query` で渡す。
 - **メソッド**：Go 版は GET と HEAD 以外に 404 を返すが、Worker はメソッドを見ずに同じ応答を返す。比較は GET だけで行う。
 
+## ブログ全体の比較とデプロイ
+
+2026-10-15 に、Go 版のルートをすべて移した MoonBit の Worker を、まず `blog-moonbit` として、続けて `make deploy-blog`（`wrangler.jsonc` の env `blog`）で `blog` としてデプロイした。`https://blog.ababjam61.workers.dev` は、TinyGo 版から MoonBit 版に置き換わった。Go 版に戻すには、`go/examples/blog/workers` でもう一度デプロイする。
+
+| ビルド | Wasm | wrangler の Total Upload | Worker Startup Time |
+| --- | --- | --- | --- |
+| MoonBit（wasm-gc、`--release`） | 241,375 B（gzip -9 後 79,216 B） | 237.41 KiB（gzip 後 78.50 KiB） | 2 ms |
+| Go、TinyGo（[レポート](blog-tinygo-workers.md)） | 2,092,466 B（同 741,246 B） | 2117.89 KiB（gzip 後 757.41 KiB） | 8 ms |
+| Go、標準 Go（同） | 8,560,688 B（同 2,327,300 B） | — | — |
+
+- アップロードは TinyGo 版の約 1/9、標準 Go 版の Wasm の約 1/35。記事 4 本と文書 7 本、`site.css`、`favicon.svg` を埋め込んだ大きさで、spike（5.85 KiB）からの増分の多くは埋め込んだ文章。
+- 起動時間は TinyGo 版の 8 ms に対して 2 ms。標準 Go 版はデプロイの記録がない。
+- いちばん大きいページは `/docs/sketch/ja/moonbit-modernize`（53,796 B、36,682 コード単位）。`wrangler dev` に `curl` を 20 回送った往復時間の中央値は 1.7 ms で、`/`（1,729 B）の 1.2 ms との差は 0.5 ms ほど。「計測」の節の見積もり（50 KB で受け渡しが 0.5 ms 弱）と合っており、コード単位の ABI のままでよい。
+- 比較スクリプトで、Go 版の `/` と `/docs/` からたどれる記事 4 本と文書 7 本とその `.md` 版、`/`、`/docs/`、`/docs`、`/posts/`、`/favicon.svg`、`/site.css?v=...`、`//posts/../`、存在しないパスの 30 パスを、ローカルの Go 版（同じ `-base-url`）とデプロイした `blog-moonbit` と `blog` のそれぞれで比べ、すべて一致した。`blog-moonbit` へのデプロイ直後の 1 回だけ 2 パスが一致しなかったが、続けて 3 回実行するとすべて一致した。どのパスだったかは記録していない。
+- サイズと起動時間で MoonBit 版が上回り、出力は Go 版と同じなので、`blog` は MoonBit 版にした。Go 版は、サーバーとしての `go run ./examples/blog` と比較の基準として残す。
+
 ## 次の一歩
 
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。
@@ -315,7 +332,7 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 4. （済み）本番に `blog-moonbit` としてデプロイし、wasm-gc が受け付けられるかを確かめて、アップロードサイズを追記する。「デプロイ」の節を参照。
 5. （済み）`wasm-opt -Oz` をかけたサイズと、コード単位の受け渡しにかかる時間を測る。「計測」の節を参照。
 6. （済み）Go 版のブログと、パスごとにステータス、`Content-Type`、本文を比べる CLI を `moonbit/compare` に置く。「Go 版との比較スクリプト」の節を参照。
-7. ブログ全体を移植し、Go 版とサイズを比べて、このレポートに追記する。手順は TODO.md の「Reimplement the blog in MoonBit」の子タスクに分けた（Go 版との比較スクリプト、記事と文書の埋め込み、HTML ビルダー、Markdown、記事、文書とリンク、残りのルート、比較と記録）。
+7. （済み）ブログ全体を移植し、Go 版とサイズを比べて、このレポートに追記する。手順は TODO.md の「Reimplement the blog in MoonBit」の子タスクに分けた（Go 版との比較スクリプト、記事と文書の埋め込み、HTML ビルダー、Markdown、記事、文書とリンク、残りのルート、比較と記録）。
 
 ## spike のコード
 

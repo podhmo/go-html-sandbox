@@ -214,6 +214,8 @@ examples/blog/
 - `/`、記事、`/docs/` 以下、`.md`、favicon は 200、存在しないパスは 404 を返し、`og:url` は `BASE_URL` から作られていた。
 - `HEAD` は 200 で本文は空になった（Workers 側で本文が捨てられる）。
 
+2026-10-15 に、`blog` は MoonBit 版に置き換えた（[調査メモ](moonbit-workers-wasm.md)の「ブログ全体の比較とデプロイ」の節）。
+
 ## 未確認・残課題
 
 - 本番での CPU 時間。
