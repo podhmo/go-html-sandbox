@@ -40,7 +40,7 @@ From `moonbit/` (`make help` lists the targets):
 ```sh
 make test     # moon test
 make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm
-make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test
+make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test, moon info
 ```
 
 `worker` is built for wasm-gc only (its host imports do not compile on
