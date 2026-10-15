@@ -32,7 +32,7 @@ fn segments(body : String) -> Array[String] {
   let sb = StringBuilder()
   for c in body {
     sb.write_char(c)
-    if c == '\n' || c == '>' {
+    if c is ('\n' | '>') {
       out.push(sb.to_string())
       sb.reset()
     }
