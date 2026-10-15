@@ -111,15 +111,12 @@ fn unescape(s : StringView) -> String? {
 
 ///|
 fn hex_value(c : UInt16) -> Int32? {
-  let c = c.to_int()
-  if c >= '0'.to_int() && c <= '9'.to_int() {
-    Some(c - '0'.to_int())
-  } else if c >= 'a'.to_int() && c <= 'f'.to_int() {
-    Some(c - 'a'.to_int() + 10)
-  } else if c >= 'A'.to_int() && c <= 'F'.to_int() {
-    Some(c - 'A'.to_int() + 10)
-  } else {
-    None
+  let n = c.to_int()
+  match c {
+    '0'..<='9' => Some(n - '0'.to_int())
+    'a'..<='f' => Some(n - 'a'.to_int() + 10)
+    'A'..<='F' => Some(n - 'A'.to_int() + 10)
+    _ => None
   }
 }
 
