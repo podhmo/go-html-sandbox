@@ -189,14 +189,14 @@ fn scan(src : String) -> Array[Flat] {
 /// be a paragraph, unless the second line is a delimiter row with as many
 /// cells as the header.
 fn parse_table(lines : Array[String]) -> Block? {
-  guard lines.length() >= 2 else { return None }
-  let header = cells(lines[0])
-  let delim = cells(lines[1])
+  guard lines is [header, delim, .. body] else { return None }
+  let header = cells(header)
+  let delim = cells(delim)
   guard delim.length() == header.length() && delim.iter().all(is_delimiter) else {
     return None
   }
   let rows = []
-  for line in lines[2:] {
+  for line in body {
     let row = cells(line)
     row.truncate(header.length())
     for _ in row.length()..<header.length() {
