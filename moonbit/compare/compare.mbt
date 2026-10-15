@@ -89,7 +89,7 @@ pub fn body_diff(
 
 ///|
 /// Report is the result of comparing one path.
-pub(all) struct Report {
+pub struct Report {
   path : String
   same : Bool
   text : String

@@ -7,7 +7,7 @@ pub fn render(String) -> Response
 // Errors
 
 // Types and methods
-pub(all) struct Response {
+pub struct Response {
   status : Int
   headers : Array[(String, String)]
   body : String
