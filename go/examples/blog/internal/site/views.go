@@ -13,7 +13,7 @@ import (
 
 const (
 	siteName        = "blog"
-	siteDescription = "Notes rendered with the Go standard library only."
+	siteDescription = "Notes rendered with Wasm."
 )
 
 // pageMeta describes a page for <head>. Title and Description may hold
@@ -54,7 +54,7 @@ func layout(env pageEnv, meta pageMeta, body ...pe.Node) pe.Node {
 			pe.A("/docs/", pe.Text("docs")),
 		)),
 		pe.Main(body...),
-		pe.Footer(pe.Small(pe.Text("Rendered with the Go standard library."))),
+		pe.Footer(pe.Small(pe.Text("Rendered with Wasm."))),
 	)
 }
 

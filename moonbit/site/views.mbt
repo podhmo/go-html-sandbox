@@ -4,7 +4,7 @@
 const SITE_NAME = "blog"
 
 ///|
-const SITE_DESCRIPTION = "Notes rendered with the Go standard library only."
+const SITE_DESCRIPTION = "Notes rendered with Wasm."
 
 ///|
 /// PageMeta describes a page for <head>. title and description may hold
@@ -46,9 +46,7 @@ fn layout(meta : PageMeta, body : Array[@el.Node]) -> @el.Node {
       ]),
     ]),
     @picoel.main_(body),
-    @picoel.footer([
-      @picoel.small([@picoel.text("Rendered with the Go standard library.")]),
-    ]),
+    @picoel.footer([@picoel.small([@picoel.text("Rendered with Wasm.")])]),
   ])
 }
 

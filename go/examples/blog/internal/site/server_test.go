@@ -122,7 +122,7 @@ Points
 one
 two
 x := <1>
-Rendered with the Go standard library.
+Rendered with Wasm.
 `
 	if got := b.String(); got != want {
 		t.Errorf("got\n%s\nwant\n%s", got, want)
@@ -268,7 +268,7 @@ func TestOGP(t *testing.T) {
 			`<meta property="og:title" content="blog">`,
 			`<meta property="og:type" content="website">`,
 			`<meta property="og:url" content="https://example.com/">`,
-			`<meta property="og:description" content="Notes rendered with the Go standard library only.">`,
+			`<meta property="og:description" content="Notes rendered with Wasm.">`,
 			`<meta property="og:site_name" content="blog">`,
 		}},
 		{"/posts/hello", []string{

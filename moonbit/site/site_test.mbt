@@ -247,7 +247,7 @@ test "ogp" {
   ])
   assert_contains(body(s, "/"), [
     "<title>blog</title>", "<meta property=\"og:title\" content=\"blog\">", "<meta property=\"og:type\" content=\"website\">",
-    "<meta property=\"og:url\" content=\"https://example.com/\">", "<meta property=\"og:description\" content=\"Notes rendered with the Go standard library only.\">",
+    "<meta property=\"og:url\" content=\"https://example.com/\">", "<meta property=\"og:description\" content=\"Notes rendered with Wasm.\">",
     "<meta property=\"og:site_name\" content=\"blog\">",
   ])
   assert_contains(body(s, "/posts/hello"), [

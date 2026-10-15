@@ -87,7 +87,7 @@ test "post page text" {
       #|one
       #|two
       #|x := <1>
-      #|Rendered with the Go standard library.
+      #|Rendered with Wasm.
       #|
     ),
   )
