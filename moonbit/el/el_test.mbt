@@ -83,8 +83,7 @@ test "html renderer" {
       "<meta charset=\"utf-8\">",
     ),
   ]
-  for c in cases {
-    let (name, node, want) = c
+  for (name, node, want) in cases {
     assert_eq(@el.render_html(node), want, msg=name)
   }
 }
@@ -150,8 +149,7 @@ test "plain renderer" {
       "",
     ),
   ]
-  for c in cases {
-    let (name, node, want) = c
+  for (name, node, want) in cases {
     assert_eq(@el.render_plain(node), want, msg=name)
   }
 }
