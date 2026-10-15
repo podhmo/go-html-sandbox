@@ -102,5 +102,16 @@
     ページで `serve` にかかる時間とともに調査メモに記録する。どちらの実装を
     `blog` としてデプロイするかを決める。
 
+- [ ] **`moonbit/site` のエスケープを Go 版に揃える**: `site` の
+  `write_escaped` は `"` を `&quot;` にするが、Go 版（`moonbit/el` も同じ）は
+  `html.EscapeString` に倣って `&#34;` にするので、`"` を含むパスの 404 ページが
+  Go 版と違う。`site` を `el` で組み立て直し、`write_escaped` を消す。
+  [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「パッケージ構成と依存関係」を参照。
+- [ ] **`derive` で生えるメソッドの打ち消し方を揃える**: `moonbit/el` の
+  `extends.mbt` は `Eq` と `Debug` のメソッドを `#deprecated` 付きの
+  `pub extend` で打ち消しているが、`moonbit/tinymarkdown` は `#deprecated` を
+  付けていない。どちらかに揃える。
+  [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「気づいたこと」を参照。
+
 ### Future work
 
