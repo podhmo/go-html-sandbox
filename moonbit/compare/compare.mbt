@@ -70,7 +70,7 @@ pub fn body_diff(
   moonbit : String,
   max_lines~ : Int32 = 40,
 ) -> String {
-  let d = @diff.Diff(old=segments(go)[:], new=segments(moonbit)[:])
+  let d = @diff.Diff(old=segments(go), new=segments(moonbit))
   let lines = []
   for h in d.group(context=2) {
     for line in h.render(show=show_segment).split("\n") {

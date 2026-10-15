@@ -224,7 +224,7 @@ fn parse_table(lines : Array[String]) -> Block? {
 fn cells(line : String) -> Array[String] {
   let line = match line.strip_prefix("|") {
     Some(v) => v
-    None => line[:]
+    None => line
   }
   let out = []
   let b = StringBuilder()
@@ -254,7 +254,7 @@ fn cells(line : String) -> Array[String] {
 fn is_delimiter(c : String) -> Bool {
   let c = match c.strip_prefix(":") {
     Some(v) => v
-    None => c[:]
+    None => c
   }
   let c = match c.strip_suffix(":") {
     Some(v) => v
