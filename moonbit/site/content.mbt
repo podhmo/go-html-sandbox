@@ -78,8 +78,8 @@ pub fn load_posts(
       }
     }
     let doc = @tinymarkdown.parse(body)
-    let title = match meta.get("title") {
-      Some(t) if t != "" => t
+    let title = match meta {
+      { "title": t, .. } if t != "" => t
       _ => first_title(doc).unwrap_or("")
     }
     if title == "" {
@@ -87,8 +87,8 @@ pub fn load_posts(
         message="\{name}: no title (set \"title\" in front matter or start with a \"# title\" heading)",
       )
     }
-    let description = match meta.get("description") {
-      Some(d) if d != "" => d
+    let description = match meta {
+      { "description": d, .. } if d != "" => d
       _ => first_paragraph(doc.children)
     }
     posts.push({
