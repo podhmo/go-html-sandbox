@@ -17,10 +17,13 @@
   と `make dev` だけで済む今の手軽さを保ったまま、文章を Wasm の外に出す。
   第一候補は Workers の Static Assets（`wrangler.jsonc` の `assets`。同じ
   `wrangler deploy` でアップロードされ、`wrangler dev` でも動き、R2 や KV のような
-  別の手順が要らない）。一覧に要るタイトルと説明は、ビルド時に目録として作る。
+  別の手順が要らない）。Static Assets には一覧の API がないので、ファイルの一覧は
+  ビルド時に作る。
   - 決めること: 文章を Wasm にどう渡すか（`serve` は同期なので、JS が先に取って
     渡すか、Wasm が要るファイルを返して呼び直すか）。下の Future work の
     アダプターの見直しと関わる。
+  - [調査レポート](docs/sketch/ja/moonbit-static-assets.md)では、最初のリクエストで
+    全部の文章を取って Wasm に渡す案を推している。
   - 完了の条件: `make compare` で Go 版と一致したまま、記事を 1 本足しても Wasm の
     サイズが変わらない。サイズと処理時間の変化を
     [調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
