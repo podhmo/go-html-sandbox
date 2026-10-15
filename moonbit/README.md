@@ -6,6 +6,9 @@ It is an experiment in progress; see
 [the research notes](../docs/sketch/ja/moonbit-workers-wasm.md) and
 `TODO.md` for what is next.
 
+- `el` — the HTML builder ported from `go/pkg/el`: nodes as plain data,
+  `render_html` (escaping like Go's `html.EscapeString`) and
+  `render_plain`
 - `site` — `render(path)`, returning the response for a path: status,
   headers, and body
 - `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)

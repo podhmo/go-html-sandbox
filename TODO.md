@@ -70,9 +70,11 @@
       `scripts/embed.sh` はディレクトリ直下の `*.md` しか扱わず、moon の
       `dev_build` はディレクトリの mtime しか見ないので、サブディレクトリの
       扱いを決める。
-  - [ ] **HTML ビルダー**: `pkg/el`（ノード、エスケープ、レンダリング）と、
+  - [-] **HTML ビルダー**: `pkg/el`（ノード、エスケープ、レンダリング）と、
     `pkg/picoel` のうちページで使う部分を移植する。完了の条件: Go のテストの
     うち当てはまるケースを `moon test` で、同じ出力で確かめている。
+    - [x] **el**: `pkg/el` を `moonbit/el` に移植する。
+    - [ ] **picoel**: `pkg/picoel` のうちページで使う部分を移植する。
   - [ ] **front matter と Markdown**: `pkg/tinyfrontmatter` と
     `pkg/tinymarkdown`（`#####` までのセクション、リスト、段落、引用、
     フェンスで囲んだコード、表。インラインのコードとリンク）を移植する。

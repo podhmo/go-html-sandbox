@@ -258,6 +258,17 @@ MoonBit に `go:embed` はないが、`moon.pkg` の `rule` と `dev_build` で�
 - まだ `site` から使っていないので、Worker の Wasm は 5,279 B のまま変わらない。試しに `site` から 1 記事を出力すると 15,687 B になり、記事の編集が `make build` で Wasm に反映された。
 - clone した直後（`embedded.mbt` がない状態）から、`make build` も素の `moon test` も通る。
 
+## HTML ビルダー（`el`）
+
+Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
+
+- **ノード**：Go の `Node` インターフェースと 5 つの型は、閉じた `enum Node`（`Text`、`Raw`、`Element`、`Attr`、`BoolAttr`）にした。要素名と属性名は、Go と同じく別の型（タプル構造体 `Tag(String)` と `AttrName(String)`）にしてあり、取り違えるとコンパイルが通らない。`derive(Eq, Debug)` で `==` と `assert_eq` が使える。
+- **名前の定数**：`const` はプリミティブ型にしか使えず、大文字で始める決まりなので、`pub let div : Tag = Tag("div")` のように小文字の値にした。MoonBit のキーワードと重なる属性は、`title_attr` と同じく `_attr` を付けた（`defer_attr`、`type_attr`）。
+- **レンダリング**：Go の `Renderer` インターフェースと `Render` の型スイッチは、`render_html` と `render_plain` の 2 つの関数の `match` にした。`enum` は閉じているので未知のノードはなく、出力先は `StringBuilder` なので書き込みエラーもない。Go のテストのうち、`nil` の子、未知のノード、書き込みエラーの 3 つはこのため移植していない。それ以外のケースは `moon test` で同じ出力を確かめている。
+- **エスケープ**：`html.EscapeString` と同じく、`"` を `&#34;`、`'` を `&#39;` にする。`site` の今のエスケープは `&quot;` を使っているので、`el` に乗り換えるときに出力が Go 版にそろう。
+- **警告 `implicit_impl_as_method`**：moonc v0.10.15 では、公開した型に `derive(Eq, Debug)` を付けるだけで、`equal` などがメソッドに昇格することへの警告が出る。core（`cmp/extends.mbt`）にならい、`#deprecated` を付けた `pub extend ... with Eq::{equal, not_equal}` を書いて消した（`el/extends.mbt`）。
+- `worker` はまだ `el` を使っていないので、Wasm は 5,279 B のまま。
+
 ## 次の一歩
 
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。
