@@ -233,3 +233,70 @@ handbook の modernize は、2 段階に分かれている。
 - `missing_doc`: 公開していない補助関数にも doc を求めることになるので。
 - `prefer_readonly_array`、`prefer_fixed_array`: 移植では Go のスライスを `Array` のまま持つので。
 - `missing_invariant`、`missing_reasoning`、`declaration_implemented`: 手順の 3 と同じ理由で。
+
+## 追記: 2 回目のパス
+
+1 回目のパスの後に、`picoel`、`tinyfrontmatter`、`site` の大部分（`content.mbt`、`links.mbt`、`views.mbt`）、`repodocs`、`assets` が加わった。
+そこで、同じ skill を、同じく「仮想的に実行」する形でもう一度当てた。作業はブランチ `moonbit-modernize-2` で行い、書き換えの種類ごとに 1 コミットにした。
+
+| | バージョン |
+| --- | --- |
+| moon | 0.1.20261012 |
+| moonbit-individual-handbook | 0c35763（#63 を取り込んだ後） |
+
+### 結論
+
+- 11 種類の書き換えを 12 コミット（for-in の分解は、拾い漏れを後から足したので 2 コミット）と、doc コメントの修正 1 コミットにした。挙動は変えていない。各コミットの前に `moon fmt` と `moon info` を実行し、`make check`（wasm-gc と native の `moon check`、`moon test` 59 件、`.mbti` の差分確認）を通した。
+- opt-in の警告で見つかったのは `unnecessary_annotation` の 90 件（すべて `@el.`）だけで、方針どおり書き換えなかった。今回の書き換えも、すべて skill の catalog と grep、`.mbti` から見つけたもの。
+- 公開 API が変わったのは `picoel`（引数のラベル）と `site`（`Site::new` → `Site::Site`、`Site` を抽象型に）だけ。
+
+### Step 0: 全体の構造の確認
+
+skill の Step 0 に従い、`moonbit-refactoring` の「Local refactoring」より前の観点で、新しいパッケージを先に見た。
+
+- 依存関係は `worker` → `site` → `picoel` / `el` / `tinymarkdown` / `tinyfrontmatter` / `posts` / `repodocs` / `assets` の一方向で、循環はない。
+- `site` は 4 ファイル、約 1,100 行。`links.mbt` は Go の `net/url` と `path` の一部の移植を含むが、使うのは `site` だけなので、パッケージを分けるほどではない。
+- 公開 API のうち、`Site` のフィールド（`by_slug` などの索引）は外から読まれていなかった。これは書き換えの 1 つとして `Site` を抽象型にした（9034696）。`Post` と `Doc` のフィールドはテストが読むので `pub struct` のまま。
+
+構造を変える必要はなかったので、そのまま局所的な書き換えに進んだ。
+
+### コミットの一覧
+
+| commit | 種類 | 内容 |
+| --- | --- | --- |
+| 6a30d6c | constructor | `Site::new` を `Site::Site` に。呼び出しは `@site.Site(..)` |
+| e013948 | for-in の分解 | `for c in xs { let (a, b) = c` と、ヘッダの `h.0` / `h.1` を `for (a, b) in xs` に |
+| 9255055 | functional-for | `tinyfrontmatter` の `split`（`for rest, lineno` と `nobreak` での raise）、`unescape`（`continue i + 3` / `continue end`）、`parse_ref` の scheme の走査（`break (scheme, rest)`）、`post_name`（for-in の累積変数 `prev_dash`） |
+| 1d3b637 | core の関数 | `check_date` の桁の計算を `Iter::fold` に、制御文字の検査を `Iter::any` に、最小値を `Int::min` に、ホストの検査を `contains_any(chars="/?#")` に |
+| a8e83bf | リスト内包 | `load_docs` の `iter().filter(..).to_array()` を `[for f in files if .. => f]` に |
+| 9e99235 | 文字列パターン | `Site` のホストの取り出しを `[.. "https://", .. h] \| [.. "http://", .. h]` に、`parse_ref` の `rest[2:]` を `[.. "//", .. after]` に |
+| 2f1d019 | 範囲パターン | `hex_value` の `to_int()` の比較を `'0'..<='9'` などの範囲パターンに |
+| 294221a | method | `post_source`、`post_path`、`post_markdown_path`、`doc_path`、`doc_markdown_path` を `Post::source`、`Post::page_path`、`Post::markdown_path`、`Doc::page_path`、`Doc::markdown_path` に。`parse_ref` は名前空間付きの constructor `Ref::parse` に |
+| aea0dcb | ラベル付き引数 | `meta_name(name, content~)`、`meta_property(property, content~)`、`icon(href, mime_type~)`、`download_link(href, filename~, children)`、`spread(start, end~)`、`page_header(info, href~, filename~)` |
+| 9034696 | 可視性 | `pub struct Site` を `struct Site`（抽象型）に |
+| 09c2132 | for-in の分解 | e013948 で拾い漏れた、テストの `c.0` / `c.1` と、`@posts.files` / `@repodocs.files` の内包表記 |
+| 3627e2a | 外部型へのローカルメソッド | `escape` と `hex_escape_non_ascii` で重複していた `%XX` の書き込みを `StringBuilder::write_percent_encoded` に |
+| 569ae6b | doc コメント | `front_matter_keys` と `doc_sources` の doc コメントが `FRONT_MATTER_KEYS` / `DOC_SOURCES` と `const` のように書いていたのを、実際の名前に。配列は `const` にできないので `let` のまま |
+
+### 方針を決めたもの
+
+1 回目のパスの方針（`@pkg.` は残す、ラベルは同じ型の引数が並ぶ箇所にだけ付ける、`el` の DSL の `children` は位置引数のまま）をそのまま使った。
+
+- **ラベル:** `picoel` の `a(href, children)` や `table(header, rows)` は、引数の型が違うので取り違えようがなく、位置引数のままにした。
+- **method の名前:** `Doc` にはフィールド `path`（`/docs/` より下の URL のパス）があるので、ページの URL を返すメソッドは `path` ではなく `page_path` にした。`Post::source` は、`Doc` のフィールド `source` と同じ意味（リポジトリ内のファイルのパス）になるように付けた。
+
+### 見送ったもの
+
+- **`post_list` と `doc_list` の `push` のループ。** 内包表記にすると `[h1, ..[for p in posts => { .. }]]` と入れ子が深くなり、元のループより読みにくかった。一度書き換えてから戻した。
+- **`ogp` のメソッド化。** 引数は呼び出し側で組み立てたレコード（`{ ..meta, title, description }`）で、メソッドにするとレコードリテラルにメソッドを続ける形になる。
+- **`render_blocks` の `bs.map(b => ..)`。** 内包表記と同じ意味で、書き換えても読みやすさは変わらない。
+- **テストの複数行の文字列を `#|` にすること。** Go のテストケースの文字列をそのまま移しているので、Go 版と見比べやすい今の形にした。
+- **`worker` の `put_string` の添字のループ。** UTF-16 のコード単位を 1 つずつ host に渡すという意図が、添字のループで一番はっきり読める。
+
+### 気づいたこと
+
+- **2 部形式の functional-for（`for i = 0; cond; { .. }`）で、本体の末尾まで `continue` なしで落ちると、状態を変えないまま次の周回に入る。** ほかの分岐に `continue e` が 1 つでもあれば警告は出ず、無限ループになる（どこでも更新しないときだけ `unused_loop_variable` の警告が出る）。`split` を書き換えたとき、本体の最後に `continue next, lineno + 1` を置いたのはこのため（moon 0.1.20261012 で確認）。
+- **`UInt16` の値にも、Char のリテラルの範囲パターン（`'0'..<='9'`）がそのまま使える。** `s[i] == '%'` と同じく、リテラルの型が `UInt16` として推論される。`hex_value` は `to_char()` を挟まずに書けた。
+- **ラベル付きの引数を持つ関数は、ローカル変数に束縛して呼べない。** `let prop = @picoel.meta_property` の後に `prop(.., content=..)` と書くと、エラー 4117「Function with labelled arguments can only be applied directly」になる。`ogp` は `@picoel.meta_property(..)` を直接呼ぶ形にした。
+- **内包表記の `for` も、for-in と同じくタプルのパターンを取れる。** `[for (name, _) in @posts.files => name]` と書けた。
+- **for-in の分解は、1 つのコミットで拾い切れなかった。** 最初の grep は `for c in xs {` の次の行の `let (..) = c` だけを探していて、本体で `c.0` を直接読む形を見落とした。`[^a-zA-Z_.][a-z_]+\.[0-9]\b` で探し直して見つけた。
