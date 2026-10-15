@@ -23,6 +23,15 @@ func run(t *testing.T, cases []testCase) {
 	}
 }
 
+// items makes list items without children.
+func items(texts ...string) []Item {
+	out := make([]Item, 0, len(texts))
+	for _, t := range texts {
+		out = append(out, Item{Text: t})
+	}
+	return out
+}
+
 func TestSectionsAndParagraphs(t *testing.T) {
 	run(t, []testCase{
 		{"empty", "", Document{}},
@@ -81,29 +90,74 @@ func TestSectionsAndParagraphs(t *testing.T) {
 
 func TestLists(t *testing.T) {
 	run(t, []testCase{
-		{"list", "- a\n-   b  \n  - c",
-			Document{Children: []Block{List{Items: []string{"a", "b", "c"}}}}},
+		{"list", "- a\n-   b  \n- c",
+			Document{Children: []Block{List{Items: items("a", "b", "c")}}}},
 		{"blank line splits lists", "- a\n\n- b",
-			Document{Children: []Block{List{Items: []string{"a"}}, List{Items: []string{"b"}}}}},
+			Document{Children: []Block{List{Items: items("a")}, List{Items: items("b")}}}},
 		{"list after paragraph without a blank line", "intro\n- a\n- b",
-			Document{Children: []Block{Paragraph{Text: "intro"}, List{Items: []string{"a", "b"}}}}},
+			Document{Children: []Block{Paragraph{Text: "intro"}, List{Items: items("a", "b")}}}},
 		{"paragraph after list without a blank line", "- a\nafter",
-			Document{Children: []Block{List{Items: []string{"a"}}, Paragraph{Text: "after"}}}},
+			Document{Children: []Block{List{Items: items("a")}, Paragraph{Text: "after"}}}},
 		{"indented lines continue an item", "- a\n  more\n\tand more\n- b\n  b2",
-			Document{Children: []Block{List{Items: []string{"a\nmore\nand more", "b\nb2"}}}}},
+			Document{Children: []Block{List{Items: items("a\nmore\nand more", "b\nb2")}}}},
 		{"indented line after a paragraph stays in the paragraph", "p\n  q",
 			Document{Children: []Block{Paragraph{Text: "p\nq"}}}},
 		{"blank line ends the continuation", "- a\n\n  b",
-			Document{Children: []Block{List{Items: []string{"a"}}, Paragraph{Text: "b"}}}},
+			Document{Children: []Block{List{Items: items("a")}, Paragraph{Text: "b"}}}},
 		{"dash without a space is paragraph text", "-a\n--",
 			Document{Children: []Block{Paragraph{Text: "-a\n--"}}}},
 		{"list inside a section", "# A\n- x\n## B\n- y",
 			Document{Children: []Block{
 				Section{Level: 1, Title: "A", Children: []Block{
-					List{Items: []string{"x"}},
-					Section{Level: 2, Title: "B", Children: []Block{List{Items: []string{"y"}}}},
+					List{Items: items("x")},
+					Section{Level: 2, Title: "B", Children: []Block{List{Items: items("y")}}},
 				}},
 			}}},
+	})
+}
+
+func TestNestedLists(t *testing.T) {
+	run(t, []testCase{
+		{"indented item nests under the one above", "- a\n  - b\n  - c\n- d",
+			Document{Children: []Block{List{Items: []Item{
+				{Text: "a", Children: items("b", "c")},
+				{Text: "d"},
+			}}}}},
+		{"deeper nesting", "- a\n  - b\n    - c\n- d",
+			Document{Children: []Block{List{Items: []Item{
+				{Text: "a", Children: []Item{{Text: "b", Children: items("c")}}},
+				{Text: "d"},
+			}}}}},
+		{"dedent goes back to the matching level", "- a\n  - b\n    - c\n  - d",
+			Document{Children: []Block{List{Items: []Item{
+				{Text: "a", Children: []Item{{Text: "b", Children: items("c")}, {Text: "d"}}},
+			}}}}},
+		{"any deeper indent nests, a shallower one is a sibling", "- a\n    - b\n  - c\n\t- d",
+			Document{Children: []Block{List{Items: []Item{
+				{Text: "a", Children: []Item{{Text: "b"}, {Text: "c"}, {Text: "d"}}},
+			}}}}},
+		{"indented lines continue the nearest item", "- a\n  more\n  - b\n    b2\n  b3\n- c",
+			Document{Children: []Block{List{Items: []Item{
+				{Text: "a\nmore", Children: items("b\nb2\nb3")},
+				{Text: "c"},
+			}}}}},
+		{"an indented first item is the top level", "  - a\n- b\n  - c",
+			Document{Children: []Block{List{Items: []Item{
+				{Text: "a"},
+				{Text: "b", Children: items("c")},
+			}}}}},
+		{"indented item after a paragraph starts a list", "p\n  - a",
+			Document{Children: []Block{Paragraph{Text: "p"}, List{Items: items("a")}}}},
+		{"blank line splits nested lists too", "- a\n\n  - b",
+			Document{Children: []Block{List{Items: items("a")}, List{Items: items("b")}}}},
+		{"checkboxes are text", "- [ ] a\n  - [x] b",
+			Document{Children: []Block{List{Items: []Item{
+				{Text: "[ ] a", Children: items("[x] b")},
+			}}}}},
+		{"nested list in a quote", "> - a\n>   - b",
+			Document{Children: []Block{Quote{Children: []Block{List{Items: []Item{
+				{Text: "a", Children: items("b")},
+			}}}}}}},
 	})
 }
 
@@ -128,7 +182,7 @@ func TestCodeBlocks(t *testing.T) {
 		{"fence ends a paragraph and a list", "p\n```\nc\n```\n- a\n```\nd\n```",
 			Document{Children: []Block{
 				Paragraph{Text: "p"}, CodeBlock{Code: "c"},
-				List{Items: []string{"a"}}, CodeBlock{Code: "d"},
+				List{Items: items("a")}, CodeBlock{Code: "d"},
 			}}},
 		{"code block inside a section", "# A\n```\n## x\n```",
 			Document{Children: []Block{
@@ -147,7 +201,7 @@ func TestQuotes(t *testing.T) {
 			Document{Children: []Block{Quote{Children: []Block{Paragraph{Text: "a"}, Paragraph{Text: "b"}}}}}},
 		{"blocks inside a quote", "> - x\n>   y\n> ```\n>   code\n> ```",
 			Document{Children: []Block{Quote{Children: []Block{
-				List{Items: []string{"x\ny"}}, CodeBlock{Code: "  code"},
+				List{Items: items("x\ny")}, CodeBlock{Code: "  code"},
 			}}}}},
 		{"nested quote", "> a\n>\n> > b",
 			Document{Children: []Block{Quote{Children: []Block{
@@ -156,7 +210,7 @@ func TestQuotes(t *testing.T) {
 		{"quote ends a paragraph and a list", "p\n> q\n- a\n> r",
 			Document{Children: []Block{
 				Paragraph{Text: "p"}, Quote{Children: []Block{Paragraph{Text: "q"}}},
-				List{Items: []string{"a"}}, Quote{Children: []Block{Paragraph{Text: "r"}}},
+				List{Items: items("a")}, Quote{Children: []Block{Paragraph{Text: "r"}}},
 			}}},
 		{"a line without > ends the quote", "> q\np\n> r\n\n> s",
 			Document{Children: []Block{
@@ -214,6 +268,6 @@ func TestTables(t *testing.T) {
 				Quote{Children: []Block{Table{Header: []string{"b"}}}},
 			}}}}},
 		{"list ends at a table", "- x\n| a |\n| - |",
-			Document{Children: []Block{List{Items: []string{"x"}}, Table{Header: []string{"a"}}}}},
+			Document{Children: []Block{List{Items: items("x")}, Table{Header: []string{"a"}}}}},
 	})
 }

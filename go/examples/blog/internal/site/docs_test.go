@@ -10,7 +10,7 @@ import (
 )
 
 var testDocs = fstest.MapFS{
-	"TODO.md":           file("# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line"),
+	"TODO.md":           file("# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line\n  - [x] child"),
 	"docs/ja/design.md": file("# Design <x>\n\nwhy\n## Use `el`\n- run `go test`\n- ``a ` b``"),
 	"docs/notes.md":     file("no heading"),
 	"docs/image.svg":    file("<svg/>"),
@@ -61,7 +61,7 @@ func TestDocPages(t *testing.T) {
 
 	_, body = get(t, h, "/docs/TODO")
 	if want := `<li>[ ] **task**: first line
-second line</li>`; !strings.Contains(body, want) {
+second line<ul><li>[x] child</li></ul></li>`; !strings.Contains(body, want) {
 		t.Errorf("TODO: body does not contain %q", want)
 	}
 
@@ -90,7 +90,7 @@ second line</li>`; !strings.Contains(body, want) {
 func TestDocMarkdown(t *testing.T) {
 	h := newTestServer(t, testPosts)
 	for _, c := range []struct{ path, want string }{
-		{"/docs/TODO.md", "# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line"},
+		{"/docs/TODO.md", "# TODO\n\n> note\n\n- [ ] **task**: first line\n  second line\n  - [x] child"},
 		{"/docs/ja/design.md", "# Design <x>\n\nwhy\n## Use `el`\n- run `go test`\n- ``a ` b``"},
 	} {
 		res, body := get(t, h, c.path)

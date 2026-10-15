@@ -3,7 +3,7 @@
 Prints the tree that [`pkg/tinymarkdown`](../../pkg/tinymarkdown) builds
 from Markdown, one block per line. Use it to check how a document is
 understood before rendering it: anything tinymarkdown does not support
-(numbered or nested lists, tables without a delimiter row, ...) shows up as paragraph
+(numbered lists, tables without a delimiter row, ...) shows up as paragraph
 text.
 
 ```sh
@@ -18,6 +18,7 @@ headed by `== path`.
 section h1 "Title"
   list
     item "a"
+      item "a1"
   section h2 "Sub"
     paragraph "| x | y |\n| - | - |"
     code "x := 1"

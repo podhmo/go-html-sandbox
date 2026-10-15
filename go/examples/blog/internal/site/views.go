@@ -175,11 +175,7 @@ func renderBlocks(bs []tinymarkdown.Block, link linker) []pe.Node {
 		case tinymarkdown.Paragraph:
 			out = append(out, pe.P(renderInlines(tinymarkdown.Inlines(b.Text), link)...))
 		case tinymarkdown.List:
-			items := make([]pe.Node, 0, len(b.Items))
-			for _, it := range b.Items {
-				items = append(items, pe.Li(renderInlines(tinymarkdown.Inlines(it), link)...))
-			}
-			out = append(out, pe.List(items...))
+			out = append(out, renderList(b.Items, link))
 		case tinymarkdown.Quote:
 			out = append(out, pe.Blockquote(renderBlocks(b.Children, link)...))
 		case tinymarkdown.Table:
@@ -200,6 +196,20 @@ func renderBlocks(bs []tinymarkdown.Block, link linker) []pe.Node {
 		}
 	}
 	return out
+}
+
+// renderList renders items as a list, with the children of an item as a
+// list inside its <li>.
+func renderList(items []tinymarkdown.Item, link linker) pe.Node {
+	lis := make([]pe.Node, 0, len(items))
+	for _, it := range items {
+		li := renderInlines(tinymarkdown.Inlines(it.Text), link)
+		if len(it.Children) > 0 {
+			li = append(li, renderList(it.Children, link))
+		}
+		lis = append(lis, pe.Li(li...))
+	}
+	return pe.List(lis...)
 }
 
 // linkedTitle renders a title written in Markdown inside the link to its
