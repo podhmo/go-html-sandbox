@@ -49,11 +49,8 @@ fn Node::write_html(self : Node, sb : StringBuilder) -> Unit {
   match self {
     Text(s) => sb.write_escaped(s)
     Raw(s) => sb.write_string(s)
-    Attr(AttrName(k), v) => {
-      sb <+ " \{k}=\""
-      sb.write_escaped(v)
-      sb.write_char('"')
-    }
+    Attr(AttrName(k), v) =>
+      sb..write_string(" \{k}=\"")..write_escaped(v).write_char('"')
     BoolAttr(AttrName(k)) => sb <+ " \{k}"
     Element(name, children) => {
       sb <+ "<\{name.0}"
