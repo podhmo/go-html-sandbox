@@ -41,6 +41,17 @@ pub extend SplitError with Debug::{to_repr}
 /// split returns the front matter of src and the rest of the document. If
 /// src does not start with a "---" line, the front matter is None and the
 /// rest is src unchanged. The keys keep the order they appear in.
+///
+/// ```mbt check
+/// test {
+///   let (meta, body) = @tinyfrontmatter.split(
+///     "---\ntitle: \"Hello\"\n---\n# Hello\n",
+///   )
+///   assert_eq(meta, Some(Map([("title", "Hello")])))
+///   assert_eq(body, "# Hello\n")
+///   assert_eq(@tinyfrontmatter.split("# Hello"), (None, "# Hello"))
+/// }
+/// ```
 pub fn split(src : String) -> (Map[String, String]?, String) raise SplitError {
   let (first, rest) = cut_line(src)
   if trim_line(first) != DELIMITER {
