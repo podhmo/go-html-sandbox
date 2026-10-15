@@ -79,7 +79,7 @@ skill はこのリポジトリにも個人の環境にもインストールせ�
 - **`moon fmt` は、長い `<+` の右辺を次の行に送る。** `details <+` で改行し、テンプレート文字列を次の行に字下げして置く。`write_string(..)` のときの括弧と末尾のカンマがなくなるので、行数は少し減る。
 - **`String` は `StringView` が期待される場所で暗黙に変換される。** `line.strip_prefix("|").unwrap_or(line)` は、`strip_prefix` が `StringView?` を返し `line` は `String` だが、そのまま型が合った。
 - **core の関数の細かい挙動は、`~/.moon/lib/core` の `pkg.generated.mbti` と実装を読んで確かめるのが早い。** `Array::truncate` は、指定した長さが今の長さ以上なら何もしないことを、実装で確かめてから使った。
-- **`el` と `tinymarkdown` で、`derive` で生えるメソッドを打ち消す書き方が違う。** `el/extends.mbt` は `#deprecated` を付けて `pub extend` しているが、`tinymarkdown` は付けていない。modernize の catalog の範囲外なので、揃えてはいない。
+- **`el` と `tinymarkdown` で、`derive` で生えるメソッドを打ち消す書き方が違う。** `el/extends.mbt` は `#deprecated` を付けて `pub extend` しているが、`tinymarkdown` は付けていない。modernize の catalog の範囲外なので、modernize のコミットでは揃えていない。その後、`tinymarkdown` にも `#deprecated` を付けて `el` に揃えた。deprecated になっているのは、`derive` したトレイトのメソッドが普通のメソッドとしても自動で生えるというコンパイラの挙動で、生えたメソッドを自分で消す方法はない。`#deprecated` を付けた `pub extend` は、警告 `implicit_impl_as_method` が示す「メソッドとしては使わせない」側の書き方で、`==` や `Debug::to_repr` だけを使うことをコンパイラに確かめさせられる。
 
 ## 追記: moonbit-refactoring skill の前半による見直し
 

@@ -21,15 +21,21 @@ pub(all) enum Block {
   Table(header~ : Array[String], rows~ : Array[Array[String]])
   CodeBlock(String)
 } derive(Eq, @debug.Debug)
+#deprecated
 pub fn Block::equal(Self, Self) -> Bool
+#deprecated
 pub fn Block::not_equal(Self, Self) -> Bool
+#deprecated
 pub fn Block::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Document {
   children : Array[Block]
 } derive(Eq, @debug.Debug)
+#deprecated
 pub fn Document::equal(Self, Self) -> Bool
+#deprecated
 pub fn Document::not_equal(Self, Self) -> Bool
+#deprecated
 pub fn Document::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Inline {
@@ -37,8 +43,11 @@ pub(all) enum Inline {
   Code(String)
   Link(children~ : Array[Inline], url~ : String)
 } derive(Eq, @debug.Debug)
+#deprecated
 pub fn Inline::equal(Self, Self) -> Bool
+#deprecated
 pub fn Inline::not_equal(Self, Self) -> Bool
+#deprecated
 pub fn Inline::to_repr(Self) -> @debug.Repr
 
 // Type aliases
