@@ -1,0 +1,1143 @@
+diff --git a/TODO.md b/TODO.md
+index 94f98cb..5315714 100644
+--- a/TODO.md
++++ b/TODO.md
+@@ -70,11 +70,13 @@
+   - [ ] **HTML ビルダー**: `pkg/el`（ノード、エスケープ、レンダリング）と、
+     `pkg/picoel` のうちページで使う部分を移植する。完了の条件: Go のテストの
+     うち当てはまるケースを `moon test` で、同じ出力で確かめている。
+-  - [ ] **front matter と Markdown**: `pkg/tinyfrontmatter` と
+-    `pkg/tinymarkdown`（`#####` までのセクション、リスト、段落、引用、
+-    フェンスで囲んだコード、表。インラインのコードとリンク）を移植する。
+-    完了の条件: Go のテストのケースを `moon test` で、同じ構文木で確かめて
+-    いる。
++  - [-] **front matter と Markdown**: `pkg/tinyfrontmatter` と
++    `pkg/tinymarkdown` を移植する。完了の条件: Go のテストのケースを
++    `moon test` で、同じ構文木で確かめている。
++    - [x] **Markdown**: `pkg/tinymarkdown`（`#####` までのセクション、
++      リスト、段落、引用、フェンスで囲んだコード、表。インラインのコードと
++      リンク）を `moonbit/tinymarkdown` に移植する。
++    - [ ] **front matter**: `pkg/tinyfrontmatter` を移植する。
+   - [ ] **記事**: 埋め込んだ記事（`YYYY-MM-DD-slug.md`。タイトルと説明は
+     front matter、なければ最初の見出しと段落から）を読み込み、`/` と
+     `/posts/{slug}` を Go 版のブログと同じレイアウト（pico.css、`BASE_URL`
+diff --git a/moonbit/README.md b/moonbit/README.md
+index 6665be7..352356d 100644
+--- a/moonbit/README.md
++++ b/moonbit/README.md
+@@ -6,6 +6,9 @@ It is an experiment in progress; see
+ [the research notes](../docs/sketch/ja/moonbit-workers-wasm.md) and
+ `TODO.md` for what is next.
+ 
++- `tinymarkdown` — the Markdown parser of `go/pkg/tinymarkdown`:
++  `parse(src)` for the block tree, `inlines(text)` for code spans and
++  links, checked against the Go tests' cases
+ - `site` — `render(path)`, returning the response for a path: status,
+   headers, and body
+ - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
+diff --git a/moonbit/tinymarkdown/extends.mbt b/moonbit/tinymarkdown/extends.mbt
+new file mode 100644
+index 0000000..6064124
+--- /dev/null
++++ b/moonbit/tinymarkdown/extends.mbt
+@@ -0,0 +1,20 @@
++// The derived Eq and Debug are kept as regular methods, so that the trees
++// can be compared and printed without naming the traits.
++
++///|
++pub extend Document with Eq::{equal, not_equal}
++
++///|
++pub extend Document with @debug.Debug::{to_repr}
++
++///|
++pub extend Block with Eq::{equal, not_equal}
++
++///|
++pub extend Block with @debug.Debug::{to_repr}
++
++///|
++pub extend Inline with Eq::{equal, not_equal}
++
++///|
++pub extend Inline with @debug.Debug::{to_repr}
+diff --git a/moonbit/tinymarkdown/inline.mbt b/moonbit/tinymarkdown/inline.mbt
+new file mode 100644
+index 0000000..5f8cb85
+--- /dev/null
++++ b/moonbit/tinymarkdown/inline.mbt
+@@ -0,0 +1,151 @@
++///|
++/// Inline is a piece of the text held by a Section title, a Paragraph, or a
++/// List item. Block parsing leaves that text as is; `inlines` splits it.
++pub(all) enum Inline {
++  /// Plain text.
++  Text(String)
++  /// The content of a `code` span.
++  Code(String)
++  /// A [text](url) link. `children` hold the parsed text, which may contain
++  /// code spans but no links. `url` is as written; resolving it is up to the
++  /// renderer.
++  Link(children~ : Array[Inline], url~ : String)
++} derive(Eq, Debug)
++
++///|
++/// inlines splits s into Text, Code, and Link.
++///
++/// As in CommonMark, a code span opens with a run of backquotes and closes
++/// with the next run of the same length, so a span opened by two backquotes
++/// may hold a single one. Line breaks inside a span become spaces, and one
++/// space is stripped from each end when both ends have one, so that a span
++/// can start or end with a backquote. A run with no closing run is plain
++/// text.
++///
++/// A link is "[", text, "](", a URL, and ")". The text may not contain
++/// brackets outside code spans, and the URL may not contain spaces,
++/// parentheses, or line breaks; there is no title. Code spans bind tighter
++/// than links: a "]" inside a code span does not close the text, and a link
++/// inside a code span is code. Anything that does not form a link is plain
++/// text.
++pub fn inlines(s : String) -> Array[Inline] {
++  split_inlines(s, true)
++}
++
++///|
++fn split_inlines(s : String, links : Bool) -> Array[Inline] {
++  let out : Array[Inline] = []
++  let mut text = 0 // start of the plain text not yet emitted
++  fn emit(i : Int32, inline : Inline) {
++    if text < i {
++      out.push(Text(s[text:i].to_owned()))
++    }
++    out.push(inline)
++  }
++
++  let mut i = 0
++  while i < s.length() {
++    if s[i] == '`' {
++      let n = backquotes(s, i)
++      let end = closing_run(s, i + n, n)
++      if end < 0 {
++        i += n
++        continue
++      }
++      emit(i, Code(code_text(s[i + n:end])))
++      i = end + n
++      text = i
++    } else if s[i] == '[' && links {
++      match link(s, i) {
++        None => i += 1
++        Some((label, url, end)) => {
++          emit(i, Link(children=split_inlines(label, false), url~))
++          i = end
++          text = i
++        }
++      }
++    } else {
++      i += 1
++    }
++  }
++  if text < s.length() {
++    out.push(Text(s[text:].to_owned()))
++  }
++  out
++}
++
++///|
++/// link parses a link starting at s[i] == '['. It returns the text, the URL,
++/// and the index just past the closing ")".
++fn link(s : String, i : Int32) -> (String, String, Int32)? {
++  let mut j = i + 1
++  while j < s.length() && s[j] != ']' {
++    if s[j] == '[' {
++      return None
++    }
++    if s[j] == '`' {
++      let n = backquotes(s, j)
++      let c = closing_run(s, j + n, n)
++      j = if c >= 0 { c + n - 1 } else { j + n - 1 }
++    }
++    j += 1
++  }
++  if j + 1 >= s.length() || s[j + 1] != '(' {
++    return None
++  }
++  let label = s[i + 1:j].to_owned()
++  let mut k = j + 2
++  while k < s.length() && s[k] != ')' {
++    match s[k] {
++      ' ' | '\t' | '\n' | '(' => return None
++      _ => ()
++    }
++    k += 1
++  }
++  if k >= s.length() {
++    return None
++  }
++  Some((label, s[j + 2:k].to_owned(), k + 1))
++}
++
++///|
++/// backquotes returns the length of the run of backquotes at s[i:].
++fn backquotes(s : String, i : Int32) -> Int32 {
++  let mut j = i
++  while j < s.length() && s[j] == '`' {
++    j += 1
++  }
++  j - i
++}
++
++///|
++/// closing_run returns the index of the first run of exactly n backquotes in
++/// s[from:], or -1.
++fn closing_run(s : String, from : Int32, n : Int32) -> Int32 {
++  let mut j = from
++  while j < s.length() {
++    if s[j] != '`' {
++      j += 1
++      continue
++    }
++    let m = backquotes(s, j)
++    if m == n {
++      return j
++    }
++    j += m
++  }
++  -1
++}
++
++///|
++fn code_text(view : StringView) -> String {
++  let s = view.to_owned().replace_all(old="\n", new=" ")
++  if s.length() >= 2 &&
++    s[0] == ' ' &&
++    s[s.length() - 1] == ' ' &&
++    s.trim(chars=" ") != "" {
++    s[1:s.length() - 1].to_owned()
++  } else {
++    s
++  }
++}
+diff --git a/moonbit/tinymarkdown/inline_test.mbt b/moonbit/tinymarkdown/inline_test.mbt
+new file mode 100644
+index 0000000..436eb51
+--- /dev/null
++++ b/moonbit/tinymarkdown/inline_test.mbt
+@@ -0,0 +1,195 @@
++// The cases of go/pkg/tinymarkdown/inline_test.go, with the same names and
++// the same expected trees.
++
++///|
++fn check_inlines(
++  src : String,
++  want : Array[@tinymarkdown.Inline],
++) -> Unit raise {
++  assert_eq(@tinymarkdown.inlines(src), want)
++}
++
++///|
++test "inlines/empty" {
++  check_inlines("", [])
++}
++
++///|
++test "inlines/text only" {
++  check_inlines("a b", [Text("a b")])
++}
++
++///|
++test "inlines/code" {
++  check_inlines("use `go test` now", [
++    Text("use "),
++    Code("go test"),
++    Text(" now"),
++  ])
++}
++
++///|
++test "inlines/code only" {
++  check_inlines("`x`", [Code("x")])
++}
++
++///|
++test "inlines/several spans" {
++  check_inlines("`a` and `b`", [Code("a"), Text(" and "), Code("b")])
++}
++
++///|
++test "inlines/double backquotes hold a backquote" {
++  check_inlines("``a ` b``", [Code("a ` b")])
++}
++
++///|
++test "inlines/one space stripped from each end" {
++  check_inlines("`` `x` ``", [Code("`x`")])
++}
++
++///|
++test "inlines/spaces only are kept" {
++  check_inlines("` `", [Code(" ")])
++}
++
++///|
++test "inlines/space on one end is kept" {
++  check_inlines("` a`", [Code(" a")])
++}
++
++///|
++test "inlines/line break becomes a space" {
++  check_inlines("`a\nb`", [Code("a b")])
++}
++
++///|
++test "inlines/unclosed run is text" {
++  check_inlines("a ` b", [Text("a ` b")])
++}
++
++///|
++test "inlines/longer run does not close" {
++  check_inlines("`a``", [Text("`a``")])
++}
++
++///|
++test "inlines/unmatched run before a span" {
++  check_inlines("`` x `y`", [Text("`` x "), Code("y")])
++}
++
++///|
++test "inlines/empty run pair is text" {
++  check_inlines("``", [Text("``")])
++}
++
++///|
++test "inlines/html stays text" {
++  check_inlines("`<b>` <i>", [Code("<b>"), Text(" <i>")])
++}
++
++///|
++test "inlines/link" {
++  check_inlines("see [docs](docs/a.md) now", [
++    Text("see "),
++    Link(children=[Text("docs")], url="docs/a.md"),
++    Text(" now"),
++  ])
++}
++
++///|
++test "inlines/link only" {
++  check_inlines("[a](b)", [Link(children=[Text("a")], url="b")])
++}
++
++///|
++test "inlines/link with code" {
++  check_inlines("[`x` y](u)", [Link(children=[Code("x"), Text(" y")], url="u")])
++}
++
++///|
++test "inlines/bracket in code inside link" {
++  check_inlines("[`]` y](u)", [Link(children=[Code("]"), Text(" y")], url="u")])
++}
++
++///|
++test "inlines/link in code is code" {
++  check_inlines("`[a](b)`", [Code("[a](b)")])
++}
++
++///|
++test "inlines/code across link is code" {
++  check_inlines("[a `b](c)` d", [Text("[a "), Code("b](c)"), Text(" d")])
++}
++
++///|
++test "inlines/empty url" {
++  check_inlines("[a]()", [Link(children=[Text("a")], url="")])
++}
++
++///|
++test "inlines/empty text" {
++  check_inlines("[](u)", [Link(children=[], url="u")])
++}
++
++///|
++test "inlines/fragment and query" {
++  check_inlines("[a](https://x.test/p?q=1#f)", [
++    Link(children=[Text("a")], url="https://x.test/p?q=1#f"),
++  ])
++}
++
++///|
++test "inlines/no url is text" {
++  check_inlines("[a] (b)", [Text("[a] (b)")])
++}
++
++///|
++test "inlines/brackets only are text" {
++  check_inlines("[a]", [Text("[a]")])
++}
++
++///|
++test "inlines/space in url is text" {
++  check_inlines("[a](b c)", [Text("[a](b c)")])
++}
++
++///|
++test "inlines/unclosed url is text" {
++  check_inlines("[a](b", [Text("[a](b")])
++}
++
++///|
++test "inlines/nested brackets: inner link" {
++  check_inlines("[a [b](c)](d)", [
++    Text("[a "),
++    Link(children=[Text("b")], url="c"),
++    Text("](d)"),
++  ])
++}
++
++///|
++test "inlines/line break in text" {
++  check_inlines("[a\nb](u)", [Link(children=[Text("a\nb")], url="u")])
++}
++
++///|
++test "inlines/two links" {
++  check_inlines("[a](1) [b](2)", [
++    Link(children=[Text("a")], url="1"),
++    Text(" "),
++    Link(children=[Text("b")], url="2"),
++  ])
++}
++
++// Not in the Go tests: see tinymarkdown_test.mbt.
++
++///|
++test "non-ASCII/inlines" {
++  check_inlines("日本語 `😀` [リンク](/p)", [
++    Text("日本語 "),
++    Code("😀"),
++    Text(" "),
++    Link(children=[Text("リンク")], url="/p"),
++  ])
++}
+diff --git a/moonbit/tinymarkdown/moon.pkg b/moonbit/tinymarkdown/moon.pkg
+new file mode 100644
+index 0000000..221b993
+--- /dev/null
++++ b/moonbit/tinymarkdown/moon.pkg
+@@ -0,0 +1,3 @@
++import {
++  "moonbitlang/core/debug",
++}
+diff --git a/moonbit/tinymarkdown/tinymarkdown.mbt b/moonbit/tinymarkdown/tinymarkdown.mbt
+new file mode 100644
+index 0000000..4ae4567
+--- /dev/null
++++ b/moonbit/tinymarkdown/tinymarkdown.mbt
+@@ -0,0 +1,306 @@
++// Package tinymarkdown parses a tiny subset of Markdown into a pure-data
++// tree. It is a port of go/pkg/tinymarkdown and gives the same trees.
++//
++// Supported: headings "#" to "#####" (which open nested sections), "- "
++// list items (which may continue on indented lines), paragraphs, "> "
++// quotes, "|" tables, and code blocks fenced by exactly "```". Anything else
++// is treated as paragraph text.
++// Block parsing keeps inline syntax as text; `inlines` splits out code spans
++// and links on request. See docs/sketch/ja/blog.md.
++//
++// Positions are UTF-16 code units. Every character the syntax looks at is
++// ASCII, so they cut strings at the same places as Go's byte offsets.
++
++///|
++/// Document is the root of a parsed document. Blocks before the first
++/// heading are its direct children.
++pub(all) struct Document {
++  children : Array[Block]
++} derive(Eq, Debug)
++
++///|
++/// Block is a block-level node.
++pub(all) enum Block {
++  /// A heading together with everything up to the next heading of the same
++  /// or a shallower level. `level` is 1..5.
++  Section(level~ : Int32, title~ : String, children~ : Array[Block])
++  /// A run of consecutive non-blank lines, joined with "\n".
++  Paragraph(String)
++  /// A run of consecutive "- " lines, holding the text after "- ". Indented
++  /// lines that follow an item continue it, joined with "\n".
++  List(Array[String])
++  /// A run of consecutive lines starting with ">". The text after ">" and
++  /// one optional space is parsed again as a document, so a quote may hold
++  /// paragraphs, lists, code blocks, and nested quotes.
++  Quote(Array[Block])
++  /// A run of consecutive lines starting with "|": a header row, a delimiter
++  /// row such as "| --- | --- |", and body rows. Cells hold their text with
++  /// surrounding spaces trimmed and "\|" unescaped to "|"; inline syntax is
++  /// kept as text, as in Paragraph. Every row has as many cells as the
++  /// header: missing cells are empty and extra ones are dropped. Column
++  /// alignment (":---:") is accepted in the delimiter row but ignored.
++  Table(header~ : Array[String], rows~ : Array[Array[String]])
++  /// The verbatim content between "```" fences, lines joined with "\n".
++  /// Text after the opening fence (a language name) is ignored.
++  CodeBlock(String)
++} derive(Eq, Debug)
++
++///|
++let fence : String = "```"
++
++///|
++/// max_level is the deepest heading level recognized.
++let max_level : Int32 = 5
++
++///|
++/// spaces are the characters Go's unicode.IsSpace accepts, so that `trim`
++/// removes what strings.TrimSpace does in the Go version.
++let spaces : String = "\t\n\u{0B}\u{0C}\r \u{85}\u{A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}"
++
++///|
++/// trim is strings.TrimSpace.
++fn trim(s : StringView) -> String {
++  s.trim(chars=spaces).to_owned()
++}
++
++///|
++/// Flat is a block from `scan`, with headings kept as markers until `nest`
++/// builds sections.
++priv enum Flat {
++  Heading(Int32, String)
++  Block(Block)
++}
++
++///|
++/// parse parses src. It never fails: lines it does not understand become
++/// paragraph text.
++pub fn parse(src : String) -> Document {
++  let (children, _) = nest(scan(src), 0, 0)
++  { children, }
++}
++
++///|
++/// scan splits src into a flat list of blocks, with headings as markers.
++fn scan(src : String) -> Array[Flat] {
++  let out : Array[Flat] = []
++  let para : Array[String] = []
++  let items : Array[String] = []
++  let quote : Array[String] = []
++  let table : Array[String] = []
++  fn flush() {
++    if para.length() > 0 {
++      out.push(Block(Paragraph(para.join("\n"))))
++      para.clear()
++    }
++    if items.length() > 0 {
++      out.push(Block(List(items.copy())))
++      items.clear()
++    }
++    if quote.length() > 0 {
++      out.push(Block(Quote(parse(quote.join("\n")).children)))
++      quote.clear()
++    }
++    if table.length() > 0 {
++      match parse_table(table) {
++        Some(t) => out.push(Block(t))
++        None => out.push(Block(Paragraph(table.join("\n"))))
++      }
++      table.clear()
++    }
++  }
++
++  let code : Array[String] = []
++  let mut in_code = false
++  for raw in src.split("\n") {
++    let line = (match raw.strip_suffix("\r") {
++      Some(l) => l
++      None => raw
++    }).to_owned()
++    let trimmed = trim(line)
++    if in_code {
++      if trimmed == fence {
++        out.push(Block(CodeBlock(code.join("\n"))))
++        code.clear()
++        in_code = false
++      } else {
++        code.push(line)
++      }
++      continue
++    }
++    if trimmed.has_prefix(fence) {
++      flush()
++      in_code = true
++    } else if trimmed == "" {
++      flush()
++    } else if is_heading(trimmed) {
++      flush()
++      out.push(parse_heading(trimmed))
++    } else if trimmed.has_prefix("|") {
++      if para.length() > 0 || items.length() > 0 || quote.length() > 0 {
++        flush()
++      }
++      table.push(trimmed)
++    } else if trimmed.has_prefix(">") {
++      if para.length() > 0 || items.length() > 0 || table.length() > 0 {
++        flush()
++      }
++      let gt = line.find(">").unwrap()
++      let rest = line[gt + 1:]
++      quote.push(
++        (match rest.strip_prefix(" ") {
++          Some(r) => r
++          None => rest
++        }).to_owned(),
++      )
++    } else if trimmed.has_prefix("- ") {
++      if para.length() > 0 || quote.length() > 0 || table.length() > 0 {
++        flush()
++      }
++      items.push(trim(trimmed[2:]))
++    } else if items.length() > 0 &&
++      line != trimmed &&
++      (line[0] == ' ' || line[0] == '\t') {
++      // An indented line continues the item above it.
++      let last = items.length() - 1
++      items[last] = items[last] + "\n" + trimmed
++    } else {
++      if items.length() > 0 || quote.length() > 0 || table.length() > 0 {
++        flush()
++      }
++      para.push(trimmed)
++    }
++  }
++  if in_code {
++    // An unclosed fence runs to the end of the document.
++    out.push(Block(CodeBlock(code.join("\n"))))
++  }
++  flush()
++  out
++}
++
++///|
++/// parse_table parses the lines of a table. It fails, leaving the lines to
++/// be a paragraph, unless the second line is a delimiter row with as many
++/// cells as the header.
++fn parse_table(lines : Array[String]) -> Block? {
++  if lines.length() < 2 {
++    return None
++  }
++  let header = cells(lines[0])
++  let delim = cells(lines[1])
++  if delim.length() != header.length() {
++    return None
++  }
++  for c in delim {
++    if !is_delimiter(c) {
++      return None
++    }
++  }
++  let rows : Array[Array[String]] = []
++  for i in 2..<lines.length() {
++    let row = cells(lines[i])
++    while row.length() > header.length() {
++      row.pop() |> ignore
++    }
++    while row.length() < header.length() {
++      row.push("")
++    }
++    rows.push(row)
++  }
++  Some(Table(header~, rows~))
++}
++
++///|
++/// cells splits a row such as "| a | b |" at unescaped "|". The leading "|"
++/// is required by scan; the trailing one is optional.
++fn cells(row : String) -> Array[String] {
++  let line = match row.strip_prefix("|") {
++    Some(l) => l.to_owned()
++    None => row
++  }
++  let out : Array[String] = []
++  let b = StringBuilder()
++  // Text is copied in runs between the "|" and "\|" that end them, so that
++  // a surrogate pair is never cut.
++  let mut run = 0
++  let mut i = 0
++  while i < line.length() {
++    if line[i] == '\\' && i + 1 < line.length() && line[i + 1] == '|' {
++      b.write_view(line[run:i])
++      b.write_char('|')
++      i += 2
++      run = i
++    } else if line[i] == '|' {
++      b.write_view(line[run:i])
++      out.push(trim(b.to_string()))
++      b.reset()
++      i += 1
++      run = i
++    } else {
++      i += 1
++    }
++  }
++  b.write_view(line[run:])
++  let rest = trim(b.to_string())
++  if rest != "" {
++    out.push(rest)
++  }
++  out
++}
++
++///|
++/// is_delimiter reports whether c is a delimiter cell: "---", ":---",
++/// ":---:", or "---:", with at least one "-".
++fn is_delimiter(cell : String) -> Bool {
++  let mut c = cell[:]
++  if c.has_prefix(":") {
++    c = c[1:]
++  }
++  if c.has_suffix(":") {
++    c = c[:c.length() - 1]
++  }
++  c != "" && c.trim(chars="-") == ""
++}
++
++///|
++fn is_heading(line : String) -> Bool {
++  let mut n = 0
++  while n < line.length() && line[n] == '#' {
++    n += 1
++  }
++  n < line.length() && 1 <= n && n <= max_level && line[n] == ' '
++}
++
++///|
++fn parse_heading(line : String) -> Flat {
++  let n = line.find(" ").unwrap()
++  Heading(n, trim(line[n:]))
++}
++
++///|
++/// nest turns headings in flat into nested sections. It consumes blocks from
++/// flat[i:] until a heading at or above level, returning the children and
++/// the index where it stopped.
++fn nest(
++  flat : Array[Flat],
++  start : Int32,
++  level : Int32,
++) -> (Array[Block], Int32) {
++  let out : Array[Block] = []
++  let mut i = start
++  while i < flat.length() {
++    match flat[i] {
++      Block(b) => {
++        out.push(b)
++        i += 1
++      }
++      Heading(l, _) if l <= level => break
++      Heading(l, title) => {
++        let (children, next) = nest(flat, i + 1, l)
++        out.push(Section(level=l, title~, children~))
++        i = next
++      }
++    }
++  }
++  (out, i)
++}
+diff --git a/moonbit/tinymarkdown/tinymarkdown_test.mbt b/moonbit/tinymarkdown/tinymarkdown_test.mbt
+new file mode 100644
+index 0000000..695ca1f
+--- /dev/null
++++ b/moonbit/tinymarkdown/tinymarkdown_test.mbt
+@@ -0,0 +1,395 @@
++// The cases of go/pkg/tinymarkdown/tinymarkdown_test.go, with the same
++// names and the same expected trees.
++
++///|
++fn check(src : String, want : Array[@tinymarkdown.Block]) -> Unit raise {
++  assert_eq(@tinymarkdown.parse(src), { children: want, })
++}
++
++// TestSectionsAndParagraphs
++
++///|
++test "sections/empty" {
++  check("", [])
++}
++
++///|
++test "sections/blank lines only" {
++  check("\n  \n\n", [])
++}
++
++///|
++test "sections/paragraph" {
++  check("hello", [Paragraph("hello")])
++}
++
++///|
++test "sections/lines join into one paragraph" {
++  check("a\nb\r\n  c  ", [Paragraph("a\nb\nc")])
++}
++
++///|
++test "sections/blank line separates paragraphs" {
++  check("a\n\nb", [Paragraph("a"), Paragraph("b")])
++}
++
++///|
++test "sections/paragraph before first heading stays at root" {
++  check("intro\n# Title\nbody", [
++    Paragraph("intro"),
++    Section(level=1, title="Title", children=[Paragraph("body")]),
++  ])
++}
++
++///|
++test "sections/heading ends a paragraph without a blank line" {
++  check("a\n## H", [Paragraph("a"), Section(level=2, title="H", children=[])])
++}
++
++///|
++test "sections/nested sections" {
++  check("# A\na\n## B\nb\n### C\nc\n## D\n# E", [
++    Section(level=1, title="A", children=[
++      Paragraph("a"),
++      Section(level=2, title="B", children=[
++        Paragraph("b"),
++        Section(level=3, title="C", children=[Paragraph("c")]),
++      ]),
++      Section(level=2, title="D", children=[]),
++    ]),
++    Section(level=1, title="E", children=[]),
++  ])
++}
++
++///|
++test "sections/level jump nests under the shallower heading" {
++  check("# A\n### C\n## B", [
++    Section(level=1, title="A", children=[
++      Section(level=3, title="C", children=[]),
++      Section(level=2, title="B", children=[]),
++    ]),
++  ])
++}
++
++///|
++test "sections/heading title is trimmed" {
++  check("#   spaced   ", [Section(level=1, title="spaced", children=[])])
++}
++
++///|
++test "sections/#### and ##### nest" {
++  check("#### D\nd\n##### E\ne\n#### F", [
++    Section(level=4, title="D", children=[
++      Paragraph("d"),
++      Section(level=5, title="E", children=[Paragraph("e")]),
++    ]),
++    Section(level=4, title="F", children=[]),
++  ])
++}
++
++///|
++test "sections/###### is not a heading" {
++  check("###### deep", [Paragraph("###### deep")])
++}
++
++///|
++test "sections/# without a space is not a heading" {
++  check("#tag", [Paragraph("#tag")])
++}
++
++///|
++test "sections/bare # is not a heading" {
++  check("#", [Paragraph("#")])
++}
++
++///|
++test "sections/inline syntax is kept as is" {
++  check("**bold** [link](/x)", [Paragraph("**bold** [link](/x)")])
++}
++
++// TestLists
++
++///|
++test "lists/list" {
++  check("- a\n-   b  \n  - c", [List(["a", "b", "c"])])
++}
++
++///|
++test "lists/blank line splits lists" {
++  check("- a\n\n- b", [List(["a"]), List(["b"])])
++}
++
++///|
++test "lists/list after paragraph without a blank line" {
++  check("intro\n- a\n- b", [Paragraph("intro"), List(["a", "b"])])
++}
++
++///|
++test "lists/paragraph after list without a blank line" {
++  check("- a\nafter", [List(["a"]), Paragraph("after")])
++}
++
++///|
++test "lists/indented lines continue an item" {
++  check("- a\n  more\n\tand more\n- b\n  b2", [
++    List(["a\nmore\nand more", "b\nb2"]),
++  ])
++}
++
++///|
++test "lists/indented line after a paragraph stays in the paragraph" {
++  check("p\n  q", [Paragraph("p\nq")])
++}
++
++///|
++test "lists/blank line ends the continuation" {
++  check("- a\n\n  b", [List(["a"]), Paragraph("b")])
++}
++
++///|
++test "lists/dash without a space is paragraph text" {
++  check("-a\n--", [Paragraph("-a\n--")])
++}
++
++///|
++test "lists/list inside a section" {
++  check("# A\n- x\n## B\n- y", [
++    Section(level=1, title="A", children=[
++      List(["x"]),
++      Section(level=2, title="B", children=[List(["y"])]),
++    ]),
++  ])
++}
++
++// TestCodeBlocks
++
++///|
++test "code blocks/code block" {
++  check("```\nfmt.Println(1)\n```", [CodeBlock("fmt.Println(1)")])
++}
++
++///|
++test "code blocks/language name is ignored" {
++  check("```go\nx := 1\n```", [CodeBlock("x := 1")])
++}
++
++///|
++test "code blocks/contents are kept verbatim" {
++  check("```\n# not a heading\n- not a list\n\n\tindented  \n```", [
++    CodeBlock("# not a heading\n- not a list\n\n\tindented  "),
++  ])
++}
++
++///|
++test "code blocks/empty code block" {
++  check("```\n```", [CodeBlock("")])
++}
++
++///|
++test "code blocks/closing fence may have surrounding spaces" {
++  check("```\na\n  ```  \nafter", [CodeBlock("a"), Paragraph("after")])
++}
++
++///|
++test "code blocks/closing fence must be bare" {
++  check("```\n```go\n```", [CodeBlock("```go")])
++}
++
++///|
++test "code blocks/CRLF line endings" {
++  check("```\r\na\r\n```\r\n", [CodeBlock("a")])
++}
++
++///|
++test "code blocks/unclosed fence runs to EOF" {
++  check("```\na\n\n# b", [CodeBlock("a\n\n# b")])
++}
++
++///|
++test "code blocks/fence ends a paragraph and a list" {
++  check("p\n```\nc\n```\n- a\n```\nd\n```", [
++    Paragraph("p"),
++    CodeBlock("c"),
++    List(["a"]),
++    CodeBlock("d"),
++  ])
++}
++
++///|
++test "code blocks/code block inside a section" {
++  check("# A\n```\n## x\n```", [
++    Section(level=1, title="A", children=[CodeBlock("## x")]),
++  ])
++}
++
++// TestQuotes
++
++///|
++test "quotes/quote" {
++  check("> a\n> b", [Quote([Paragraph("a\nb")])])
++}
++
++///|
++test "quotes/space after > is optional" {
++  check(">a\n  >  b", [Quote([Paragraph("a\nb")])])
++}
++
++///|
++test "quotes/bare > separates paragraphs" {
++  check("> a\n>\n> b", [Quote([Paragraph("a"), Paragraph("b")])])
++}
++
++///|
++test "quotes/blocks inside a quote" {
++  check("> - x\n>   y\n> ```\n>   code\n> ```", [
++    Quote([List(["x\ny"]), CodeBlock("  code")]),
++  ])
++}
++
++///|
++test "quotes/nested quote" {
++  check("> a\n>\n> > b", [Quote([Paragraph("a"), Quote([Paragraph("b")])])])
++}
++
++///|
++test "quotes/quote ends a paragraph and a list" {
++  check("p\n> q\n- a\n> r", [
++    Paragraph("p"),
++    Quote([Paragraph("q")]),
++    List(["a"]),
++    Quote([Paragraph("r")]),
++  ])
++}
++
++///|
++test "quotes/a line without > ends the quote" {
++  check("> q\np\n> r\n\n> s", [
++    Quote([Paragraph("q")]),
++    Paragraph("p"),
++    Quote([Paragraph("r")]),
++    Quote([Paragraph("s")]),
++  ])
++}
++
++///|
++test "quotes/quote inside a section" {
++  check("# A\n> q", [
++    Section(level=1, title="A", children=[Quote([Paragraph("q")])]),
++  ])
++}
++
++///|
++test "quotes/> inside a code block is code" {
++  check("```\n> x\n```", [CodeBlock("> x")])
++}
++
++// TestTables
++
++///|
++test "tables/table" {
++  check("| a | b |\n| --- | --- |\n| 1 | `2` |\n| 3 | 4 |", [
++    Table(header=["a", "b"], rows=[["1", "`2`"], ["3", "4"]]),
++  ])
++}
++
++///|
++test "tables/header only" {
++  check("| a |\n|---|", [Table(header=["a"], rows=[])])
++}
++
++///|
++test "tables/trailing pipe is optional" {
++  check("| a | b\n| --- | ---\n| 1 | 2", [
++    Table(header=["a", "b"], rows=[["1", "2"]]),
++  ])
++}
++
++///|
++test "tables/alignment is accepted and ignored" {
++  check("| a | b | c |\n| :-- | :-: | --: |", [
++    Table(header=["a", "b", "c"], rows=[]),
++  ])
++}
++
++///|
++test "tables/rows are padded and cut to the header" {
++  check("| a | b |\n| - | - |\n| 1 |\n| 1 | 2 | 3 |\n| | x |", [
++    Table(header=["a", "b"], rows=[["1", ""], ["1", "2"], ["", "x"]]),
++  ])
++}
++
++///|
++test "tables/escaped pipe" {
++  check("| a \\| b |\n| --- |\n| `x \\| y` |", [
++    Table(header=["a | b"], rows=[["`x | y`"]]),
++  ])
++}
++
++///|
++test "tables/no delimiter row is a paragraph" {
++  check("| a |\n| b |", [Paragraph("| a |\n| b |")])
++}
++
++///|
++test "tables/delimiter count must match" {
++  check("| a | b |\n| --- |", [Paragraph("| a | b |\n| --- |")])
++}
++
++///|
++test "tables/single line is a paragraph" {
++  check("| a |", [Paragraph("| a |")])
++}
++
++///|
++test "tables/table between paragraphs" {
++  check("intro\n| a |\n| - |\n| 1 |\nafter", [
++    Paragraph("intro"),
++    Table(header=["a"], rows=[["1"]]),
++    Paragraph("after"),
++  ])
++}
++
++///|
++test "tables/blank line splits tables" {
++  check("| a |\n| - |\n\n| b |\n| - |", [
++    Table(header=["a"], rows=[]),
++    Table(header=["b"], rows=[]),
++  ])
++}
++
++///|
++test "tables/indented rows" {
++  check("  | a |\n  | - |\n  | 1 |", [Table(header=["a"], rows=[["1"]])])
++}
++
++///|
++test "tables/table in a section and a quote" {
++  check("# T\n| a |\n| - |\n> | b |\n> | - |", [
++    Section(level=1, title="T", children=[
++      Table(header=["a"], rows=[]),
++      Quote([Table(header=["b"], rows=[])]),
++    ]),
++  ])
++}
++
++///|
++test "tables/list ends at a table" {
++  check("- x\n| a |\n| - |", [List(["x"]), Table(header=["a"], rows=[])])
++}
++
++// Not in the Go tests: non-ASCII text, which MoonBit holds as UTF-16 where
++// Go holds UTF-8. The expected trees are what the Go version returns.
++
++///|
++test "non-ASCII/ideographic space is trimmed but does not indent" {
++  check(
++    "- 項目\u{3000}\n\u{3000}続き\n# 見出し 😀\n| 😀 | b |\n| - | - |\n| `x` | [l](u) |",
++    [
++      List(["項目"]),
++      Paragraph("続き"),
++      Section(level=1, title="見出し 😀", children=[
++        Table(header=["😀", "b"], rows=[["`x`", "[l](u)"]]),
++      ]),
++    ],
++  )
++}

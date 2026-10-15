@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "plain moon test passes in a fresh clone, before any make target",
+      "passed": false,
+      "evidence": "l-sandbox/moonbit-workspace/iteration-1/embed-posts/without_skill/grade-copy/moonbit/site/site.mbt:59:29 ]\n    │\n 59 │           write_escaped(sb, p.0)\n    │                             ─┬─  \n    │                              ╰─── Type Mismatch\n        has type : _/0\n        wanted   : tuple\n────╯\n"
+    },
+    {
+      "text": "make build passes from a clean checkout",
+      "passed": true,
+      "evidence": "sh scripts/embed-posts.sh ../go/examples/blog/posts posts/posts_gen.mbt\nmoon build --target wasm-gc --release\n-rw-r--r--@ 1 <user>  wheel  15815 10 15 09:56 _build/wasm-gc/release/build/worker/worker.wasm\nFinished. moon: ran 4 tasks, now up to date\n"
+    },
+    {
+      "text": "make check passes (moon fmt --check, moon check, moon test)",
+      "passed": true,
+      "evidence": "sh scripts/embed-posts.sh ../go/examples/blog/posts posts/posts_gen.mbt\nmoon fmt --check\nmoon check\nmoon test\nTotal tests: 4, passed: 4, failed: 0.\nFinished. moon: ran 9 tasks, now up to date\nFinished. moon: ran 6 tasks, now up to date\n"
+    },
+    {
+      "text": "Worker Wasm still exports only path_push and serve, and imports only the four host functions",
+      "passed": true,
+      "evidence": "{\"exports\": [\"path_push\", \"serve\"], \"imports\": [\"host.header_name\", \"host.header_value\", \"host.put\", \"host.status\"]}"
+    },
+    {
+      "text": "dependencies are limited to moonbitlang/core, x, async",
+      "passed": true,
+      "evidence": "moon.mod imports: []"
+    },
+    {
+      "text": "generated MoonBit source exists only as an ignored file, not tracked",
+      "passed": true,
+      "evidence": "ignored generated .mbt: ['moonbit/posts/posts_gen.mbt']"
+    },
+    {
+      "text": "moon test passes after a clean build",
+      "passed": true,
+      "evidence": "Total tests: 4, passed: 4, failed: 0.\n"
+    },
+    {
+      "text": "every post is in the built Worker Wasm",
+      "passed": true,
+      "evidence": "['2026-10-14-hello', '2026-10-15-tinymarkdown', '2026-10-16-mobile-first', '2026-10-17-workers-wasm'] of ['2026-10-14-hello', '2026-10-15-tinymarkdown', '2026-10-16-mobile-first', '2026-10-17-workers-wasm']"
+    },
+    {
+      "text": "wrangler dev rebuilds when posts change (watch_dir covers the posts directory)",
+      "passed": true,
+      "evidence": "\"watch_dir\": [\"../site\", \"../worker\", \"../scripts\", \"../../go/examples/blog/posts\"]"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 1,
+    "total": 9,
+    "pass_rate": 0.889
+  }
+}

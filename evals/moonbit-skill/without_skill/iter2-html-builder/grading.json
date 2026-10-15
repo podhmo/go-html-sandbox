@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "make check passes (moon fmt --check, moon check, moon test)",
+      "passed": true,
+      "evidence": "moon fmt --check\nmoon check\nmoon test\nTotal tests: 7, passed: 7, failed: 0.\nFinished. moon: ran 12 tasks, now up to date\nFinished. moon: ran 6 tasks, now up to date\n"
+    },
+    {
+      "text": "moon check reports no warnings",
+      "passed": true,
+      "evidence": "0 warnings\nFinished. moon: no work to do\n"
+    },
+    {
+      "text": "Worker Wasm keeps its exports and host imports",
+      "passed": true,
+      "evidence": "{\"exports\": [\"path_push\", \"serve\"], \"imports\": [\"host.header_name\", \"host.header_value\", \"host.put\", \"host.status\"]}"
+    },
+    {
+      "text": "no dependencies beyond moonbitlang/*",
+      "passed": true,
+      "evidence": "[]"
+    },
+    {
+      "text": "tests were added",
+      "passed": true,
+      "evidence": "['moonbit/el/node_test.mbt', 'moonbit/el/render_test.mbt']"
+    },
+    {
+      "text": "the Go tests' inputs and expected values appear in the MoonBit tests (>= 90%)",
+      "passed": true,
+      "evidence": "37/39 (95%); missing e.g. ['<p>x</p>', 'boom']"
+    },
+    {
+      "text": "blackbox tests call the package qualified (@pkg.)",
+      "passed": true,
+      "evidence": "['node_test.mbt', 'render_test.mbt']"
+    },
+    {
+      "text": "every new top-level item starts with ///|",
+      "passed": true,
+      "evidence": "lacking: []"
+    },
+    {
+      "text": "every pub item has a doc comment",
+      "passed": false,
+      "evidence": "undocumented: ['const.mbt:9', 'const.mbt:12', 'const.mbt:15', 'const.mbt:18', 'const.mbt:21', 'const.mbt:24', 'const.mbt:27', 'const.mbt:30']"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 1,
+    "total": 9,
+    "pass_rate": 0.889
+  }
+}

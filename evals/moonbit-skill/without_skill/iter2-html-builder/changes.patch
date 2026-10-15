@@ -1,0 +1,759 @@
+diff --git a/TODO.md b/TODO.md
+index 94f98cb..3abb583 100644
+--- a/TODO.md
++++ b/TODO.md
+@@ -45,7 +45,7 @@
+     で）を測る。両方を調査メモに記録し、呼び出しが遅ければ、UTF-8 のバイト列を
+     線形メモリ越しに渡す ABI を検討する。
+ 
+-- [ ] **ブログを MoonBit で作り直す**: 同じサイトをトップレベルの `moonbit/`
++- [-] **ブログを MoonBit で作り直す**: 同じサイトをトップレベルの `moonbit/`
+   に作り、Wasm として Cloudflare Workers で動かして、Wasm のサイズを Go 版と
+   比べる（TinyGo で約 2 MiB / gzip 後 760 KiB、標準 Go で約 8 MiB。
+   [レポート](docs/sketch/ja/blog-tinygo-workers.md)を参照）。`pkg/*`（HTML
+@@ -67,9 +67,13 @@
+     パスと内容の組として使い、生成したソースはコミットしない。完了の条件:
+     `moon test` ですべてがそろっていることを確かめ、clone 直後の状態から
+     `make build` が通る。
+-  - [ ] **HTML ビルダー**: `pkg/el`（ノード、エスケープ、レンダリング）と、
++  - [-] **HTML ビルダー**: `pkg/el`（ノード、エスケープ、レンダリング）と、
+     `pkg/picoel` のうちページで使う部分を移植する。完了の条件: Go のテストの
+     うち当てはまるケースを `moon test` で、同じ出力で確かめている。
++    - [x] **`pkg/el`**: `moonbit/el` に移植した（`Node`、`escape`、
++      `HtmlRenderer` と `PlainRenderer`）。
++    - [ ] **`pkg/picoel`**: ページで使う部分を `moonbit/` に移植し、
++      `picoel_test.go` のうち当てはまるケースを `moon test` で確かめる。
+   - [ ] **front matter と Markdown**: `pkg/tinyfrontmatter` と
+     `pkg/tinymarkdown`（`#####` までのセクション、リスト、段落、引用、
+     フェンスで囲んだコード、表。インラインのコードとリンク）を移植する。
+diff --git a/moonbit/README.md b/moonbit/README.md
+index 6665be7..4186536 100644
+--- a/moonbit/README.md
++++ b/moonbit/README.md
+@@ -6,6 +6,9 @@ It is an experiment in progress; see
+ [the research notes](../docs/sketch/ja/moonbit-workers-wasm.md) and
+ `TODO.md` for what is next.
+ 
++- `el` — the HTML builder ported from `go/pkg/el`: nodes as plain data,
++  rendered as HTML by `HtmlRenderer` (`to_html`) or as text by
++  `PlainRenderer` (`to_plain`)
+ - `site` — `render(path)`, returning the response for a path: status,
+   headers, and body
+ - `worker` — the Wasm entry point: `path_push` and `serve` exported, the
+diff --git a/moonbit/el/const.mbt b/moonbit/el/const.mbt
+new file mode 100644
+index 0000000..9e9a569
+--- /dev/null
++++ b/moonbit/el/const.mbt
+@@ -0,0 +1,186 @@
++// Element names. Add a line here to support a new element; for a one-off
++// dynamic name, construct directly: Tag("my-widget").
++//
++// When an element and an attribute share a name, the element keeps the bare
++// name and the attribute gets an `_attr` suffix (e.g. title / title_attr).
++// Names that are MoonBit keywords get a trailing underscore (type_, defer_).
++
++///|
++pub let a : Tag = Tag("a")
++
++///|
++pub let article : Tag = Tag("article")
++
++///|
++pub let blockquote : Tag = Tag("blockquote")
++
++///|
++pub let body : Tag = Tag("body")
++
++///|
++pub let br : Tag = Tag("br")
++
++///|
++pub let code : Tag = Tag("code")
++
++///|
++pub let div : Tag = Tag("div")
++
++///|
++pub let footer : Tag = Tag("footer")
++
++///|
++pub let h1 : Tag = Tag("h1")
++
++///|
++pub let h2 : Tag = Tag("h2")
++
++///|
++pub let h3 : Tag = Tag("h3")
++
++///|
++pub let h4 : Tag = Tag("h4")
++
++///|
++pub let h5 : Tag = Tag("h5")
++
++///|
++pub let head : Tag = Tag("head")
++
++///|
++pub let header : Tag = Tag("header")
++
++///|
++pub let hgroup : Tag = Tag("hgroup")
++
++///|
++pub let hr : Tag = Tag("hr")
++
++///|
++pub let html : Tag = Tag("html")
++
++///|
++pub let img : Tag = Tag("img")
++
++///|
++pub let input : Tag = Tag("input")
++
++///|
++pub let li : Tag = Tag("li")
++
++///|
++pub let link : Tag = Tag("link")
++
++///|
++pub let main : Tag = Tag("main")
++
++///|
++pub let meta : Tag = Tag("meta")
++
++///|
++pub let nav : Tag = Tag("nav")
++
++///|
++pub let p : Tag = Tag("p")
++
++///|
++pub let pre : Tag = Tag("pre")
++
++///|
++pub let script : Tag = Tag("script")
++
++///|
++pub let section : Tag = Tag("section")
++
++///|
++pub let small : Tag = Tag("small")
++
++///|
++pub let span : Tag = Tag("span")
++
++///|
++pub let strong : Tag = Tag("strong")
++
++///|
++pub let style : Tag = Tag("style")
++
++///|
++pub let table : Tag = Tag("table")
++
++///|
++pub let tbody : Tag = Tag("tbody")
++
++///|
++pub let td : Tag = Tag("td")
++
++///|
++pub let th : Tag = Tag("th")
++
++///|
++pub let thead : Tag = Tag("thead")
++
++///|
++pub let time : Tag = Tag("time")
++
++///|
++pub let title : Tag = Tag("title")
++
++///|
++pub let tr : Tag = Tag("tr")
++
++///|
++pub let ul : Tag = Tag("ul")
++
++// Attribute names. For a one-off dynamic name, construct directly:
++// AttrName("data-id").
++
++///|
++pub let alt : AttrName = AttrName("alt")
++
++///|
++pub let defer_ : AttrName = AttrName("defer")
++
++///|
++pub let charset : AttrName = AttrName("charset")
++
++///|
++pub let class : AttrName = AttrName("class")
++
++///|
++pub let content : AttrName = AttrName("content")
++
++///|
++pub let datetime : AttrName = AttrName("datetime")
++
++///|
++pub let download : AttrName = AttrName("download")
++
++///|
++pub let href : AttrName = AttrName("href")
++
++///|
++pub let id : AttrName = AttrName("id")
++
++///|
++pub let lang : AttrName = AttrName("lang")
++
++///|
++pub let name : AttrName = AttrName("name")
++
++///|
++pub let property : AttrName = AttrName("property")
++
++///|
++pub let rel : AttrName = AttrName("rel")
++
++///|
++pub let src : AttrName = AttrName("src")
++
++///|
++pub let title_attr : AttrName = AttrName("title")
++
++///|
++pub let type_ : AttrName = AttrName("type")
++
++///|
++pub let value : AttrName = AttrName("value")
+diff --git a/moonbit/el/moon.pkg b/moonbit/el/moon.pkg
+new file mode 100644
+index 0000000..d7e3b0d
+--- /dev/null
++++ b/moonbit/el/moon.pkg
+@@ -0,0 +1,3 @@
++// The derived Eq and Debug methods would be promoted to regular methods,
++// which is deprecated; the nodes only need the trait impls.
++warnings = "-implicit_impl_as_method"
+diff --git a/moonbit/el/node.mbt b/moonbit/el/node.mbt
+new file mode 100644
+index 0000000..4aebc6a
+--- /dev/null
++++ b/moonbit/el/node.mbt
+@@ -0,0 +1,62 @@
++// Package el builds HTML as plain data and renders it with a Renderer,
++// ported from go/pkg/el.
++//
++// Nodes carry no rendering logic: they are values compared with ==.
++// Element and attribute names are distinct types (Tag and AttrName) so that
++// passing one where the other is expected fails to compile.
++
++///|
++/// Tag is an element name such as "div".
++pub(all) struct Tag(String) derive(Eq, Debug)
++
++///|
++/// AttrName is an attribute name such as "class".
++pub(all) struct AttrName(String) derive(Eq, Debug)
++
++///|
++/// Node is a piece of an HTML document.
++///
++/// - `Text` is text content, escaped when rendered as HTML.
++/// - `Raw` is trusted markup written as is. Never put user input in it.
++/// - `Element` is an element. `Attr` and `BoolAttr` children go into the
++///   start tag; every other child becomes content.
++/// - `Attr` is an attribute with a value, such as class="x".
++/// - `BoolAttr` is an attribute without a value, such as hidden.
++pub(all) enum Node {
++  Text(String)
++  Raw(String)
++  Element(Tag, Array[Node])
++  Attr(AttrName, String)
++  BoolAttr(AttrName)
++} derive(Eq, Debug)
++
++///|
++/// el returns an element with the given children.
++pub fn el(name : Tag, children : Array[Node]) -> Node {
++  Element(name, children)
++}
++
++///|
++/// attr returns an attribute with a value.
++pub fn attr(key : AttrName, val : String) -> Node {
++  Attr(key, val)
++}
++
++///|
++/// bool_attr returns an attribute without a value.
++pub fn bool_attr(key : AttrName) -> Node {
++  BoolAttr(key)
++}
++
++///|
++/// text returns a text node. The text is escaped when rendered as HTML.
++pub fn text(s : String) -> Node {
++  Text(s)
++}
++
++///|
++/// raw returns a node written without escaping. Use it only for trusted,
++/// static strings such as embedded CSS.
++pub fn raw(s : String) -> Node {
++  Raw(s)
++}
+diff --git a/moonbit/el/node_test.mbt b/moonbit/el/node_test.mbt
+new file mode 100644
+index 0000000..69c615c
+--- /dev/null
++++ b/moonbit/el/node_test.mbt
+@@ -0,0 +1,41 @@
++// Ported from go/pkg/el/node_test.go.
++
++///|
++test "constructors" {
++  let cases : Array[(String, @el.Node, @el.Node)] = [
++    ("text", @el.text("hi"), Text("hi")),
++    ("raw", @el.raw("<b>"), Raw("<b>")),
++    ("attr", @el.attr(@el.class, "x"), Attr(AttrName("class"), "x")),
++    (
++      "bool attr",
++      @el.bool_attr(AttrName("hidden")),
++      BoolAttr(AttrName("hidden")),
++    ),
++    ("empty element", @el.el(@el.br, []), Element(Tag("br"), [])),
++    (
++      "nested element",
++      @el.el(@el.div, [@el.attr(@el.id, "a"), @el.el(@el.p, [@el.text("hi")])]),
++      Element(Tag("div"), [
++        Attr(AttrName("id"), "a"),
++        Element(Tag("p"), [Text("hi")]),
++      ]),
++    ),
++    (
++      "dynamic names",
++      @el.el(Tag("my-widget"), [@el.attr(AttrName("data-id"), "1")]),
++      Element(Tag("my-widget"), [Attr(AttrName("data-id"), "1")]),
++    ),
++  ]
++  for c in cases {
++    let (name, got, want) = c
++    assert_eq(got, want, msg=name)
++  }
++}
++
++///|
++test "leaf nodes are comparable" {
++  let s = "a"
++  assert_true(@el.text(s) == Text("a"))
++  let href = "/"
++  assert_true(@el.attr(@el.href, href) == Attr(AttrName("href"), "/"))
++}
+diff --git a/moonbit/el/render.mbt b/moonbit/el/render.mbt
+new file mode 100644
+index 0000000..c78c701
+--- /dev/null
++++ b/moonbit/el/render.mbt
+@@ -0,0 +1,253 @@
++///|
++/// Renderer writes nodes in some output format. `render` dispatches each
++/// node to the matching method; `element` implementations call `render`
++/// again for their children.
++pub(open) trait Renderer {
++  fn text(Self, &Logger, String) -> Unit
++  fn raw(Self, &Logger, String) -> Unit
++  fn element(Self, &Logger, Tag, Array[Node]) -> Unit
++  fn attr(Self, &Logger, AttrName, String) -> Unit
++  fn bool_attr(Self, &Logger, AttrName) -> Unit
++}
++
++///|
++/// render writes n to w using r. This is the only place that matches on
++/// node kinds.
++pub fn[R : Renderer] render(w : &Logger, n : Node, r : R) -> Unit {
++  match n {
++    Text(s) => r.text(w, s)
++    Raw(s) => r.raw(w, s)
++    Element(name, children) => r.element(w, name, children)
++    Attr(name, value) => r.attr(w, name, value)
++    BoolAttr(name) => r.bool_attr(w, name)
++  }
++}
++
++///|
++/// to_html returns n rendered by HtmlRenderer.
++pub fn to_html(n : Node) -> String {
++  let sb = StringBuilder()
++  render(sb, n, HtmlRenderer::{ })
++  sb.to_string()
++}
++
++///|
++/// to_plain returns n rendered by a new PlainRenderer.
++pub fn to_plain(n : Node) -> String {
++  let sb = StringBuilder()
++  render(sb, n, PlainRenderer::new())
++  sb.to_string()
++}
++
++///|
++/// is_attr reports whether n belongs in a start tag rather than in content.
++fn is_attr(n : Node) -> Bool {
++  n is (Attr(_) | BoolAttr(_))
++}
++
++///|
++/// is_void reports whether elements named name have no content and no end
++/// tag.
++fn is_void(name : Tag) -> Bool {
++  match name.0 {
++    "area"
++    | "base"
++    | "br"
++    | "col"
++    | "embed"
++    | "hr"
++    | "img"
++    | "input"
++    | "link"
++    | "meta"
++    | "source"
++    | "track"
++    | "wbr" => true
++    _ => false
++  }
++}
++
++///|
++/// escape writes s to w with the characters special in HTML replaced by
++/// entities, the same as Go's html.EscapeString.
++pub fn escape(w : &Logger, s : String) -> Unit {
++  for c in s {
++    match c {
++      '<' => w.write_string("&lt;")
++      '>' => w.write_string("&gt;")
++      '&' => w.write_string("&amp;")
++      '\'' => w.write_string("&#39;")
++      '"' => w.write_string("&#34;")
++      _ => w.write_char(c)
++    }
++  }
++}
++
++///|
++/// HtmlRenderer writes HTML5.
++pub(all) struct HtmlRenderer {}
++
++///|
++pub impl Renderer for HtmlRenderer with fn text(_, w, s) {
++  escape(w, s)
++}
++
++///|
++pub impl Renderer for HtmlRenderer with fn raw(_, w, s) {
++  w.write_string(s)
++}
++
++///|
++pub impl Renderer for HtmlRenderer with fn element(self, w, name, children) {
++  w.write_string("<")
++  w.write_string(name.0)
++  for c in children {
++    if is_attr(c) {
++      render(w, c, self)
++    }
++  }
++  w.write_string(">")
++  if is_void(name) {
++    return
++  }
++  for c in children {
++    if !is_attr(c) {
++      render(w, c, self)
++    }
++  }
++  w.write_string("</")
++  w.write_string(name.0)
++  w.write_string(">")
++}
++
++///|
++pub impl Renderer for HtmlRenderer with fn attr(_, w, name, value) {
++  w.write_string(" ")
++  w.write_string(name.0)
++  w.write_string("=\"")
++  escape(w, value)
++  w.write_string("\"")
++}
++
++///|
++pub impl Renderer for HtmlRenderer with fn bool_attr(_, w, name) {
++  w.write_string(" ")
++  w.write_string(name.0)
++}
++
++///|
++/// PlainRenderer writes only text content, dropping tags, attributes, and
++/// raw markup. Text is not escaped. Block-level elements (paragraphs,
++/// headings, list items, ...) start and end on their own line, so the
++/// output reads like the page. Useful for debugging and for tests that
++/// check what a page says.
++///
++/// It remembers the last character it wrote so that a line break never
++/// makes a blank line or a leading newline, so use a new one for each
++/// output.
++pub struct PlainRenderer {
++  mut last : Char? // None until something is written
++}
++
++///|
++pub fn PlainRenderer::new() -> PlainRenderer {
++  { last: None, }
++}
++
++///|
++fn PlainRenderer::write(self : PlainRenderer, w : &Logger, s : String) -> Unit {
++  if s.is_empty() {
++    return
++  }
++  w.write_string(s)
++  self.last = s.rev_iter().next()
++}
++
++///|
++fn PlainRenderer::break_line(self : PlainRenderer, w : &Logger) -> Unit {
++  match self.last {
++    None | Some('\n') => ()
++    Some(_) => self.write(w, "\n")
++  }
++}
++
++///|
++pub impl Renderer for PlainRenderer with fn text(self, w, s) {
++  self.write(w, s)
++}
++
++///|
++pub impl Renderer for PlainRenderer with fn raw(_, _, _) {
++
++}
++
++///|
++pub impl Renderer for PlainRenderer with fn element(self, w, name, children) {
++  let block = is_block(name)
++  if block {
++    self.break_line(w)
++  }
++  for c in children {
++    render(w, c, self)
++  }
++  if block {
++    self.break_line(w)
++  }
++}
++
++///|
++pub impl Renderer for PlainRenderer with fn attr(_, _, _, _) {
++
++}
++
++///|
++pub impl Renderer for PlainRenderer with fn bool_attr(_, _, _) {
++
++}
++
++///|
++/// is_block reports whether PlainRenderer puts elements named name on
++/// their own lines.
++fn is_block(name : Tag) -> Bool {
++  match name.0 {
++    "address"
++    | "article"
++    | "aside"
++    | "blockquote"
++    | "body"
++    | "br"
++    | "dd"
++    | "details"
++    | "div"
++    | "dl"
++    | "dt"
++    | "figcaption"
++    | "figure"
++    | "footer"
++    | "form"
++    | "h1"
++    | "h2"
++    | "h3"
++    | "h4"
++    | "h5"
++    | "h6"
++    | "head"
++    | "header"
++    | "hgroup"
++    | "hr"
++    | "html"
++    | "li"
++    | "main"
++    | "nav"
++    | "ol"
++    | "p"
++    | "pre"
++    | "section"
++    | "summary"
++    | "table"
++    | "title"
++    | "tr"
++    | "ul" => true
++    _ => false
++  }
++}
+diff --git a/moonbit/el/render_test.mbt b/moonbit/el/render_test.mbt
+new file mode 100644
+index 0000000..b516aae
+--- /dev/null
++++ b/moonbit/el/render_test.mbt
+@@ -0,0 +1,136 @@
++// Ported from go/pkg/el/render_test.go. The cases with a nil child, an
++// unknown node type, and a failing writer do not apply: Node is a closed
++// enum without nil, and the renderers write to a &Logger, which cannot
++// fail.
++
++///|
++test "html renderer" {
++  let cases : Array[(String, @el.Node, String)] = [
++    ("text", @el.text("hello"), "hello"),
++    (
++      "text is escaped",
++      @el.text("<script>alert(\"x\")</script>"),
++      "&lt;script&gt;alert(&#34;x&#34;)&lt;/script&gt;",
++    ),
++    ("raw is not escaped", @el.raw("<!doctype html>"), "<!doctype html>"),
++    ("empty element", @el.el(@el.p, []), "<p></p>"),
++    (
++      "nested",
++      @el.el(@el.ul, [
++        @el.el(@el.li, [@el.text("a")]),
++        @el.el(@el.li, [@el.text("b")]),
++      ]),
++      "<ul><li>a</li><li>b</li></ul>",
++    ),
++    (
++      "attributes go into the start tag",
++      @el.el(@el.a, [
++        @el.text("top"),
++        @el.attr(@el.href, "/"),
++        @el.attr(@el.class, "x"),
++      ]),
++      "<a href=\"/\" class=\"x\">top</a>",
++    ),
++    (
++      "attribute value is escaped",
++      @el.el(@el.a, [@el.attr(@el.href, "/\" onclick=\"x")]),
++      "<a href=\"/&#34; onclick=&#34;x\"></a>",
++    ),
++    (
++      "bool attribute",
++      @el.el(@el.input, [@el.bool_attr(AttrName("hidden"))]),
++      "<input hidden>",
++    ),
++    (
++      "void element drops content",
++      @el.el(@el.br, [@el.text("ignored")]),
++      "<br>",
++    ),
++    (
++      "void element with attrs",
++      @el.el(@el.meta, [@el.attr(@el.charset, "utf-8")]),
++      "<meta charset=\"utf-8\">",
++    ),
++  ]
++  for c in cases {
++    let (name, n, want) = c
++    assert_eq(@el.to_html(n), want, msg=name)
++  }
++}
++
++///|
++test "escape matches Go's html.EscapeString" {
++  let sb = StringBuilder()
++  @el.escape(sb, "<a href='x'>\"&\"</a> 日本語")
++  assert_eq(
++    sb.to_string(),
++    "&lt;a href=&#39;x&#39;&gt;&#34;&amp;&#34;&lt;/a&gt; 日本語",
++  )
++}
++
++///|
++test "plain renderer" {
++  let cases : Array[(String, @el.Node, String)] = [
++    ("text is not escaped", @el.text("a < b & c"), "a < b & c"),
++    ("raw is dropped", @el.el(@el.style, [@el.raw("p{color:red}")]), ""),
++    (
++      "tags and attributes are dropped",
++      @el.el(@el.span, [
++        @el.attr(@el.class, "x"),
++        @el.bool_attr(AttrName("hidden")),
++        @el.text("one "),
++        @el.el(@el.a, [@el.attr(@el.href, "/"), @el.text("two")]),
++      ]),
++      "one two",
++    ),
++    (
++      "block elements go on their own lines",
++      @el.el(@el.div, [
++        @el.el(@el.h1, [@el.text("Title")]),
++        @el.el(@el.p, [@el.text("a "), @el.el(@el.a, [@el.text("link")])]),
++        @el.el(@el.p, [@el.text("b")]),
++      ]),
++      "Title\na link\nb\n",
++    ),
++    (
++      "nested blocks do not make blank lines",
++      @el.el(@el.section, [
++        @el.el(@el.section, [
++          @el.el(@el.ul, [
++            @el.el(@el.li, [@el.text("x")]),
++            @el.el(@el.li, [@el.text("y")]),
++          ]),
++        ]),
++      ]),
++      "x\ny\n",
++    ),
++    (
++      "text around a block",
++      @el.el(@el.span, [
++        @el.text("before"),
++        @el.el(@el.p, [@el.text("in")]),
++        @el.text("after"),
++      ]),
++      "before\nin\nafter",
++    ),
++    (
++      "pre keeps its newlines",
++      @el.el(@el.pre, [@el.text("a\n  b")]),
++      "a\n  b\n",
++    ),
++    (
++      "br breaks a line",
++      @el.el(@el.p, [@el.text("a"), @el.el(@el.br, []), @el.text("b")]),
++      "a\nb\n",
++    ),
++    (
++      "empty blocks write nothing",
++      @el.el(@el.div, [@el.el(@el.p, []), @el.el(@el.p, [])]),
++      "",
++    ),
++  ]
++  for c in cases {
++    let (name, n, want) = c
++    assert_eq(@el.to_plain(n), want, msg=name)
++  }
++}
