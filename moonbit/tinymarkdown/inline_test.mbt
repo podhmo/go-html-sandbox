@@ -14,7 +14,7 @@ fn run_inlines(
       )
     }
   }
-  if failures.length() > 0 {
+  if !failures.is_empty() {
     fail(failures.join("\n"))
   }
 }
