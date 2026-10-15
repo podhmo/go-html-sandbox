@@ -150,6 +150,6 @@ pub fn compare(
 ///|
 /// summary is the last line of the output: how many paths differ.
 pub fn summary(reports : Array[Report]) -> String {
-  let differ = reports.filter(r => !r.same).length()
+  let differ = reports.count_if(r => !r.same)
   "\{differ} of \{reports.length()} paths differ\n"
 }
