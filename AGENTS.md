@@ -8,6 +8,10 @@
 - TODO.md は日本語で出力（見出しの `## To Be Implemented` と `### Future work` は、運用ルールが名前で参照しているので英語のまま）
 - TODO-archive.md は、GC で移す項目を TODO.md の文面のまま追記する（それ以前の英語の項目は書き換えない）
 
+# 開発環境
+
+新しい環境（Claude Code のクラウドセッションなど）で作業を始めるときは、`docs/develop.md` のセットアップ（git の user、MoonBit、gh-stack による stacked PRs、Go 版との比較）に従ってください。
+
 # TODO.md
 
 TODO.md関連の運用ルール（タスクの追記・完了・部分完了時の操作）は `.claude/skills/todo-md/SKILL.md` を参照し、必ずそれに従ってください。タスクとは関係のないバグを見つけた場合も同じ手順で記録してください。

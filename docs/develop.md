@@ -1,8 +1,7 @@
-@AGENTS.md
+# Development setup
 
-# Session setup (memory for Claude Code)
-
-What a fresh cloud session of this repository needs before working on it.
+What a fresh environment (such as a Claude Code cloud session) needs
+before working on this repository.
 
 ## Git identity
 
