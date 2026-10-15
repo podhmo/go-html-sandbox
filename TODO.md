@@ -107,7 +107,7 @@
   `html.EscapeString` に倣って `&#34;` にするので、`"` を含むパスの 404 ページが
   Go 版と違う。`site` を `el` で組み立て直し、`write_escaped` を消す。
   [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「パッケージ構成と依存関係」を参照。
-- [x] **`derive` で生えるメソッドの打ち消し方を揃える**: `moonbit/el` の
+- [ ] **`derive` で生えるメソッドの打ち消し方を揃える**: `moonbit/el` の
   `extends.mbt` は `Eq` と `Debug` のメソッドを `#deprecated` 付きの
   `pub extend` で打ち消しているが、`moonbit/tinymarkdown` は `#deprecated` を
   付けていない。どちらかに揃える。
