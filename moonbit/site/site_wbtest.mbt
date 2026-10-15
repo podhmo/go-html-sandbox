@@ -68,7 +68,19 @@ test "post page text" {
   let posts = load_posts([
     ("2026-10-01-old.md", "# Old post\nold body"),
     (
-      "2026-10-14-hello.md", "# Hello <script>\n\nfirst\n## Points\n- one\n- two\n```\nx := <1>\n```",
+      "2026-10-14-hello.md",
+      (
+        #|# Hello <script>
+        #|
+        #|first
+        #|## Points
+        #|- one
+        #|  - one.1
+        #|- two
+        #|```
+        #|x := <1>
+        #|```
+      ),
     ),
   ])
   let s = Site(base_url="https://example.com", posts~, docs=[])
@@ -85,6 +97,7 @@ test "post page text" {
       #|first
       #|Points
       #|one
+      #|one.1
       #|two
       #|x := <1>
       #|Rendered with Wasm.

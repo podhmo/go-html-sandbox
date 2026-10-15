@@ -20,6 +20,12 @@ fn run(
 }
 
 ///|
+/// items makes list items without children.
+fn items(texts : Array[String]) -> Array[@tinymarkdown.Item] {
+  texts.map(text => { text, children: [], })
+}
+
+///|
 // The cases of TestSectionsAndParagraphs in go/pkg/tinymarkdown.
 test "sections and paragraphs" {
   run([
@@ -101,22 +107,26 @@ test "sections and paragraphs" {
 // The cases of TestLists in go/pkg/tinymarkdown.
 test "lists" {
   run([
-    ("list", "- a\n-   b  \n  - c", [List(["a", "b", "c"])]),
-    ("blank line splits lists", "- a\n\n- b", [List(["a"]), List(["b"])]),
+    ("list", "- a\n-   b  \n- c", [List(items(["a", "b", "c"]))]),
+    (
+      "blank line splits lists",
+      "- a\n\n- b",
+      [List(items(["a"])), List(items(["b"]))],
+    ),
     (
       "list after paragraph without a blank line",
       "intro\n- a\n- b",
-      [Paragraph("intro"), List(["a", "b"])],
+      [Paragraph("intro"), List(items(["a", "b"]))],
     ),
     (
       "paragraph after list without a blank line",
       "- a\nafter",
-      [List(["a"]), Paragraph("after")],
+      [List(items(["a"])), Paragraph("after")],
     ),
     (
       "indented lines continue an item",
       "- a\n  more\n\tand more\n- b\n  b2",
-      [List(["a\nmore\nand more", "b\nb2"])],
+      [List(items(["a\nmore\nand more", "b\nb2"]))],
     ),
     (
       "indented line after a paragraph stays in the paragraph",
@@ -126,7 +136,7 @@ test "lists" {
     (
       "blank line ends the continuation",
       "- a\n\n  b",
-      [List(["a"]), Paragraph("b")],
+      [List(items(["a"])), Paragraph("b")],
     ),
     ("dash without a space is paragraph text", "-a\n--", [Paragraph("-a\n--")]),
     (
@@ -134,10 +144,85 @@ test "lists" {
       "# A\n- x\n## B\n- y",
       [
         Section(level=1, title="A", children=[
-          List(["x"]),
-          Section(level=2, title="B", children=[List(["y"])]),
+          List(items(["x"])),
+          Section(level=2, title="B", children=[List(items(["y"]))]),
         ]),
       ],
+    ),
+  ])
+}
+
+///|
+// The cases of TestNestedLists in go/pkg/tinymarkdown.
+test "nested lists" {
+  run([
+    (
+      "indented item nests under the one above",
+      "- a\n  - b\n  - c\n- d",
+      [List([{ text: "a", children: items(["b", "c"]), }, ..items(["d"])])],
+    ),
+    (
+      "deeper nesting",
+      "- a\n  - b\n    - c\n- d",
+      [
+        List(
+          [
+            { text: "a", children: [{ text: "b", children: items(["c"]), }], },
+            ..items(["d"]),
+          ],
+        ),
+      ],
+    ),
+    (
+      "dedent goes back to the matching level",
+      "- a\n  - b\n    - c\n  - d",
+      [
+        List([
+          {
+            text: "a",
+            children: [{ text: "b", children: items(["c"]), }, ..items(["d"])],
+          },
+        ]),
+      ],
+    ),
+    (
+      "any deeper indent nests, a shallower one is a sibling",
+      "- a\n    - b\n  - c\n\t- d",
+      [List([{ text: "a", children: items(["b", "c", "d"]), }])],
+    ),
+    (
+      "indented lines continue the nearest item",
+      "- a\n  more\n  - b\n    b2\n  b3\n- c",
+      [
+        List(
+          [{ text: "a\nmore", children: items(["b\nb2\nb3"]), }, ..items(["c"])],
+        ),
+      ],
+    ),
+    (
+      "an indented first item is the top level",
+      "  - a\n- b\n  - c",
+      [List([..items(["a"]), { text: "b", children: items(["c"]), }])],
+    ),
+    (
+      "indented item after a paragraph starts a list",
+      "p\n  - a",
+      [Paragraph("p"), List(items(["a"]))],
+    ),
+    (
+      "blank line splits nested lists too",
+      "- a\n\n  - b",
+      [List(items(["a"])), List(items(["b"]))],
+    ),
+    (
+      "checkboxes are text",
+      "- [ ] a\n  - [x] b",
+      [List([{ text: "[ ] a", children: items(["[x] b"]), }])],
+    ),
+    (
+      "nested list in a quote",
+      "> - a\n>   - b",
+      [Quote([List([{ text: "a", children: items(["b"]), }])])],
     ),
   ])
 }
@@ -165,7 +250,7 @@ test "code blocks" {
     (
       "fence ends a paragraph and a list",
       "p\n```\nc\n```\n- a\n```\nd\n```",
-      [Paragraph("p"), CodeBlock("c"), List(["a"]), CodeBlock("d")],
+      [Paragraph("p"), CodeBlock("c"), List(items(["a"])), CodeBlock("d")],
     ),
     (
       "code block inside a section",
@@ -189,7 +274,7 @@ test "quotes" {
     (
       "blocks inside a quote",
       "> - x\n>   y\n> ```\n>   code\n> ```",
-      [Quote([List(["x\ny"]), CodeBlock("  code")])],
+      [Quote([List(items(["x\ny"])), CodeBlock("  code")])],
     ),
     (
       "nested quote",
@@ -202,7 +287,7 @@ test "quotes" {
       [
         Paragraph("p"),
         Quote([Paragraph("q")]),
-        List(["a"]),
+        List(items(["a"])),
         Quote([Paragraph("r")]),
       ],
     ),
@@ -298,7 +383,7 @@ test "tables" {
     (
       "list ends at a table",
       "- x\n| a |\n| - |",
-      [List(["x"]), Table(header=["a"], rows=[])],
+      [List(items(["x"])), Table(header=["a"], rows=[])],
     ),
   ])
 }

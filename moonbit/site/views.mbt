@@ -255,8 +255,7 @@ fn render_blocks(
           [heading(level, inlines(title)), ..render_blocks(children, link)],
         )
       Paragraph(text) => @picoel.p(inlines(text))
-      List(items) =>
-        @picoel.list([ for it in items => @picoel.li(inlines(it)) ])
+      List(items) => render_list(items, link)
       Quote(children) => @picoel.blockquote(render_blocks(children, link))
       Table(header~, rows~) => {
         let cells = (row : Array[String]) => [ for c in row => inlines(c) ]
@@ -265,6 +264,21 @@ fn render_blocks(
       CodeBlock(code) => @picoel.pre(code)
     }
   })
+}
+
+///|
+/// render_list renders items as a list, with the children of an item as a
+/// list inside its <li>.
+fn render_list(items : Array[@tinymarkdown.Item], link : Linker) -> @el.Node {
+  @picoel.list(
+    items.map(it => {
+      let li = render_inlines(@tinymarkdown.inlines(it.text), link)
+      if !it.children.is_empty() {
+        li.push(render_list(it.children, link))
+      }
+      @picoel.li(li)
+    }),
+  )
 }
 
 ///|
