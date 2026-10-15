@@ -32,10 +32,15 @@ function push(s) {
 // baseURL is the BASE_URL given to the Wasm, which it reads once.
 let baseURL;
 
-// serve returns the response the Wasm builds for path.
-function serve(path) {
+// serve returns the response the Wasm builds for path and query, the
+// raw query string without "?", which only redirects keep.
+function serve(path, query) {
   res = { status: 200, headers: new Headers() };
   buf = [];
+  if (query !== "") {
+    push(query);
+    instance.exports.set_query();
+  }
   push(path);
   instance.exports.serve();
   return new Response(take(), res);
@@ -48,12 +53,13 @@ export default {
       push(baseURL ?? "");
       instance.exports.set_base_url();
     }
+    const url = new URL(request.url);
     let path;
     try {
-      path = decodeURIComponent(new URL(request.url).pathname);
+      path = decodeURIComponent(url.pathname);
     } catch {
       return new Response("Bad request: malformed path\n", { status: 400 });
     }
-    return serve(path);
+    return serve(path, url.search.slice(1));
   },
 };

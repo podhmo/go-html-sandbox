@@ -8,5 +8,9 @@ import {
 supported_targets = "+wasm-gc"
 
 options(
-  link: { "wasm-gc": { "exports": [ "path_push", "set_base_url", "serve" ] } },
+  link: {
+    "wasm-gc": {
+      "exports": [ "path_push", "set_base_url", "set_query", "serve" ],
+    },
+  },
 )

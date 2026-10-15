@@ -361,3 +361,106 @@ test "the embedded documents have pages" {
     assert_true(body(s, p).contains("<article>"), msg=p)
   }
 }
+
+///|
+test "post markdown" {
+  let s = new_site(test_posts)
+  let res = s.render("/posts/hello.md")
+  assert_eq(res.status, 200)
+  assert_eq(res.body, test_posts[1].1)
+  assert_eq(header(res, "content-type"), Some("text/markdown; charset=utf-8"))
+  assert_eq(header(res, "x-content-type-options"), Some("nosniff"))
+  assert_contains(body(s, "/posts/hello"), [
+    "<header><nav><ul><li><time datetime=\"2026-10-14\">2026-10-14</time></li></ul><ul><li><small><a href=\"/posts/hello.md\" download=\"2026-10-14-hello.md\" class=\"secondary\">Download .md</a></small></li></ul></nav></header><article>",
+  ])
+}
+
+///|
+test "doc markdown" {
+  let s = new_site(test_posts)
+  for
+    c in [
+      ("/docs/TODO.md", test_docs[0].1),
+      ("/docs/ja/design.md", test_docs[1].1),
+    ] {
+    let res = s.render(c.0)
+    assert_eq(res.status, 200, msg=c.0)
+    assert_eq(res.body, c.1, msg=c.0)
+    assert_eq(
+      header(res, "content-type"),
+      Some("text/markdown; charset=utf-8"),
+      msg=c.0,
+    )
+  }
+  assert_contains(body(s, "/docs/nope.md", want=404), ["Document not found."])
+}
+
+///|
+test "more not found pages" {
+  let s = new_site(test_posts)
+  let cases = [
+    ("/posts/hello/extra", "Page not found."),
+    ("/posts/nope.md", "Post not found."),
+    ("/posts/hello/extra.md", "Page not found."),
+    ("/posts/", "Page not found."),
+  ]
+  for c in cases {
+    let res = s.render(c.0)
+    assert_eq(res.status, 404, msg=c.0)
+    assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
+    assert_contains(res.body, [
+      "<h1>404 Not Found</h1>",
+      c.1,
+      "<a href=\"/\">Back to all posts</a>",
+    ])
+  }
+}
+
+///|
+test "favicon and site.css" {
+  let s = new_site(test_posts)
+  let res = s.render("/favicon.svg")
+  assert_eq(res.status, 200)
+  assert_eq(header(res, "content-type"), Some("image/svg+xml"))
+  assert_eq(header(res, "cache-control"), Some("public, max-age=86400"))
+  assert_true(res.body.has_prefix("<svg"))
+  let page = body(s, "/")
+  guard page.find("/site.css?v=") is Some(i) else { fail("no site.css link") }
+  let version = page[i + "/site.css?v=".length():i + "/site.css?v=".length() + 8]
+  assert_true(version.iter().all(c => c is ('0'..<='9' | 'a'..<='f')))
+  let res = s.render("/site.css", query="v=\{version}")
+  assert_eq(res.status, 200)
+  assert_eq(header(res, "content-type"), Some("text/css; charset=utf-8"))
+  assert_eq(
+    header(res, "cache-control"),
+    Some("public, max-age=31536000, immutable"),
+  )
+  assert_true(res.body.contains("body > header"))
+}
+
+///|
+test "redirects" {
+  let s = new_site(test_posts)
+  let cases = [
+    ("/docs", "", "/docs/"),
+    ("/docs", "x=1", "/docs/?x=1"),
+    ("//posts/hello", "", "/posts/hello"),
+    ("/posts/../docs/", "", "/docs/"),
+    ("/docs/ja/../TODO", "", "/docs/TODO"),
+    ("/a b//", "", "/a%20b/"),
+    ("/メモ//", "", "/%E3%83%A1%E3%83%A2/"),
+    ("/docs", "a=\"<>", "/docs/?a=\"<>"),
+  ]
+  for c in cases {
+    let (path, query, location) = c
+    let res = s.render(path, query~)
+    assert_eq(res.status, 307, msg=path)
+    assert_eq(header(res, "location"), Some(location), msg=path)
+    assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
+    assert_eq(
+      res.body,
+      "<a href=\"\{@el.render_html(@el.Text(location))}\">Temporary Redirect</a>.\n\n",
+      msg=path,
+    )
+  }
+}

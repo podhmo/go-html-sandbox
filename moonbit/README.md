@@ -15,9 +15,9 @@ It is an experiment in progress; see
 - `site` — the blog, ported from the Go blog's `internal/site`:
   `load_posts` and `load_docs` read the embedded files, and
   `Site::render(path)` returns the response for a path (status, headers,
-  and body) with the same pages as the Go blog; so far `/`,
-  `/posts/{slug}`, `/docs/`, and `/docs/{path}`, and 404 pages for the
-  rest
+  and body) for every route of the Go blog: `/`, `/posts/{slug}` and
+  `/docs/{path}` with their `.md` sources, `/docs/`, `/favicon.svg`,
+  `/site.css`, the redirects to cleaned paths, and the 404 pages
 - `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
   `site.css` that pages put in its URL, generated into
   `assets/embedded.mbt` by `scripts/embed-assets.sh`
@@ -36,9 +36,10 @@ It is an experiment in progress; see
   into the `key: value` pairs of a leading `---` block (`None` without
   one) and the rest, raising `SplitError` on a malformed block; its tests
   are the Go test cases
-- `worker` — the Wasm entry point: `path_push`, `set_base_url`, and
-  `serve` exported (the host pushes `BASE_URL` once and calls
-  `set_base_url`, then pushes each path and calls `serve`), the
+- `worker` — the Wasm entry point: `path_push`, `set_base_url`,
+  `set_query`, and `serve` exported (the host pushes `BASE_URL` once and
+  calls `set_base_url`; for each request it pushes the query, if any, and
+  calls `set_query`, then pushes the path and calls `serve`), the
   response sent back through the imported `host` functions (`status`,
   then `put` for text one UTF-16 code unit at a time, with `header_name`
   and `header_value` taking what was put as a header; the rest is the

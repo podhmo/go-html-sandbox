@@ -95,21 +95,110 @@ pub fn Site::embedded(base_url~ : String) -> Site raise LoadError {
 }
 
 ///|
-/// render answers the request for path.
-pub fn Site::render(self : Site, path : String) -> Response {
+/// render answers the request for path, with query the raw query string
+/// (without "?"), which only redirects keep.
+pub fn Site::render(
+  self : Site,
+  path : String,
+  query~ : String = "",
+) -> Response {
+  // Redirect like ServeMux: to the cleaned path, and from a directory
+  // without its trailing slash.
+  let c = clean_path(path)
+  if c != path || c == "/docs" {
+    return Response::redirect(if c == "/docs" { "/docs/" } else { c }, query~)
+  }
   match path {
     "/" => Response::page(200, self.post_list())
+    "/docs/" => Response::page(200, self.doc_list())
+    "/favicon.svg" =>
+      // Pages link to it without a version, so it is cached for a day.
+      {
+        status: 200,
+        headers: [
+          ("content-type", "image/svg+xml"),
+          ("cache-control", "public, max-age=86400"),
+        ],
+        body: @assets.favicon_svg,
+      }
+    "/site.css" =>
+      // Pages link to it with a version in the query, so it can be cached
+      // for long.
+      {
+        status: 200,
+        headers: [
+          ("content-type", "text/css; charset=utf-8"),
+          ("cache-control", "public, max-age=31536000, immutable"),
+        ],
+        body: @assets.site_css,
+      }
+    [.. "/posts/", .. slug] if !slug.contains("/") && slug is [.. s, .. ".md"] =>
+      match self.by_slug.get(s.to_owned()) {
+        Some(p) => Response::markdown(p.markdown)
+        None => Response::page(404, error_page(404, "Post not found."))
+      }
     [.. "/posts/", .. slug] if slug != "" && !slug.contains("/") =>
       match self.by_slug.get(slug.to_owned()) {
         Some(p) => Response::page(200, self.post_page(p))
         None => Response::page(404, error_page(404, "Post not found."))
       }
-    "/docs/" => Response::page(200, self.doc_list())
+    [.. "/docs/", .. p] if p is [.. p, .. ".md"] =>
+      match self.by_path.get(p.to_owned()) {
+        Some(d) => Response::markdown(d.markdown)
+        None => Response::page(404, error_page(404, "Document not found."))
+      }
     [.. "/docs/", .. p] =>
       match self.by_path.get(p.to_owned()) {
         Some(d) => Response::page(200, self.doc_page(d))
         None => Response::page(404, error_page(404, "Document not found."))
       }
     _ => Response::page(404, error_page(404, "Page not found."))
+  }
+}
+
+///|
+/// clean_path is p without "." and ".." elements and repeated slashes. A
+/// trailing slash is kept.
+fn clean_path(p : String) -> String {
+  let c = clean("/\{p}")
+  if p.has_suffix("/") && c != "/" {
+    "\{c}/"
+  } else {
+    c
+  }
+}
+
+///|
+/// Response::markdown sends src as text. nosniff keeps browsers from
+/// guessing that Markdown containing tags is HTML.
+fn Response::markdown(src : String) -> Response {
+  {
+    status: 200,
+    headers: [
+      ("content-type", "text/markdown; charset=utf-8"),
+      ("x-content-type-options", "nosniff"),
+    ],
+    body: src,
+  }
+}
+
+///|
+/// Response::redirect is a 307 to path, a cleaned path, with query, as
+/// Go's http.Redirect writes it for a GET: the Location header and a short
+/// HTML body linking to it.
+fn Response::redirect(path : String, query~ : String) -> Response {
+  let url = if query == "" {
+    escape(path, fragment=false)
+  } else {
+    "\{escape(path, fragment=false)}?\{query}"
+  }
+  let location = hex_escape_non_ascii(url)
+  {
+    status: 307,
+    headers: [
+      ("location", location),
+      ("content-type", "text/html; charset=utf-8"),
+    ],
+    body: "<a href=\"\{@el.render_html(@el.Text(url))}\">Temporary Redirect</a>.\n\n",
   }
 }

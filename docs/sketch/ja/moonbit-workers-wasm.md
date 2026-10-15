@@ -298,6 +298,15 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 
 - Go 版は `go generate` で文書をコピーしてから埋め込むので、文書を編集したら、比較の前に Go 版でも `go generate ./...` をやり直す必要がある。やり直さないと、古いコピーとの差分が出る。
 
+## 残りのルート
+
+`/favicon.svg`、`/site.css`、記事と文書の `.md` 版、リダイレクト（正規化されていないパスと `/docs` から `/docs/`）、404 ページを足し、Go 版のブログのルートをすべて移した。
+
+- **比較**：Go 版の `/` と `/docs/` からたどれるすべてのページとその `.md` 版、`/favicon.svg`、`/site.css`（`?v=` 付きと無し）、`/docs`、`/docs?x=1`、`//posts/hello`、存在しない記事・文書・パスとその `.md` 版、Go 版の `-watch` 用のパス（`/_livereload.js` など、どちらも 404）の 41 パスを比べ、40 パスが一致した。
+- **一致しない 1 パス**：`/docs/ja/../TODO` のように `.` や `..` を含むパスは、Go 版が 307 で `/docs/TODO` にリダイレクトするのに対し、Worker は 200 で `/docs/TODO` を返す。workerd がリクエストを受けた時点で URL を正規化するので（wrangler のログにも正規化後のパスが出る）、`request.url` にも元のパスは残っておらず、Worker の側では区別できない。Wasm の `render` は Go 版と同じくリダイレクトを返し、`moon test` で確かめている。
+- **リダイレクトの本文**：Go の `http.Redirect` は GET に `<a href="...">Temporary Redirect</a>.` と改行 2 つの本文を付ける。比較は本文も見るので、同じ本文を返す。`Location` のクエリーを保つため、`worker.mjs` はクエリーを新しい export の `set_query` で渡す。
+- **メソッド**：Go 版は GET と HEAD 以外に 404 を返すが、Worker はメソッドを見ずに同じ応答を返す。比較は GET だけで行う。
+
 ## 次の一歩
 
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。
