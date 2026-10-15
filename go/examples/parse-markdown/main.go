@@ -75,11 +75,7 @@ func dump(w io.Writer, bs []tinymarkdown.Block, depth int) error {
 			_, err = fmt.Fprintf(w, "%sparagraph %q\n", indent, b.Text)
 		case tinymarkdown.List:
 			if _, err = fmt.Fprintf(w, "%slist\n", indent); err == nil {
-				for _, it := range b.Items {
-					if _, err = fmt.Fprintf(w, "%s  item %q\n", indent, it); err != nil {
-						break
-					}
-				}
+				err = dumpItems(w, b.Items, depth+1)
 			}
 		case tinymarkdown.Quote:
 			if _, err = fmt.Fprintf(w, "%squote\n", indent); err == nil {
@@ -99,6 +95,21 @@ func dump(w io.Writer, bs []tinymarkdown.Block, depth int) error {
 			err = fmt.Errorf("unknown block %T", b)
 		}
 		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// dumpItems writes one item per line, with the items nested under an item
+// indented below it.
+func dumpItems(w io.Writer, items []tinymarkdown.Item, depth int) error {
+	indent := strings.Repeat("  ", depth)
+	for _, it := range items {
+		if _, err := fmt.Fprintf(w, "%sitem %q\n", indent, it.Text); err != nil {
+			return err
+		}
+		if err := dumpItems(w, it.Children, depth+1); err != nil {
 			return err
 		}
 	}

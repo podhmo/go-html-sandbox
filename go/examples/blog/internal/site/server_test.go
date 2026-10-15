@@ -42,7 +42,7 @@ func get(t *testing.T, h http.Handler, path string) (*http.Response, string) {
 
 var testPosts = fstest.MapFS{
 	"2026-10-01-old.md":   file("# Old post\nold body"),
-	"2026-10-14-hello.md": file("# Hello <script>\n\nfirst\n## Points\n- one\n- two\n```\nx := <1>\n```"),
+	"2026-10-14-hello.md": file("# Hello <script>\n\nfirst\n## Points\n- one\n  - one.1\n- two\n```\nx := <1>\n```"),
 }
 
 func TestList(t *testing.T) {
@@ -94,7 +94,7 @@ func TestPost(t *testing.T) {
 	for _, want := range []string{
 		`<title>Hello &lt;script&gt; - blog</title>`,
 		`<time datetime="2026-10-14">2026-10-14</time>`,
-		`<section><h1>Hello &lt;script&gt;</h1><p>first</p><section><h2>Points</h2><ul><li>one</li><li>two</li></ul><pre>x := &lt;1&gt;</pre></section></section>`,
+		`<section><h1>Hello &lt;script&gt;</h1><p>first</p><section><h2>Points</h2><ul><li>one<ul><li>one.1</li></ul></li><li>two</li></ul><pre>x := &lt;1&gt;</pre></section></section>`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("body does not contain %q", want)
@@ -120,6 +120,7 @@ Hello <script>
 first
 Points
 one
+one.1
 two
 x := <1>
 Rendered with Wasm.

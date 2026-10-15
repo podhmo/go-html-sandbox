@@ -1,7 +1,8 @@
 // Package tinymarkdown parses a tiny subset of Markdown into a pure-data tree.
 //
 // Supported: headings "#" to "#####" (which open nested sections), "- "
-// list items (which may continue on indented lines), paragraphs, "> "
+// list items (which may continue on indented lines and nest by
+// indentation), paragraphs, "> "
 // quotes, "|" tables, and code blocks fenced by exactly "```". Anything else
 // is treated as paragraph text.
 // Block parsing keeps inline syntax as text; Inlines splits out code spans
@@ -34,10 +35,20 @@ type Paragraph struct {
 	Text string
 }
 
-// List is a run of consecutive "- " lines. Items hold the text after "- ".
-// Indented lines that follow an item continue it, joined with "\n".
+// List is a run of consecutive "- " lines. Each item is nested under the
+// nearest item above it whose "- " is indented less, as "b" is under "a" in
+// "- a\n  - b"; with no such item, it is at the top level. Indentation
+// counts leading spaces and tabs, one column each.
 type List struct {
-	Items []string
+	Items []Item
+}
+
+// Item is a list item: the text after "- " and the items nested under it.
+// Indented lines that follow an item without "- " continue its text,
+// joined with "\n".
+type Item struct {
+	Text     string
+	Children []Item
 }
 
 // Quote is a run of consecutive lines starting with ">". The text after ">"
@@ -94,14 +105,16 @@ func Parse(src string) Document {
 // scan splits src into a flat list of blocks, with headings as markers.
 func scan(src string) []Block {
 	var out []Block
-	var para, items, quote, table []string
+	var para, quote, table []string
+	var items []rawItem
 	flush := func() {
 		if len(para) > 0 {
 			out = append(out, Paragraph{Text: strings.Join(para, "\n")})
 			para = nil
 		}
 		if len(items) > 0 {
-			out = append(out, List{Items: items})
+			list, _ := nestItems(items, 0, -1)
+			out = append(out, List{Items: list})
 			items = nil
 		}
 		if len(quote) > 0 {
@@ -155,10 +168,10 @@ func scan(src string) []Block {
 			if len(para) > 0 || len(quote) > 0 || len(table) > 0 {
 				flush()
 			}
-			items = append(items, strings.TrimSpace(trimmed[2:]))
+			items = append(items, rawItem{indent: indent(line), text: strings.TrimSpace(trimmed[2:])})
 		case len(items) > 0 && line != trimmed && (line[0] == ' ' || line[0] == '\t'):
 			// An indented line continues the item above it.
-			items[len(items)-1] += "\n" + trimmed
+			items[len(items)-1].text += "\n" + trimmed
 		default:
 			if len(items) > 0 || len(quote) > 0 || len(table) > 0 {
 				flush()
@@ -172,6 +185,31 @@ func scan(src string) []Block {
 	}
 	flush()
 	return out
+}
+
+// rawItem is a list item as scan reads it, kept flat until nestItems builds
+// the nested lists.
+type rawItem struct {
+	indent int
+	text   string
+}
+
+// indent counts the leading spaces and tabs of line.
+func indent(line string) int {
+	return len(line) - len(strings.TrimLeft(line, " \t"))
+}
+
+// nestItems turns indentation in flat into nested lists. It consumes items
+// from flat[i:] while they are indented deeper than parent, returning them
+// and the index where it stopped.
+func nestItems(flat []rawItem, i, parent int) ([]Item, int) {
+	var out []Item
+	for i < len(flat) && flat[i].indent > parent {
+		it := Item{Text: flat[i].text}
+		it.Children, i = nestItems(flat, i+1, flat[i].indent)
+		out = append(out, it)
+	}
+	return out, i
 }
 
 // parseTable parses the lines of a table. It fails, leaving the lines to be
