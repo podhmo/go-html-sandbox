@@ -10,7 +10,7 @@
 
 # 開発環境
 
-新しい環境（Claude Code のクラウドセッションなど）で作業を始めるときは、`docs/develop.md` のセットアップ（MoonBit、gh-stack による stacked PRs、Go 版との比較）に従ってください。
+新しい環境（Claude Code のクラウドセッションなど）で作業を始めるときは、`docs/develop.md` のセットアップに従ってください。
 
 # TODO.md
 
