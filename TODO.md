@@ -13,10 +13,11 @@
 
 ### Future work
 
-- [ ] **MoonBit の Workers 用アダプターを必要十分な形に磨く**: 今のアダプター
+- [ ] **MoonBit の Workers 用アダプターを最適な形に磨く**: 今のアダプター
   （`moonbit/workers/worker.mjs` と `moonbit/worker` の export、host の
-  import）は、spike から必要に応じて継ぎ足してきたもの。これまでの知見を総動員し、
-  ブログが今使っている範囲で過不足のない形に設計し直す。知見とは、Workers では
+  import）は、ブログに必要十分で、足りないものはない。ただ、spike から必要に
+  応じて継ぎ足してきたものなので、これまでの知見を総動員して最適な形に設計し
+  直す。知見とは、Workers では
   `use-js-builtin-string` が使えないこと、コード単位の受け渡しが時間の約 8 割を
   占めること、`wasm-opt -Oz` の効果、workerd による URL の正規化、メソッドと HEAD
   の扱い、`set_query` と `set_base_url` を後から足した経緯など。
