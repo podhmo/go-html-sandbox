@@ -210,7 +210,7 @@ fn parse_table(lines : Array[String]) -> Block? {
 ///|
 /// cells splits a row such as "| a | b |" at unescaped "|". The leading
 /// "|" is required by scan; the trailing one is optional.
-fn cells(line : String) -> Array[String] {
+fn cells(line : StringView) -> Array[String] {
   let line = line.strip_prefix("|").unwrap_or(line)
   let out = []
   let b = StringBuilder()

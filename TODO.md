@@ -112,7 +112,7 @@
   `pub extend` で打ち消しているが、`moonbit/tinymarkdown` は `#deprecated` を
   付けていない。どちらかに揃える。
   [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「気づいたこと」を参照。
-- [ ] **`moonbit/tinymarkdown` のコピーを減らす**: `cells` と `code_text` は
+- [x] **`moonbit/tinymarkdown` のコピーを減らす**: `cells` と `code_text` は
   `String` を受け取るので、呼び出し側が先に `to_owned()` している。
   `StringView` を受け取るようにして、構文木に入れるときだけコピーする。
   [modernize のレポート](docs/sketch/ja/moonbit-modernize.md)の「view 型とコピー」を参照。
