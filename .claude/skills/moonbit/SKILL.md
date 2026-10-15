@@ -18,10 +18,21 @@ library sources** rather than writing from memory.
 
 ## Toolchain and config format
 
-- `moon version` is 0.1.20260920 at the time of writing. Configuration
-  uses the **DSL files `moon.mod` and `moon.pkg`**, not `moon.mod.json` /
-  `moon.pkg.json`. `~/.moon/AGENTS.md` and the `AGENTS.md` that `moon new`
-  writes still describe the JSON format; ignore those parts.
+- **Stay on the latest toolchain**; no version is pinned. Before MoonBit
+  work, compare `moon version` with the latest release:
+
+  ```sh
+  curl -fsSL https://cli.moonbitlang.com/version.json   # "moon" item
+  ```
+
+  If it is behind, ask the user to run `! moon upgrade` (it prompts, so it
+  cannot run without a terminal). Then run `make check` in `moonbit/`;
+  releases change the language, and `moon fmt` rewrites the sources to
+  match. Commit that reformat on its own, before your change.
+- Configuration uses the **DSL files `moon.mod` and `moon.pkg`**, not
+  `moon.mod.json` / `moon.pkg.json`. `~/.moon/AGENTS.md` and the
+  `AGENTS.md` that `moon new` writes still describe the JSON format;
+  ignore those parts.
 - For language reference, read the official agent guide, which is up to
   date with the DSL:
   `~/ghq/github.com/moonbitlang/moonbit-agent-guide/moonbit-agent-guide/SKILL.md`
@@ -37,7 +48,7 @@ version = "0.1.0"
 preferred_target = "wasm-gc"
 
 import {
-  "moonbitlang/async@0.22.4",   // dependencies live here, always with a version
+  "moonbitlang/async@0.22.5",   // dependencies live here, always with a version
 }
 ```
 
@@ -63,8 +74,7 @@ supported_targets = "+native"
 pkgtype(kind: "executable")
 ```
 
-An empty `moon.pkg` is a valid package. Run `moon fmt` after editing these
-files; it normalizes them.
+An empty `moon.pkg` is a valid package.
 
 ## Libraries
 
@@ -80,13 +90,10 @@ run on the developer's machine; see "CLI tools" below.
 ### Choosing a version
 
 1. `moon update` first — a stale registry index resolves to old versions.
-2. `moon add moonbitlang/<name>` picks the newest version, which may need
-   a newer `moon` than the one installed. Example: async 0.22.5 fails on
-   moon 0.1.20260920 with `Unexpected key 'max_concurrent_tests' found in
-   moon.pkg`; 0.22.4 works. If the newest fails like that, pin the newest
-   tag that builds and say so in the commit message. Upgrading the
-   toolchain (`moon upgrade`) affects everything else in the repo, so ask
-   the user before doing that.
+2. `moon add moonbitlang/<name>` picks the newest version, which can need
+   a newer `moon` than the one installed (it then fails to read the
+   library's `moon.pkg`, e.g. `Unexpected key ... found in moon.pkg`).
+   Upgrade the toolchain (see above) rather than pinning an older library.
 3. Whatever version ends up in `moon.mod`, line up the reference clones
    with it (next section).
 
@@ -103,12 +110,12 @@ Do not guess names or signatures — confirm them, in this order:
 
    **Not for x and async.** For dependencies, `moon ide doc` answers from
    the registry's symbol index, which can be a different version than the
-   one pinned: with async@0.22.4 in `moon.mod` it printed
-   `// moonbitlang/async@0.21.3`. Check the version in its first line, and
+   one pinned: with async@0.22.5 in `moon.mod` (after `moon update`) it
+   printed `// moonbitlang/async@0.21.3`. Check the version in its first line, and
    use the sources (step 2) for x and async.
 2. **The library sources, at the version you build against.** Run
    `.claude/skills/moonbit/scripts/sync-refs.sh` (reads the versions in
-   `moonbit/moon.mod`; or pass `async@0.22.4` to look at a candidate).
+   `moonbit/moon.mod`; or pass `async@0.22.5` to look at a candidate).
    It clones/fetches `~/ghq/github.com/moonbitlang/{x,async}` and checks out
    the tag `v<version>`, so the source you read is the source you compile.
    Then:
@@ -140,22 +147,18 @@ Follow what `moonbit/site/site.mbt` and `moonbit/worker/worker.mbt` do:
   only when other packages must construct the type.
 - Build strings with `StringBuilder` (characters). `Buffer` is for bytes;
   mixing the two garbles non-ASCII text.
-- Deprecations you will otherwise write from memory: `derive(Show)` (use
-  `derive(Debug)`; on a `pub` type that warns `implicit_impl_as_method`,
-  so read the warning's suggested fix), `Iterator` (use `Iter`),
-  `StringView::to_string` (use `to_owned()`), `try?`.
-- Treat warnings as things to fix, not noise: `moon check` reports them,
-  and `moon explain --diagnostic <code>` explains them.
+- Leave formatting, deprecations, and other things `make check` reports
+  to the tools: write, run `make check`, and fix what it says
+  (`moon explain --diagnostic <code>` explains a warning).
 
 ### Packages and tests
 
 - Tests are blackbox files `<pkg>_test.mbt` next to the code, calling the
-  package qualified (`@site.render(...)`); unqualified calls warn.
+  package qualified (`@site.render(...)`).
 - Keep logic in library packages and keep executables thin (`cmd/` or a
-  `pkgtype(kind: "executable")` package with only `main`). `_test.mbt`
-  files in an executable package warn that main packages will stop
-  generating blackbox tests.
-- Anything that imports host functions (`fn put(code : Int) = "host" "put"`)
+  `pkgtype(kind: "executable")` package with only `main`), so the tests
+  live in the library package.
+- Anything that imports host functions (`fn put(code : Int32) = "host" "put"`)
   stays in `worker`. A test binary that contains such an import cannot run,
   which is why `site` and `worker` are separate.
 

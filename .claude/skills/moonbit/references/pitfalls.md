@@ -1,7 +1,8 @@
 # MoonBit pitfalls
 
-Surprises that cost time, each found by running the toolchain
-(moon 0.1.20260920). Most come from
+Surprises that cost time and that `make check` does not point out
+(anything `moon fmt --check` or `moon check` reports is left out: run it
+and follow what it says). Most come from
 `~/ghq/github.com/podhmo/moonbit-individual-handbook/docs/knowledge.md`,
 which has more; the rest were found in this repo. Re-check an entry when
 the toolchain or a pinned dependency moves.
@@ -12,15 +13,12 @@ the toolchain or a pinned dependency moves.
   also runs `git init` and writes `.githooks`/`.github` — do not run it
   inside this repo), `moon doc <symbol>` is deprecated (`moon ide doc`).
 - `moon ide doc` on a dependency reads the registry's symbol index, which
-  can be another version than the one in `moon.mod` (showed async 0.21.3
-  with 0.22.4 pinned). Read the tag-pinned clone instead.
-- The newest library release can require a newer `moon`: async 0.22.5 on
-  moon 0.1.20260920 fails with `Unexpected key 'max_concurrent_tests'
-  found in moon.pkg`.
+  can be another version than the one in `moon.mod`. Read the tag-pinned
+  clone instead.
+- The newest library release can require a newer `moon`; it then fails
+  to read the library's `moon.pkg`.
 - Without `moon update`, `moon add` resolves against a stale index and
   picks old versions.
-- `moon fmt` converts `moon.pkg.json` to `moon.pkg` syntactically only;
-  keys it does not know stay inside `options(...)`.
 - `RUST_LOG` in the environment makes moon print tracing to stderr; unset
   it in scripts that check stderr.
 - `moon -C <dir> <cmd>` runs from outside the module (the option goes
@@ -28,7 +26,7 @@ the toolchain or a pinned dependency moves.
 
 ## Targets
 
-- An import declared as `fn f(x : Int) = "host" "f"` does not compile on
+- An import declared as `fn f(x : Int32) = "host" "f"` does not compile on
   native (`[4156] import is unsupported in native backend`), and
   `extern "C"` does not compile on wasm. Restrict the package with
   `supported_targets`, or split files with `options(targets: ...)`.
@@ -49,20 +47,13 @@ the toolchain or a pinned dependency moves.
   non-ASCII text; ASCII-only tests pass by accident.
 - `String::split` returns `Iter[StringView]`; `to_owned()` makes Strings.
 
-## Language and library
+## Library behavior
 
-- `for .. else` is a parse error; the keyword is `nobreak`.
-- `derive(Show)` is deprecated, and so are the `Show` impls of Array,
-  Option, Map, tuples and Json (use `debug_inspect` in tests).
-  `Iterator` is a deprecated alias of `Iter`; `try?` is deprecated.
-- `derive(Debug)` on a `pub` type warns `implicit_impl_as_method`.
 - `Array::sort` is not stable; `stable_sort` exists only on
   `MutArrayView` and `FixedArray`.
 - `Map` keeps insertion order.
 - `derive(ToJson)` on enums is externally tagged
   (`["Axes",{"x":-1,"y":1}]` for labelled arguments), unlike what
   `derive.md` shows; the tag key cannot be renamed through derive.
-- Adding a variant to a `#non_exhaustive` enum turns matches without `..`
-  into `partial_match` errors.
 - There is no function to format a Double with a fixed number of digits,
   and `x/time` has no local time zone or formatting.
