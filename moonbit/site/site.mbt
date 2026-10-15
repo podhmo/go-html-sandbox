@@ -51,13 +51,13 @@ pub fn render(path : String) -> Response {
   let sb = StringBuilder()
   match path {
     "/" => {
-      page(sb, "blog", fn(sb) {
+      page(sb, "blog", sb => {
         sb.write_string("<h1>blog</h1><p>Rendered with MoonBit.</p>")
       })
       html_response(200, sb.to_string())
     }
     _ => {
-      page(sb, "Not found | blog", fn(sb) {
+      page(sb, "Not found | blog", sb => {
         sb.write_string("<h1>Not found</h1><p>No page at <code>")
         write_escaped(sb, path)
         sb.write_string("</code>.</p>")
