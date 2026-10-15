@@ -140,11 +140,8 @@ fn closing_run(s : String, from~ : Int32, n~ : Int32) -> Int32 {
 ///|
 fn code_text(s : String) -> String {
   let s = s.replace_all(old="\n", new=" ")
-  if s.length() >= 2 &&
-    s[0] == ' ' &&
-    s[s.length() - 1] == ' ' &&
-    s.trim(chars=" ") != "" {
-    s[1:s.length() - 1].to_owned()
+  if s is [' ', .. inner, ' '] && inner.trim(chars=" ") != "" {
+    inner.to_owned()
   } else {
     s
   }
