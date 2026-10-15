@@ -143,8 +143,11 @@ pub fn compare(
   if parts.is_empty() {
     return { path, same: true, text: "\{path}: same\n", }
   }
-  let header = "\{path}: differs (\{parts.join(", ")})\n"
-  { path, same: false, text: header + details.to_string(), }
+  {
+    path,
+    same: false,
+    text: "\{path}: differs (\{parts.join(", ")})\n\{details}",
+  }
 }
 
 ///|
