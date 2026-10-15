@@ -2,11 +2,11 @@
 /// put appends one UTF-16 code unit to the host's buffer. The Wasm passes
 /// strings this way since Workers cannot compile it with the JS string
 /// builtins; see docs/sketch/ja/moonbit-workers-wasm.md.
-fn put(code : Int) = "host" "put"
+fn put(code : Int32) = "host" "put"
 
 ///|
 /// status sets the status code of the response.
-fn status(code : Int) = "host" "status"
+fn status(code : Int32) = "host" "status"
 
 ///|
 /// header_name takes the host's buffer as the name of the next header.
@@ -29,7 +29,7 @@ let path : StringBuilder = StringBuilder()
 
 ///|
 /// path_push appends one UTF-16 code unit of the request path.
-pub fn path_push(code : Int) -> Unit {
+pub fn path_push(code : Int32) -> Unit {
   path.write_char(code.unsafe_to_char())
 }
 

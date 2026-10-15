@@ -33,14 +33,14 @@ fn page(
 ///|
 /// Response is what the site answers to a request.
 pub(all) struct Response {
-  status : Int
+  status : Int32
   headers : Array[(String, String)]
   body : String
 }
 
 ///|
 /// html_response wraps an HTML page with status.
-fn html_response(status : Int, body : String) -> Response {
+fn html_response(status : Int32, body : String) -> Response {
   { status, headers: [("content-type", "text/html; charset=utf-8")], body, }
 }
 
