@@ -122,10 +122,7 @@ fn scan(src : String) -> Array[Flat] {
   let code : Array[String] = []
   let mut in_code = false
   for raw in src.split("\n") {
-    let line = (match raw.strip_suffix("\r") {
-      Some(v) => v
-      None => raw
-    }).to_owned()
+    let line = raw.strip_suffix("\r").unwrap_or(raw).to_owned()
     let trimmed = trim_space(line)
     if in_code {
       if trimmed == fence {
@@ -155,12 +152,7 @@ fn scan(src : String) -> Array[Flat] {
         flush()
       }
       let rest = line[line.find(">").unwrap() + 1:]
-      quote.push(
-        (match rest.strip_prefix(" ") {
-          Some(v) => v
-          None => rest
-        }).to_owned(),
-      )
+      quote.push(rest.strip_prefix(" ").unwrap_or(rest).to_owned())
     } else if trimmed.has_prefix("- ") {
       if para.length() > 0 || quote.length() > 0 || table.length() > 0 {
         flush()
@@ -215,10 +207,7 @@ fn parse_table(lines : Array[String]) -> Block? {
 /// cells splits a row such as "| a | b |" at unescaped "|". The leading
 /// "|" is required by scan; the trailing one is optional.
 fn cells(line : String) -> Array[String] {
-  let line = match line.strip_prefix("|") {
-    Some(v) => v
-    None => line
-  }
+  let line = line.strip_prefix("|").unwrap_or(line)
   let out = []
   let b = StringBuilder()
   let mut i = 0
@@ -245,14 +234,8 @@ fn cells(line : String) -> Array[String] {
 /// is_delimiter reports whether c is a delimiter cell: "---", ":---",
 /// ":---:", or "---:", with at least one "-".
 fn is_delimiter(c : String) -> Bool {
-  let c = match c.strip_prefix(":") {
-    Some(v) => v
-    None => c
-  }
-  let c = match c.strip_suffix(":") {
-    Some(v) => v
-    None => c
-  }
+  let c = c.strip_prefix(":").unwrap_or(c)
+  let c = c.strip_suffix(":").unwrap_or(c)
   c != "" && c.trim(chars="-") == ""
 }
 
