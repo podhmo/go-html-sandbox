@@ -7,11 +7,11 @@
   },
   "scripts": {
     "embed": "node examples/blog/scripts/embed.ts",
-    "dev": "wrangler dev --config examples/blog/wrangler.jsonc",
-    "deploy": "wrangler deploy --config examples/blog/wrangler.jsonc",
+    "dev": "cd examples/blog && wrangler dev",
+    "deploy": "cd examples/blog && wrangler deploy",
+    "pretest": "npm run embed",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "check": "npm run embed && npm run typecheck && npm test"
+    "check": "npm test && tsc --noEmit"
   },
   "dependencies": {
     "hono": "^4.13.13"
