@@ -11,5 +11,5 @@ than one language.
 Shared across implementations:
 
 - [`posts/`](posts) — the blog's posts
-- [`docs/`](docs) — design notes and sketches
+- [`docs/`](docs) — design notes and sketches; [where things go, and why](docs/ja/layout.md), for every implementation
 - [`TODO.md`](TODO.md) — open tasks ([archive](TODO-archive.md))
