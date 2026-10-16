@@ -23,7 +23,7 @@ ts 版のブログ（`ts/`）は、`go/pkg/tinymarkdown` を TS に移した `ts
 - `moonbit/pkg/tinymarkdown/js/js.mbt`: `parse(src) -> Js` と `inlines(s) -> Js`。`@tinymarkdown` の結果をたどり、`{ kind: "section", level, title, children }` のような JS オブジェクトを `extern "js"` の小さな関数（`{}` を作る、キーに値を入れる、配列に push する）で組む。`supported_targets = "+js"` なので、wasm-gc と native の `moon check` には入らない。テストは `moon test --target js` で、`JSON.stringify` した結果を見る（`make test` に入れた）。
 - `moonbit/Makefile` の `ts`: `moon build --target js --release pkg/tinymarkdown/js` の出力を `ts/pkg/tinymarkdown/tinymarkdown.mjs` に写す。`make check` は最後に `make ts` を走らせ、差分があれば落ちる（`.mbti` と同じやり方）。
 - `ts/pkg/tinymarkdown/tinymarkdown.ts`: 型（`Document`、`Block`、`Inline` など）と、`export { inlines, parse } from "./tinymarkdown.mjs"`。
-- `ts/pkg/tinymarkdown/tinymarkdown.d.mts`: `tinymarkdown.mjs` の型。moon が生成する `.d.ts` は戻り値が `any` なので、手で書いた。
+- `ts/pkg/tinymarkdown/tinymarkdown.d.mts`: `tinymarkdown.mjs` の型。moon が生成する `.d.ts` は戻り値が `any` なので、手で書いた。moon 0.1.20261012 の `.d.ts` で型が付くのは `String`、`Int`、`Double`、`Bool`、`T?`（`T | undefined`）と関数だけで、`Array`、`struct`、`enum`、`#external type` は `any` になる。型を指定する方法も見当たらなかった。
 
 MoonBit の js ビルドでは、`String` は JS の文字列、`Int` は JS の数になる。enum は、ケースごとのクラスに `$tag` と `_0`、`_1` のようなフィールドを持たせた形になる。そのままでは TS の `kind` で分ける型にならないので、MoonBit 側で JS オブジェクトを組んだ。
 
