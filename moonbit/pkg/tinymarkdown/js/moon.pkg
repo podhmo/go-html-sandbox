@@ -1,0 +1,11 @@
+import {
+  "podhmo/html-sandbox/pkg/tinymarkdown",
+}
+
+// Only js: the JS objects are built through extern "js".
+
+supported_targets = "+js"
+
+options(
+  link: { "js": { "exports": [ "parse", "inlines" ], "format": "esm" } },
+)

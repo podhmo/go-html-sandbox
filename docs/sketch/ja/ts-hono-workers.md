@@ -4,6 +4,8 @@ Go 版と MoonBit 版のブログは、どちらも Wasm として Cloudflare Wo
 
 実装は `ts/`（[README](../../../ts/README.md)）に置いた。方針は「素直に」で、Hono のガイドに書いてある形から外れないようにした。最終的には [Cloudflare Workers + Vite](https://hono.dev/docs/getting-started/cloudflare-workers-vite) のテンプレート（`cloudflare-workers+vite`）の形にした。最初は [wrangler だけのガイド](https://hono.dev/docs/getting-started/cloudflare-workers)の形で書いたので、その版（コミット `95bf1d5`）とも比べる。
 
+その後、`ts/pkg/tinymarkdown` の TS の移植をやめ、MoonBit の `tinymarkdown` を js にビルドしたものに替えた（[探索メモ](moonbit-js-tinymarkdown.md)）。このメモの数字は、TS の移植を使っていたときのもの。
+
 ## 何を確かめたか
 
 | 問い | 答え | 確かめ方 |

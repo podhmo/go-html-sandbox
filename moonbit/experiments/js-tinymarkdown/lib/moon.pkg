@@ -1,9 +1,0 @@
-import {
-  "podhmo/html-sandbox/pkg/tinymarkdown",
-}
-
-options(
-  link: {
-    "js": { "exports": [ "parse", "inlines", "parse_only" ], "format": "esm" },
-  },
-)

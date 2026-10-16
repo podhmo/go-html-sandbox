@@ -1,11 +1,11 @@
-// tinymarkdown for TypeScript: parse and inlines, built for the js target,
-// returning plain JS objects in the shape of the types in
-// ts/pkg/tinymarkdown/tinymarkdown.ts, so that the TS code can use them in
-// place of its own port.
+// tinymarkdown for the ts blog (../../../../ts): parse and inlines, built
+// for the js target, returning plain JS objects in the shape of the types
+// in ts/pkg/tinymarkdown/tinymarkdown.ts. `make ts` copies the build there.
 
 ///|
+/// Js is a JS value: what parse and inlines return.
 #external
-type Js
+pub type Js
 
 ///|
 extern "js" fn new_object() -> Js = "() => ({})"
@@ -109,11 +109,4 @@ fn inline_array(xs : Array[@tinymarkdown.Inline]) -> Js {
         ])
     }
   })
-}
-
-///|
-/// parse_only parses src and drops the result, to tell the time of the
-/// parse from that of building the JS objects.
-pub fn parse_only(src : String) -> Int32 {
-  @tinymarkdown.parse(src).children.length()
 }

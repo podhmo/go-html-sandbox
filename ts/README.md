@@ -7,15 +7,19 @@ template. It is here to see how much the Go and MoonBit builds pay for
 being Wasm; see [the notes](../docs/sketch/ja/ts-hono-workers.md). It is
 deployed at <https://blog-ts.podhmo.workers.dev>.
 
-Only the Markdown and front matter parsers are ported from `../go`; the
-pages are TSX, so there is no port of `el` or `picoel`.
+The front matter parser is ported from `../go`, and the Markdown parser
+is MoonBit's, built for js (not Wasm); the pages are TSX, so there is no
+port of `el` or `picoel`.
 
 `pkg/`:
 
-- `tinymarkdown` — a port of `go/pkg/tinymarkdown`: `parse(src)` into a
-  tree of sections, paragraphs, lists, quotes, tables, and code blocks, and
-  `inlines(text)` into text, code spans, and links; its tests are the Go
-  test cases
+- `tinymarkdown` — `parse(src)` into a tree of sections, paragraphs,
+  lists, quotes, tables, and code blocks, and `inlines(text)` into text,
+  code spans, and links. `tinymarkdown.ts` has the types, and
+  re-exports them from `tinymarkdown.mjs`, the js build of
+  `moonbit/pkg/tinymarkdown/js`, which is committed: run `make ts` in
+  `../moonbit` after changing the MoonBit code (`make check` there fails
+  when it is stale). Its tests are the Go test cases
 - `tinyfrontmatter` — a port of `go/pkg/tinyfrontmatter`: `split(src)`
   into the `key: value` pairs of a leading `---` block and the rest; its
   tests are the Go test cases
