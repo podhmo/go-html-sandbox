@@ -43,8 +43,9 @@ It is an experiment in progress; see
   line; `serve` writes the response over it, the status and the
   headers (a tab between name and value) one per line, an empty line,
   and the body, and returns its length
-- `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for each
-  request, and `wrangler.jsonc` builds it
+- `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for a
+  request, keeping each 200 response to GET and HEAD by path for the
+  rest of the isolate's life, and `wrangler.jsonc` builds it
 - `compare` — compares the Go blog with the Worker path by path (status,
   `Content-Type`, and a diff of the body); `compare/cmd` is its native
   CLI, built on `moonbitlang/async`, and the only package that uses it
