@@ -14,7 +14,11 @@ type Env = {
   };
 };
 
-// The posts and documents are parsed once, when the isolate starts.
+// The posts and documents are parsed once, when the isolate starts. Parsing
+// them on the first request instead cut the reported startup time from
+// about 13 ms to 3 ms, but moved the work into requests: 9 of 25 took 18 to
+// 43 ms of CPU, against 1 of 25 (15 ms) this way. See
+// docs/sketch/ja/ts-hono-workers.md.
 const posts = loadPosts(sources.posts);
 const docs = loadDocs(sources.docs);
 const bySlug = new Map(posts.map((p) => [p.slug, p]));

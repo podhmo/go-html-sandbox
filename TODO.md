@@ -52,10 +52,17 @@
   - [x] MoonBit 版（`moonbit/tinymarkdown`）も同じように直す。
   - 完了の条件: `TODO.md` の入れ子がそのまま描画され、`make compare` で Go 版と
     一致する。
-- [ ] **ts 版のブログを本番にデプロイして、起動時間を測る**: `ts/`（Hono と
+- [x] **ts 版のブログを本番にデプロイして、起動時間を測る**: `ts/`（Hono と
   hono/jsx、Vite）は `vite preview` までで、デプロイしていない。`npm run deploy` で
   `blog-ts` としてデプロイし、起動時間とアップロードの大きさを MoonBit 版と比べる。
   - 完了の条件: 結果を[探索メモ](docs/sketch/ja/ts-hono-workers.md)に記録する。
+- [ ] **MoonBit 版のブログで、記事と文書の解析を isolate の起動時に移す**: 今は
+  最初のリクエストで解析している（`worker.mbt` の `Ref(None)`）。ts 版では、起動時に
+  解析すると Startup Time は 3 ms から約 13 ms に増えたが、新しい isolate に当たった
+  リクエストの CPU 時間は 18〜43 ms から 0〜3 ms に減った（[探索メモ](docs/sketch/ja/ts-hono-workers.md)の「デプロイ」）。
+  MoonBit 版でも同じことが起きるかを確かめる。
+  - 完了の条件: `make compare` で Go 版と一致したまま、Startup Time と `wrangler tail` の
+    `cpuTime` を、今の形と比べて[調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
 
 ### Future work
 

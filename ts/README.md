@@ -4,7 +4,8 @@ The blog written the plain way for Cloudflare Workers: TypeScript,
 [Hono](https://hono.dev/), and `hono/jsx`, with no Wasm, set up as Hono's
 [Cloudflare Workers + Vite](https://hono.dev/docs/getting-started/cloudflare-workers-vite)
 template. It is here to see how much the Go and MoonBit builds pay for
-being Wasm; see [the notes](../docs/sketch/ja/ts-hono-workers.md).
+being Wasm; see [the notes](../docs/sketch/ja/ts-hono-workers.md). It is
+deployed at <https://blog-ts.podhmo.workers.dev>.
 
 Only the Markdown and front matter parsers are ported from `../go`; the
 pages are TSX, so there is no port of `el` or `picoel`.
