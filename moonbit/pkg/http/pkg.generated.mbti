@@ -40,12 +40,12 @@ pub struct Form {
 pub struct Headers {
   fields : Array[(String, String)]
 }
+pub fn Headers::Headers(fields? : Array[(String, String)]) -> Self
 pub fn Headers::add(Self, String, String) -> Unit
 pub fn Headers::delete(Self, String) -> Unit
 pub fn Headers::get(Self, String) -> String?
 pub fn Headers::get_all(Self, String) -> Array[String]
 pub fn Headers::iter(Self) -> Iter[(String, String)]
-pub fn Headers::new(fields? : Array[(String, String)]) -> Self
 pub fn Headers::set(Self, String, String) -> Unit
 
 pub struct Request {
@@ -60,9 +60,9 @@ pub struct Request {
   env : Map[String, String]
   params : Map[String, String]
 }
+pub fn Request::Request(verb~ : String, url~ : String, headers? : Headers, body? : Bytes, env? : Map[String, String]) -> Self raise BadRequest
 pub fn Request::form(Self) -> Form raise BadRequest
 pub fn Request::json(Self) -> Json raise BadRequest
-pub fn Request::new(verb~ : String, url~ : String, headers? : Headers, body? : Bytes, env? : Map[String, String]) -> Self raise BadRequest
 pub fn Request::param(Self, String) -> String
 pub fn Request::query(Self) -> Values
 pub fn Request::text(Self) -> String
@@ -72,10 +72,10 @@ pub struct Response {
   headers : Headers
   body : Body
 }
+pub fn Response::Response(Int, headers? : Headers, body? : Body) -> Self
 pub fn Response::header(Self, String, String) -> Self
 pub fn Response::html(Int, String) -> Self
 pub fn Response::json(Int, Json) -> Self
-pub fn Response::new(Int, headers? : Headers, body? : Body) -> Self
 pub fn Response::redirect(Int, String) -> Self
 pub fn Response::text(Int, String) -> Self
 pub fn Response::typed(Int, String, Body) -> Self
@@ -86,8 +86,8 @@ pub struct Router {
   method_not_allowed : (Request, Array[String]) -> Response
   // private fields
 }
+pub fn Router::Router(decoded_path? : Bool, not_found? : (Request) -> Response, method_not_allowed? : (Request, Array[String]) -> Response) -> Self
 pub fn Router::handle(Self, String, (Request) -> Response) -> Unit
-pub fn Router::new(decoded_path? : Bool, not_found? : (Request) -> Response, method_not_allowed? : (Request, Array[String]) -> Response) -> Self
 pub fn Router::serve(Self, Request) -> Response
 
 pub struct Values {

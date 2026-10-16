@@ -117,7 +117,7 @@ pub fn Site::handle(self : Site, req : @http.Request) -> @http.Response {
 /// path, as the Go blog's route does with r.URL.Path, so "/docs%2F" is
 /// "/docs/".
 fn Site::new_router(self : Site) -> @http.Router {
-  let r = @http.Router::new(decoded_path=true, not_found=_ => {
+  let r = @http.Router(decoded_path=true, not_found=_ => {
     not_found("Page not found.")
   })
   r.handle("GET /{$}", _ => page(200, self.post_list()))
@@ -187,7 +187,7 @@ pub fn Site::render(
   } else {
     "\{escape(path, fragment=false)}?\{query}"
   }
-  let req = @http.Request::new(verb~, url~) catch {
+  let req = @http.Request(verb~, url~) catch {
     // escape writes only well-formed escapes.
     e => abort("\{e}")
   }
@@ -226,9 +226,9 @@ fn redirect(path : String, query~ : String) -> @http.Response {
     "\{escape(path, fragment=false)}?\{query}"
   }
   let location = hex_escape_non_ascii(url)
-  @http.Response::new(
+  @http.Response(
     307,
-    headers=@http.Headers::new(fields=[
+    headers=@http.Headers(fields=[
       ("location", location),
       ("content-type", "text/html; charset=utf-8"),
     ]),

@@ -36,13 +36,13 @@ pub struct Router {
 }
 
 ///|
-/// Router::new is a router without routes. not_found and
+/// Router::Router is a router without routes. not_found and
 /// method_not_allowed (given the methods the path allows) replace the
 /// default answers. Patterns match the path split at "/" and then
 /// decoded, as Go 1.22's ServeMux does, so "%2F" stays inside a segment;
 /// with decoded_path, they match the decoded path split at "/", as a
 /// handler routing on Go's r.URL.Path by hand does.
-pub fn Router::new(
+pub fn Router::Router(
   decoded_path~ : Bool = false,
   not_found~ : Handler = _ => Response::text(404, "404 page not found\n"),
   method_not_allowed~ : (Request, Array[String]) -> Response = (_, allow) => {

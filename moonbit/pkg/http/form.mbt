@@ -75,7 +75,7 @@ fn parse_multipart(
     }
     let data = rest[content_at:content_at + len]
     pos = pos + 2 + content_at + len + next.length()
-    let headers = Headers::new()
+    let headers = Headers()
     for line in head.split("\r\n") {
       if line.find(":") is Some(i) {
         headers.add(

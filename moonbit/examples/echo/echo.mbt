@@ -41,7 +41,7 @@ fn request_json(req : @http.Request) -> Json {
 
 ///|
 fn router() -> @http.Router {
-  let r = @http.Router::new()
+  let r = @http.Router()
   r.handle("GET /{$}", _ => @http.Response::html(200, page))
   r.handle("GET /hello/{name}", req => {
     let greeting = req.query().get("greeting").unwrap_or("hello")
@@ -75,7 +75,7 @@ fn router() -> @http.Router {
   r.handle("PUT /items/{id}", req => {
     @http.Response::json(200, { "id": req.param("id"), "body": req.text() })
   })
-  r.handle("DELETE /items/{id}", _ => @http.Response::new(204))
+  r.handle("DELETE /items/{id}", _ => @http.Response(204))
   r.handle("GET /redirect", req => {
     let to = req.query().get("to").unwrap_or("/")
     @http.Response::redirect(303, to)

@@ -39,7 +39,7 @@ fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
   let head = @utf8.decode_lossy(data[:head_end])
   let lines = head.split("\n").collect()
   guard lines.length() >= 4 else { raise @http.BadRequest("truncated request") }
-  let headers = @http.Headers::new()
+  let headers = @http.Headers()
   let env = Map([])
   let mut in_env = false
   for line in lines[2:] {
@@ -60,7 +60,7 @@ fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
       headers.add(name, value)
     }
   }
-  @http.Request::new(
+  @http.Request(
     verb=lines[0].to_owned(),
     url=lines[1].to_owned(),
     headers~,

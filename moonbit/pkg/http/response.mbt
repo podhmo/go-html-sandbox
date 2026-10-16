@@ -26,9 +26,9 @@ pub struct Response {
 }
 
 ///|
-pub fn Response::new(
+pub fn Response::Response(
   status : Int32,
-  headers~ : Headers = Headers::new(),
+  headers~ : Headers = Headers(),
   body~ : Body = Text(""),
 ) -> Response {
   { status, headers, body, }
@@ -59,22 +59,14 @@ pub fn Response::typed(
   content_type : String,
   body : Body,
 ) -> Response {
-  {
-    status,
-    headers: Headers::new(fields=[("content-type", content_type)]),
-    body,
-  }
+  { status, headers: Headers(fields=[("content-type", content_type)]), body, }
 }
 
 ///|
 /// Response::redirect is a redirect to location, with status (such as 302,
 /// 303, 307, or 308) and no body.
 pub fn Response::redirect(status : Int32, location : String) -> Response {
-  {
-    status,
-    headers: Headers::new(fields=[("location", location)]),
-    body: Text(""),
-  }
+  { status, headers: Headers(fields=[("location", location)]), body: Text(""), }
 }
 
 ///|

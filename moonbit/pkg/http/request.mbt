@@ -36,13 +36,13 @@ pub struct Request {
 }
 
 ///|
-/// Request::new parses url, either absolute ("https://host/path?q") or
+/// Request::Request parses url, either absolute ("https://host/path?q") or
 /// only the path and the query, and decodes the path. It raises
 /// BadRequest when the path has a malformed escape.
-pub fn Request::new(
+pub fn Request::Request(
   verb~ : String,
   url~ : String,
-  headers~ : Headers = Headers::new(),
+  headers~ : Headers = Headers(),
   body~ : Bytes = b"",
   env~ : Map[String, String] = {},
 ) -> Request raise BadRequest {

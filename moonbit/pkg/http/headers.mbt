@@ -9,7 +9,7 @@ pub struct Headers {
 }
 
 ///|
-pub fn Headers::new(fields~ : Array[(String, String)] = []) -> Headers {
+pub fn Headers::Headers(fields~ : Array[(String, String)] = []) -> Headers {
   { fields, }
 }
 

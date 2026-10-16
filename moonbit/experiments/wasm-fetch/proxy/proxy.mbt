@@ -29,7 +29,7 @@ fn fetch(url : String) -> (String, String) {
 
 ///|
 let app : @http.Router = {
-  let r = @http.Router::new()
+  let r = @http.Router()
   r.handle("GET /proxy", req => {
     let url = req.query().get("url").unwrap_or("https://example.com/")
     let (status, body) = fetch(url)

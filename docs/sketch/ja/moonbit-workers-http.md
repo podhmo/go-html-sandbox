@@ -34,7 +34,7 @@ pub struct Request {
   env : Map[String, String]     // Worker の変数など、要求の外から渡るもの
   params : Map[String, String]  // Router が埋める wildcard の値
 }
-pub fn Request::new(verb~ : String, url~ : String, headers? : Headers, body? : Bytes, env? : Map[String, String]) -> Self raise BadRequest
+pub fn Request::Request(verb~ : String, url~ : String, headers? : Headers, body? : Bytes, env? : Map[String, String]) -> Self raise BadRequest
 pub fn Request::query(Self) -> Values
 pub fn Request::param(Self, String) -> String
 pub fn Request::text(Self) -> String
@@ -43,11 +43,11 @@ pub fn Request::form(Self) -> Form raise BadRequest
 
 pub(all) enum Body { Text(String); Binary(Bytes) }
 pub struct Response { status : Int; headers : Headers; body : Body }
-pub fn Response::text / html / json / typed / redirect / new
+pub fn Response::Response / text / html / json / typed / redirect
 pub fn Response::header(Self, String, String) -> Self   // つないで書ける
 
 pub struct Router { ... }
-pub fn Router::new(decoded_path? : Bool, not_found? : Handler, method_not_allowed? : (Request, Array[String]) -> Response) -> Self
+pub fn Router::Router(decoded_path? : Bool, not_found? : Handler, method_not_allowed? : (Request, Array[String]) -> Response) -> Self
 pub fn Router::handle(Self, String, Handler) -> Unit
 pub fn Router::serve(Self, Request) -> Response
 ```
@@ -62,7 +62,7 @@ pub fn Router::serve(Self, Request) -> Response
 Go 1.22 の `ServeMux` のパターンをまねた。`"[METHOD ]/path"` で、セグメントはリテラル、`{name}`（1 セグメント、空は不可）、`{name...}`（残り全部）、`{$}`（そこで終わる）。`/` で終わるパターンは、その下のすべてのパスに当たる。
 
 - GET のパターンは HEAD にも当たる。
-- パスに当たるパターンが、ほかのメソッドのものしかなければ 405 と `Allow` を返す。何にも当たらなければ 404。どちらも `Router::new` の引数で差し替えられる。
+- パスに当たるパターンが、ほかのメソッドのものしかなければ 405 と `Allow` を返す。何にも当たらなければ 404。どちらも `Router::Router` の引数で差し替えられる。
 - **優先順位**: より狭いパターンが勝つ。セグメントごとに、リテラル > `{$}` > `{name}` > `{name...}` > `/` で終わる部分木の順に比べ、同じならメソッドを指定したほうが勝つ。登録の順番は、同じ強さのときだけ効く。Go は重なりがあいまいなパターンを登録すると panic するが、こちらは登録の順で決める。
 - **パスの分け方**: 既定では、エスケープしたままのパスを `/` で分けてから、セグメントごとにデコードする（Go 1.22 と同じ）。`/posts/a%2Fb` の `{slug}` は `a/b` になる。`decoded_path=true` にすると、デコードした後のパスを `/` で分ける。ブログは後者を使う（下の「ブログの載せ替え」）。
 - 足りないもの: `{slug}.md` のような、wildcard の後ろに続く接尾辞のパターンはない（ブログはハンドラーで接尾辞を見ている）。ホスト名でのルーティング、`/a` から `/a/` への自動のリダイレクト、ミドルウェアの仕組みもない。ミドルウェアは、ハンドラーを包む関数を書けば足りる（ブログのメソッドの確認とリダイレクトがそう）。
@@ -95,7 +95,7 @@ status \n (name \t value \n)* \n body
 
 ```moonbit
 let app : @http.Router = {
-  let r = @http.Router::new()
+  let r = @http.Router()
   r.handle("GET /hello/{name}", req => @http.Response::text(200, "hello, \{req.param("name")}\n"))
   r.handle("POST /form", req => { ... req.form() ... })
   r
@@ -202,7 +202,7 @@ PR #31 と同じ測り方（`fetch` に `Request` を渡して本文を読み終
 - **`method` は予約語**（PR #31 と同じ）。`Request` のフィールドも `verb` にした。
 - `Ref` は、`site` パッケージに同じ名前の型（リンクの参照）があるので、`Ref[T]` と書くと `site` の `Ref` になってエラーになった。`Site` の遅延初期化は `mut` のフィールドにした。
 - `typealias` の書き方は `pub type Handler = (Request) -> Response` だった（`pub typealias ... as ...` は構文エラー）。
-- 関数を値に持つ `pub struct` のフィールドを `mut` にすると、パッケージの中で書き換えないので `unused_mut` の警告（このリポジトリではエラー扱い）になる。差し替えは `Router::new` の省略可能な引数で受けることにした。
+- 関数を値に持つ `pub struct` のフィールドを `mut` にすると、パッケージの中で書き換えないので `unused_mut` の警告（このリポジトリではエラー扱い）になる。差し替えは `Router::Router` の省略可能な引数で受けることにした。
 - `match` の腕にそのまま `guard` は書けない（`Using guard statement in the action part of a matching case directly is not allowed`）。`if !(... is ...) { return None }` にした。
 
 ## ライブラリとして出すときに考えること
