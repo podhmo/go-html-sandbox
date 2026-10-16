@@ -37,15 +37,28 @@ Worker の形で止まったのは 11 ms だけだった。
 
 ## Worker では、つながらない
 
+先に、Worker で wasm がどう動くかを書いておく。
+
+Cloudflare Workers で JS や wasm を動かしているのは、[workerd](https://github.com/cloudflare/workerd) というランタイムだ。
+Chrome と同じ V8 を使っていて、オープンソースになっている。
+本番の Workers も、手元の `wrangler dev` も、中で動いているのはこの workerd だ。
+
+ブラウザーでは、ページの JS が `WebAssembly.instantiateStreaming(fetch(...), {}, { builtins: ["js-string"], ... })` のように、自分で wasm をコンパイルする。
+だから、builtins を付けるかどうかをページの側で決められる。
+
+Worker では、wasm は JS のファイルから `import wasm from "./app.wasm"` で読み込む。
+コンパイルするのはこちらのコードではなく、Worker を読み込むときの workerd だ。
+しかも、Workers ではバイト列から実行時に wasm をコンパイルすること（`new WebAssembly.Module(bytes, options)`）も許されていない。
+つまり、Worker の側には、コンパイルのオプションを渡す口がない。
+
+そして workerd は、`import` した wasm を builtins なしでコンパイルする。
 同じ `.wasm` を Worker で `import` すると、インスタンスを作るところで失敗する。
 
 ```
 TypeError: WebAssembly.Instance(): Import #0 "_": module is not an object or function
 ```
 
-workerd は `import` した wasm を builtins なしでコンパイルする。
-すると、ブラウザーでは消えた 69 個の import が、文字列リテラルと `wasm:js-string` の関数として残る。
-コンパイルのオプションを渡す口もない。
+ブラウザーでは消えた 69 個の import が、文字列リテラルと `wasm:js-string` の関数として残ったままになるからだ。
 
 このブログの Worker が、[線形メモリで文字列を受け渡す](./2026-10-19-moonbit-memory.md)小さな ABI を持っているのは、これを避けるためだった。
 その結果、ブログの Worker の wasm（ABI の `serve` を export する）と、ブラウザーの wasm（文字列をそのまま受け渡す）は、別のビルドになる。
@@ -59,6 +72,8 @@ workerd は `import` した wasm を builtins なしでコンパイルする。
 
 workerd に、互換性フラグ `wasm_esm_integration_builtins` が入った（[PR #7685](https://github.com/cloudflare/workerd/pull/7685)、2026-10-12 マージ）。
 `import` した wasm を、ブラウザーと同じ `js-string` builtins を付けてコンパイルするフラグだ。
+互換性フラグは、workerd の振る舞いを Worker ごとに選ぶスイッチで、`wrangler.jsonc` の `compatibility_flags` に書く。
+コンパイルのオプションを渡す口がない代わりに、workerd の側に「builtins を付けてコンパイルする」と頼めるようになる。
 これが効けば、ブログの Worker でも文字列をそのまま受け渡せて、ABI はいらなくなる。
 そうなれば、Worker とブラウザーで同じ `.wasm` を使える。
 
