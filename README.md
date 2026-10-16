@@ -7,6 +7,9 @@ than one language.
   a tiny Markdown parser, and a blog built on them
 - [`moonbit/`](moonbit/README.md) — the blog in MoonBit, as Wasm for
   Cloudflare Workers (an experiment in progress)
+- [`ts/`](ts/README.md) — the blog written the plain way for Workers, in
+  TypeScript with Hono and `hono/jsx`, without Wasm, to compare with the
+  Wasm builds
 
 Shared across implementations:
 
