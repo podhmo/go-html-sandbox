@@ -38,8 +38,9 @@ It is an experiment in progress; see
   are the Go test cases
 - `worker` — the Wasm entry point: `serve` and the linear memory
   exported, nothing imported. The host writes the request into the
-  memory as UTF-8, `BASE_URL`, the method, the query, and the path, one
-  per line; `serve` writes the response over it, the status and the
+  memory as UTF-8, `BASE_URL`, the method, the query, and the path (still
+  percent-encoded; the Wasm decodes it, as Go's net/http does), one per
+  line; `serve` writes the response over it, the status and the
   headers (a tab between name and value) one per line, an empty line,
   and the body, and returns its length
 - `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for each
