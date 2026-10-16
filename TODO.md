@@ -52,4 +52,7 @@
     今と比べる。
   - 完了の条件: `make compare` で Go 版と一致したまま、結果を
     [調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
+  - 探索の記録は[探索メモ](docs/sketch/ja/moonbit-workers-adapter.md)にある。
+    線形メモリに UTF-8 でまとめて渡す案、`moon-wasm-opt -Oz`、workerd の
+    `wasm_esm_integration_builtins` フラグを使う案などを、一つずつ確かめる。
 

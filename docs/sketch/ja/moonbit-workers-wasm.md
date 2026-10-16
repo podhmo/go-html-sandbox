@@ -328,6 +328,10 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 - 比較スクリプトで、Go 版の `/` と `/docs/` からたどれる記事 4 本と文書 7 本とその `.md` 版、`/`、`/docs/`、`/docs`、`/posts/`、`/favicon.svg`、`/site.css?v=...`、`//posts/../`、存在しないパスの 30 パスを、ローカルの Go 版（同じ `-base-url`）とデプロイした `blog-moonbit` と `blog` のそれぞれで比べ、すべて一致した。`blog-moonbit` へのデプロイ直後の 1 回だけ 2 パスが一致しなかったが、続けて 3 回実行するとすべて一致した。どのパスだったかは記録していない。
 - サイズと起動時間で MoonBit 版が上回り、出力は Go 版と同じなので、`blog` は MoonBit 版にした。Go 版は、サーバーとしての `go run ./examples/blog` と比較の基準として残す。
 
+## アダプターの見直し
+
+受け渡しの方法と export / import の形を見直す探索は、[別のメモ](moonbit-workers-adapter.md)に記録した（2026-10-16）。線形メモリに UTF-8 でまとめて渡すと、いちばん大きいページの受け渡しにかかる時間は約 390 µs から約 50 µs に減る。workerd に js-string builtins を有効にするフラグが入ったことも、そちらに書いた。
+
 ## 次の一歩
 
 1. （済み）トップレベルに `moonbit/` を作り、spike の ABI と `worker.mjs` を置く。「`moonbit/` への取り込み」の節を参照。
