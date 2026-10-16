@@ -1,0 +1,1 @@
+{ "name": "spike-v0", "main": "./worker-v0.mjs", "compatibility_date": "2026-10-01", "vars": { "BASE_URL": "https://blog.podhmo.workers.dev" } }

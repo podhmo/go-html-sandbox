@@ -27,6 +27,22 @@
   - 完了の条件: `make compare` で Go 版と一致したまま、記事を 1 本足しても Wasm の
     サイズが変わらない。サイズと処理時間の変化を
     [調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
+- [x] **MoonBit の Workers 用アダプターを汎用化する**: 今のアダプターはブログ専用で、
+  要求として `BASE_URL`、メソッド、クエリー、パスしか渡さない。POST の本文、
+  ヘッダー、クエリーの解析、フォーム（urlencoded と multipart）、パスの
+  パターンによるルーティングを、ライブラリとして切り出せる形で使えるようにする。
+  Go 版や net/http に寄せる必要はなく、同じような機能が使えればよい。
+  [issue #33](https://github.com/podhmo/html-sandbox/issues/33)、
+  [PR #31](https://github.com/podhmo/html-sandbox/pull/31) の知見を踏まえる。
+  - 完了の条件: POST、クエリー、本文、フォームを扱う例が `wrangler dev` で動き、
+    ブログは `make compare` で Go 版と一致したまま。分かったことを
+    [探索メモ](docs/sketch/ja/moonbit-workers-http.md)に記録する。
+- [ ] **MoonBit の http ライブラリから非同期の I/O を使えるようにする**: `serve` は
+  同期なので、ハンドラーから KV、R2、D1、Static Assets、外への `fetch` を呼べない。
+  JSPI（`WebAssembly.Suspending` / `promising`）で Wasm から JS の `fetch` を待つ形が、
+  spike（`moonbit/experiments/wasm-fetch`）では Node と `wrangler dev` で動いた。これをライブラリに取り込み、
+  本番の Workers で確かめる。上の Static Assets の TODO の「文章を Wasm にどう渡すか」とつながる。
+  [探索メモ](docs/sketch/ja/moonbit-workers-http.md)の「ライブラリとして出すときに考えること」を参照。
 - [x] **tinymarkdown: ネストした箇条書きを扱う**: ブログで `TODO.md` をそのまま
   読めるように、インデントした `- ` を親の項目の子のリストにする。今は
   `List.Items` が文字列の並びなので、子の項目が親と同じ階層に並んでしまう

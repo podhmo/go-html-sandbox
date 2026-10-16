@@ -39,7 +39,7 @@ fn Ref::parse(raw : String) -> Ref? {
     return None
   }
   let (rest, fragment) = match raw.find("#") {
-    Some(i) => (raw[:i], unescape(raw[i + 1:]))
+    Some(i) => (raw[:i], @http.unescape(raw[i + 1:]))
     None => (raw, Some(""))
   }
   guard fragment is Some(fragment) else { return None }
@@ -80,53 +80,8 @@ fn Ref::parse(raw : String) -> Ref? {
   } else {
     rest
   }
-  guard unescape(rest) is Some(path) else { return None }
+  guard @http.unescape(rest) is Some(path) else { return None }
   Some({ scheme, path, raw_query, fragment, })
-}
-
-///|
-/// unescape decodes %XX escapes, or returns None for a malformed one.
-fn unescape(s : StringView) -> String? {
-  guard s.contains("%") else { return Some(s.to_owned()) }
-  let bytes = Buffer()
-  for i = 0; i < s.length(); {
-    if s[i] == '%' {
-      guard i + 2 < s.length() &&
-        hex_value(s[i + 1]) is Some(hi) &&
-        hex_value(s[i + 2]) is Some(lo) else {
-        return None
-      }
-      bytes.write_byte((hi * 16 + lo).to_byte())
-      continue i + 3
-    }
-    let end = match s[i:].find("%") {
-      Some(j) => i + j
-      None => s.length()
-    }
-    bytes.write_bytes(@utf8.encode(s[i:end]))
-    continue end
-  }
-  Some(@utf8.decode_lossy(bytes.to_bytes()))
-}
-
-///|
-/// unescape_path decodes the path of a request URL as Go's net/http does
-/// before a handler sees it: None for a malformed %XX escape, which gets
-/// 400, and bytes that are not UTF-8 replaced with U+FFFD, where Go keeps
-/// them as they are.
-pub fn unescape_path(raw : String) -> String? {
-  unescape(raw)
-}
-
-///|
-fn hex_value(c : UInt16) -> Int32? {
-  let n = c.to_int()
-  match c {
-    '0'..<='9' => Some(n - '0'.to_int())
-    'a'..<='f' => Some(n - 'a'.to_int() + 10)
-    'A'..<='F' => Some(n - 'A'.to_int() + 10)
-    _ => None
-  }
 }
 
 ///|

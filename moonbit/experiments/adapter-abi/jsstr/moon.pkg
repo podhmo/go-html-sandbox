@@ -1,0 +1,16 @@
+import {
+  "podhmo/blog/site",
+  "podhmo/blog/http",
+}
+
+supported_targets = "+wasm-gc"
+
+options(
+  link: {
+    "wasm-gc": {
+      "exports": [ "serve" ],
+      "use-js-builtin-string": true,
+      "imported-string-constants": "wasm:js/string-constants",
+    },
+  },
+)

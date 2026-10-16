@@ -1,0 +1,1 @@
+{ "name": "wasm-fetch-detect", "main": "./detect.mjs", "compatibility_date": "2026-10-01" }

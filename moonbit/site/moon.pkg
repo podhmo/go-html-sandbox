@@ -6,9 +6,11 @@ import {
   "podhmo/blog/posts",
   "podhmo/blog/repodocs",
   "podhmo/blog/assets",
+  "podhmo/blog/http",
   "moonbitlang/core/encoding/utf8",
 }
 
 import {
   "podhmo/blog/el",
+  "podhmo/blog/http",
 } for "test"

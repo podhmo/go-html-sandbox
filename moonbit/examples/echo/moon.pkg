@@ -1,0 +1,12 @@
+import {
+  "podhmo/blog/http",
+  "podhmo/blog/http/wasm",
+}
+
+supported_targets = "+wasm-gc"
+
+options(
+  link: {
+    "wasm-gc": { "exports": [ "serve" ], "export-memory-name": "memory" },
+  },
+)

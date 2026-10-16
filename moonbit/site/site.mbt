@@ -1,29 +1,17 @@
 // The blog as the Worker serves it: a port of the Go blog's server.go,
-// without the HTTP server. render answers a path with a Response, which
-// the worker package hands to the host.
+// without the HTTP server. Site::handle answers an @http.Request with an
+// @http.Response, routing with an @http.Router.
 
 ///|
-/// Response is what the site answers to a request.
-pub struct Response {
-  status : Int32
-  headers : Array[(String, String)]
-  body : String
+/// page renders n as a full HTML document with status.
+fn page(status : Int32, n : @el.Node) -> @http.Response {
+  @http.Response::html(status, "<!doctype html>\n\{@el.render_html(n)}")
 }
 
 ///|
-/// Response::page renders n as a full HTML document with status.
-fn Response::page(status : Int32, n : @el.Node) -> Response {
-  {
-    status,
-    headers: [("content-type", "text/html; charset=utf-8")],
-    body: "<!doctype html>\n\{@el.render_html(n)}",
-  }
-}
-
-///|
-/// Response::text is body as plain text with status.
-pub fn Response::text(status : Int32, body : String) -> Response {
-  { status, headers: [("content-type", "text/plain; charset=utf-8")], body, }
+/// not_found is the 404 page saying message.
+fn not_found(message : String) -> @http.Response {
+  page(404, error_page(404, message))
 }
 
 ///|
@@ -36,6 +24,7 @@ struct Site {
   docs : Array[Doc]
   by_path : Map[String, Doc]
   by_source : Map[String, Doc]
+  mut router : @http.Router? // made on the first request
 }
 
 ///|
@@ -77,6 +66,7 @@ pub fn Site::Site(
     docs,
     by_path,
     by_source,
+    router: None,
   }
 }
 
@@ -91,71 +81,117 @@ pub fn Site::embedded(base_url~ : String) -> Site raise LoadError {
 }
 
 ///|
-/// render answers the request for path, with query the raw query string
-/// (without "?"), which only redirects keep. Like the Go blog, it answers
-/// only GET and HEAD (verb is the HTTP method; `method` is reserved), and
-/// any other method gets the 404 page.
+/// handle answers req. Like the Go blog, it answers only GET and HEAD, and
+/// any other method gets the 404 page, before the redirects.
+pub fn Site::handle(self : Site, req : @http.Request) -> @http.Response {
+  if req.verb != "GET" && req.verb != "HEAD" {
+    return not_found("Page not found.")
+  }
+  // Redirect like ServeMux: to the cleaned path, and from a directory
+  // without its trailing slash.
+  let path = req.path
+  let c = clean_path(path)
+  if c != path || c == "/docs" {
+    return redirect(
+      if c == "/docs" {
+        "/docs/"
+      } else {
+        c
+      },
+      query=req.raw_query,
+    )
+  }
+  let router = match self.router {
+    Some(r) => r
+    None => {
+      let r = self.new_router()
+      self.router = Some(r)
+      r
+    }
+  }
+  router.serve(req)
+}
+
+///|
+/// new_router routes the paths of the Go blog. It matches the decoded
+/// path, as the Go blog's route does with r.URL.Path, so "/docs%2F" is
+/// "/docs/".
+fn Site::new_router(self : Site) -> @http.Router {
+  let r = @http.Router::new(decoded_path=true, not_found=_ => {
+    not_found("Page not found.")
+  })
+  r.handle("GET /{$}", _ => page(200, self.post_list()))
+  r.handle("GET /docs/{$}", _ => page(200, self.doc_list()))
+  // Pages link to it without a version, so it is cached for a day.
+  r.handle("GET /favicon.svg", _ => {
+    @http.Response::typed(200, "image/svg+xml", Text(@assets.favicon_svg)).header(
+      "cache-control", "public, max-age=86400",
+    )
+  })
+  // Pages link to it with a version in the query, so it can be cached for
+  // long.
+  r.handle("GET /site.css", _ => {
+    @http.Response::typed(
+      200,
+      "text/css; charset=utf-8",
+      Text(@assets.site_css),
+    ).header("cache-control", "public, max-age=31536000, immutable")
+  })
+  // A pattern cannot end in ".md" after a wildcard, so the handlers look
+  // at the suffix.
+  r.handle("GET /posts/{slug}", req => {
+    let slug = req.param("slug")
+    match slug {
+      [.. s, .. ".md"] =>
+        match self.by_slug.get(s.to_owned()) {
+          Some(p) => markdown(p.markdown)
+          None => not_found("Post not found.")
+        }
+      _ =>
+        match self.by_slug.get(slug) {
+          Some(p) => page(200, self.post_page(p))
+          None => not_found("Post not found.")
+        }
+    }
+  })
+  r.handle("GET /docs/{path...}", req => {
+    let path = req.param("path")
+    match path {
+      [.. p, .. ".md"] =>
+        match self.by_path.get(p.to_owned()) {
+          Some(d) => markdown(d.markdown)
+          None => not_found("Document not found.")
+        }
+      _ =>
+        match self.by_path.get(path) {
+          Some(d) => page(200, self.doc_page(d))
+          None => not_found("Document not found.")
+        }
+    }
+  })
+  r
+}
+
+///|
+/// render answers the request for path, a decoded path, with query the
+/// raw query string (without "?"), and verb the method. It is handle for
+/// a request made of them.
 pub fn Site::render(
   self : Site,
   path : String,
   query~ : String = "",
   verb~ : String = "GET",
-) -> Response {
-  if verb != "GET" && verb != "HEAD" {
-    return Response::page(404, error_page(404, "Page not found."))
+) -> @http.Response {
+  let url = if query == "" {
+    escape(path, fragment=false)
+  } else {
+    "\{escape(path, fragment=false)}?\{query}"
   }
-  // Redirect like ServeMux: to the cleaned path, and from a directory
-  // without its trailing slash.
-  let c = clean_path(path)
-  if c != path || c == "/docs" {
-    return Response::redirect(if c == "/docs" { "/docs/" } else { c }, query~)
+  let req = @http.Request::new(verb~, url~) catch {
+    // escape writes only well-formed escapes.
+    e => abort("\{e}")
   }
-  match path {
-    "/" => Response::page(200, self.post_list())
-    "/docs/" => Response::page(200, self.doc_list())
-    "/favicon.svg" =>
-      // Pages link to it without a version, so it is cached for a day.
-      {
-        status: 200,
-        headers: [
-          ("content-type", "image/svg+xml"),
-          ("cache-control", "public, max-age=86400"),
-        ],
-        body: @assets.favicon_svg,
-      }
-    "/site.css" =>
-      // Pages link to it with a version in the query, so it can be cached
-      // for long.
-      {
-        status: 200,
-        headers: [
-          ("content-type", "text/css; charset=utf-8"),
-          ("cache-control", "public, max-age=31536000, immutable"),
-        ],
-        body: @assets.site_css,
-      }
-    [.. "/posts/", .. slug] if !slug.contains("/") && slug is [.. s, .. ".md"] =>
-      match self.by_slug.get(s.to_owned()) {
-        Some(p) => Response::markdown(p.markdown)
-        None => Response::page(404, error_page(404, "Post not found."))
-      }
-    [.. "/posts/", .. slug] if slug != "" && !slug.contains("/") =>
-      match self.by_slug.get(slug.to_owned()) {
-        Some(p) => Response::page(200, self.post_page(p))
-        None => Response::page(404, error_page(404, "Post not found."))
-      }
-    [.. "/docs/", .. p] if p is [.. p, .. ".md"] =>
-      match self.by_path.get(p.to_owned()) {
-        Some(d) => Response::markdown(d.markdown)
-        None => Response::page(404, error_page(404, "Document not found."))
-      }
-    [.. "/docs/", .. p] =>
-      match self.by_path.get(p.to_owned()) {
-        Some(d) => Response::page(200, self.doc_page(d))
-        None => Response::page(404, error_page(404, "Document not found."))
-      }
-    _ => Response::page(404, error_page(404, "Page not found."))
-  }
+  self.handle(req)
 }
 
 ///|
@@ -171,36 +207,33 @@ fn clean_path(p : String) -> String {
 }
 
 ///|
-/// Response::markdown sends src as text. nosniff keeps browsers from
-/// guessing that Markdown containing tags is HTML.
-fn Response::markdown(src : String) -> Response {
-  {
-    status: 200,
-    headers: [
-      ("content-type", "text/markdown; charset=utf-8"),
-      ("x-content-type-options", "nosniff"),
-    ],
-    body: src,
-  }
+/// markdown sends src as text. nosniff keeps browsers from guessing that
+/// Markdown containing tags is HTML.
+fn markdown(src : String) -> @http.Response {
+  @http.Response::typed(200, "text/markdown; charset=utf-8", Text(src)).header(
+    "x-content-type-options", "nosniff",
+  )
 }
 
 ///|
-/// Response::redirect is a 307 to path, a cleaned path, with query, as
-/// Go's http.Redirect writes it for a GET: the Location header and a short
+/// redirect is a 307 to path, a cleaned path, with query, as Go's
+/// http.Redirect writes it for a GET: the Location header and a short
 /// HTML body linking to it.
-fn Response::redirect(path : String, query~ : String) -> Response {
+fn redirect(path : String, query~ : String) -> @http.Response {
   let url = if query == "" {
     escape(path, fragment=false)
   } else {
     "\{escape(path, fragment=false)}?\{query}"
   }
   let location = hex_escape_non_ascii(url)
-  {
-    status: 307,
-    headers: [
+  @http.Response::new(
+    307,
+    headers=@http.Headers::new(fields=[
       ("location", location),
       ("content-type", "text/html; charset=utf-8"),
-    ],
-    body: "<a href=\"\{@el.render_html(@el.Text(url))}\">Temporary Redirect</a>.\n\n",
-  }
+    ]),
+    body=Text(
+      "<a href=\"\{@el.render_html(@el.Text(url))}\">Temporary Redirect</a>.\n\n",
+    ),
+  )
 }

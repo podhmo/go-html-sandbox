@@ -14,10 +14,11 @@ It is an experiment in progress; see
   `table`, ...) as `el` nodes; `date` takes a `YYYY-MM-DD` string
 - `site` — the blog, ported from the Go blog's `internal/site`:
   `load_posts` and `load_docs` read the embedded files, and
-  `Site::render(path)` returns the response for a path (status, headers,
-  and body; methods other than GET and HEAD get the 404 page) for every route of the Go blog: `/`, `/posts/{slug}` and
-  `/docs/{path}` with their `.md` sources, `/docs/`, `/favicon.svg`,
-  `/site.css`, the redirects to cleaned paths, and the 404 pages
+  `Site::handle(req)` answers an `@http.Request` (methods other than GET
+  and HEAD get the 404 page) for every route of the Go blog: `/`,
+  `/posts/{slug}` and `/docs/{path}` with their `.md` sources, `/docs/`,
+  `/favicon.svg`, `/site.css`, the redirects to cleaned paths, and the
+  404 pages, routing with an `@http.Router`
 - `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
   `site.css` that pages put in its URL, generated into
   `assets/embedded.mbt` by `scripts/embed-assets.sh`
@@ -36,16 +37,29 @@ It is an experiment in progress; see
   into the `key: value` pairs of a leading `---` block (`None` without
   one) and the rest, raising `SplitError` on a malformed block; its tests
   are the Go test cases
-- `worker` — the Wasm entry point: `serve` and the linear memory
-  exported, nothing imported. The host writes the request into the
-  memory as UTF-8, `BASE_URL`, the method, the query, and the path (still
-  percent-encoded; the Wasm decodes it, as Go's net/http does), one per
-  line; `serve` writes the response over it, the status and the
-  headers (a tab between name and value) one per line, an empty line,
-  and the body, and returns its length
-- `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for a
-  request, keeping each 200 response to GET and HEAD by path for the
-  rest of the isolate's life, and `wrangler.jsonc` builds it
+- `http` — a small HTTP library, independent of the host: `Request`
+  (method, URL, headers, body, and the host's variables, with the query,
+  text, JSON, and urlencoded or multipart forms parsed on demand),
+  `Response` with a text or binary body, and `Router`, which routes by
+  patterns like Go 1.22's ServeMux (`GET /posts/{slug}`,
+  `/files/{path...}`, `/{$}`), answering 405 with `Allow` and 404
+- `http/wasm` — runs an `http` handler as a Wasm export:
+  `handle(n, handler)` reads the request the host wrote into the linear
+  memory as UTF-8 (the method, the URL, the headers, the variables, and
+  the body as bytes) and writes the response over it; `adapter.mjs` is
+  the host side, `wasmApp(module)`, which gives a `fetch` handler
+- `worker` — the blog's Wasm entry point: `serve` and the linear memory
+  exported, nothing imported; `serve` hands the request to
+  `Site::handle` through `http/wasm`
+- `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm with
+  `http/wasm/adapter.mjs`, keeping each 200 response to GET and HEAD by
+  path for the rest of the isolate's life, and `wrangler.jsonc` builds it
+- `experiments` — spikes kept to reproduce the numbers in the notes,
+  each a module of its own outside the blog's (see its README)
+- `examples/echo` — an example of `http` outside the blog (methods,
+  wildcards, the query, text, JSON and form bodies, binary responses,
+  cookies, and variables), run on Node by `make test-echo` and with
+  wrangler by `make dev-echo`
 - `compare` — compares the Go blog with the Worker path by path (status,
   `Content-Type`, and a diff of the body); `compare/cmd` is its native
   CLI, built on `moonbitlang/async`, and the only package that uses it
@@ -53,8 +67,9 @@ It is an experiment in progress; see
 Strings cross between JS and Wasm as UTF-8 in the Wasm's memory because
 Workers compiles imported Wasm modules without the JS string builtins,
 which `use-js-builtin-string` relies on. moon emits one page of linear
-memory even for wasm-gc and leaves it unused; `worker` reads and writes
-it with inline Wasm.
+memory even for wasm-gc and leaves it unused; `http/wasm` reads and
+writes it with inline Wasm. See
+[the notes on the http library](../docs/sketch/ja/moonbit-workers-http.md).
 
 ## Development
 
@@ -64,11 +79,13 @@ From `moonbit/` (`make help` lists the targets):
 make test     # moon test
 make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm, and after wasm-opt -Oz, workers/build/app.wasm
 make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test, moon info
+make test-echo  # the echo example on Node through http/wasm/adapter.mjs
 ```
 
-`worker` is built for wasm-gc only (its host imports do not compile on
-native) and `compare/cmd` for native only (async's I/O is native only),
-so the CLI and its dependency stay out of the Wasm.
+`worker`, `http/wasm`, and `examples/echo` are built for wasm-gc only
+(their inline Wasm does not compile on native) and `compare/cmd` for
+native only (async's I/O is native only), so the CLI and its dependency
+stay out of the Wasm.
 
 MoonBit has no `go:embed`, so `scripts/embed.sh` writes the posts into
 `posts/embedded.mbt`, and `TODO.md` and `docs/**/*.md` into

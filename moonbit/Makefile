@@ -23,7 +23,7 @@ DOCS := ../TODO.md ../docs
 # The Go blog's site.css and favicon.svg.
 ASSETS := ../go/examples/blog/internal/site
 
-.PHONY: embed build test check dev deploy compare clean help
+.PHONY: embed build test check dev deploy compare build-echo test-echo dev-echo clean help
 
 ## embed: regenerate the embedded.mbt files: the Go blog's posts, the repository's documents, and the Go blog's site.css and favicon.svg
 # The packages' moon.pkg run the same scripts, but moon reruns them only
@@ -68,9 +68,28 @@ deploy:
 compare:
 	moon run --target native compare/cmd -- $(GO_URL) $(MOONBIT_URL) $(PATHS)
 
+# The echo example of the http library, in examples/echo.
+ECHO_WASM := _build/wasm-gc/release/build/examples/echo/echo.wasm
+ECHO_APP_WASM := examples/echo/build/echo.wasm
+
+## build-echo: build the echo example of the http library into examples/echo/build/echo.wasm
+build-echo:
+	moon build --target wasm-gc --release
+	@mkdir -p $(dir $(ECHO_APP_WASM))
+	$(WASM_OPT) $(WASM_OPT_FLAGS) $(ECHO_WASM) -o $(ECHO_APP_WASM)
+	@ls -l $(ECHO_WASM) $(ECHO_APP_WASM)
+
+## test-echo: run the echo example on Node through http/wasm/adapter.mjs
+test-echo: build-echo
+	node --test examples/echo/test.mjs
+
+## dev-echo: serve the echo example on localhost:PORT with wrangler
+dev-echo:
+	cd examples/echo && $(WRANGLER) dev --port $(PORT)
+
 ## clean: remove the build output
 clean:
-	rm -rf _build workers/build posts/embedded.mbt repodocs/embedded.mbt assets/embedded.mbt
+	rm -rf _build workers/build examples/echo/build posts/embedded.mbt repodocs/embedded.mbt assets/embedded.mbt
 
 help:
 	@sed -n 's/^## //p' $(MAKEFILE_LIST)
