@@ -88,9 +88,15 @@ fn ogp(meta : PageMeta) -> Array[@el.Node] {
 
 ///|
 /// post_list shows each post as a card: the title links to the post and
-/// the date below it is muted by hgroup.
+/// the date below it is muted by hgroup. The heading says, muted the same
+/// way, that the posts are written by AI.
 fn Site::post_list(self : Site) -> @el.Node {
-  let body = [@picoel.h1([@picoel.text("Posts")])]
+  let body = [
+    @picoel.hgroup([
+      @picoel.h1([@picoel.text("Posts")]),
+      @picoel.p([@picoel.text("blog by AI")]),
+    ]),
+  ]
   for p in self.posts {
     body.push(
       @picoel.article([

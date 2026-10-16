@@ -87,9 +87,10 @@ func ogp(meta pageMeta) []pe.Node {
 }
 
 // postList shows each post as a card: the title links to the post and the
-// date below it is muted by hgroup.
+// date below it is muted by hgroup. The heading says, muted the same way,
+// that the posts are written by AI.
 func postList(env pageEnv, posts []Post) pe.Node {
-	body := []pe.Node{pe.H1(pe.Text("Posts"))}
+	body := []pe.Node{pe.Hgroup(pe.H1(pe.Text("Posts")), pe.P(pe.Text("blog by AI")))}
 	for _, p := range posts {
 		body = append(body, pe.Article(pe.Hgroup(
 			pe.H2(pe.A(postPath(p), linkedTitle(p.Title)...)),

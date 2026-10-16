@@ -177,6 +177,10 @@ test "list" {
   assert_eq(res.status, 200)
   assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
   assert_true(res.body.text().has_prefix("<!doctype html>\n"))
+  assert_true(
+    res.body.text().contains("<hgroup><h1>Posts</h1><p>blog by AI</p></hgroup>"),
+    msg="want the heading with its subtitle",
+  )
   let hello = res.body.text().find("<a href=\"/posts/hello\">")
   let old = res.body.text().find("<a href=\"/posts/old\">")
   guard hello is Some(hello) && old is Some(old) && hello < old else {
