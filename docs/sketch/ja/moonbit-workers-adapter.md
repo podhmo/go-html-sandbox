@@ -2,7 +2,7 @@
 
 TODO.md の「MoonBit の Workers 用アダプターを最適な形に磨く」の探索の記録（2026-10-16）。
 今のアダプター（`moonbit/workers/worker.mjs`、`moonbit/worker` の export、host の import）に代わる形を、`/tmp` の spike でいくつか作って比べた。
-**リポジトリのアダプターはまだ変えていない。** 案ごとに結果を確かめてから、どれを取り込むか決める。
+案ごとに結果を確かめてから、どれを取り込むか決める。案 D' と案 G は取り込んだ（「取り込み」の節）。
 
 前提となる経緯は[調査メモ](moonbit-workers-wasm.md)にある。このメモは、次の探索でもそのまま使えるように、分かった前提、試した案のすべて、確かめられなかったことを分けて書く。
 
@@ -142,16 +142,49 @@ C、D、A のそれぞれを `wrangler dev` で動かし、ローカルの Go �
 
 - **`wasm_esm_integration_builtins` を `wrangler dev` で試せなかった。** 手元の wrangler 4.148.0（workerd 1.20261006.1）では、`compatibility_flags` に書くと `No such compatibility flag: wasm_esm_integration_builtins` で workerd が起動しない。フラグが入ったのは 2026-10-13 公開の workerd 1.20261013.1 以降で、最新の wrangler は 4.151.0。しかし npm の設定 `min-release-age = 8` で、公開から 8 日たっていない版は入らない（`No matching version found for wrangler@4.151.0 with a date before 2026/10/8`）。この設定は依存の取り込みを遅らせるための意図的なものなので、迂回していない。**2026-10-21 ごろ以降なら、フラグ入りの wrangler を入れて試せる見込み。**
 - **本番の Workers でこのフラグが使えるかは確かめていない。** 本番のランタイムに入る時期は分からない。確かめるにはデプロイが要る。
-- **本番での起動時間（Worker Startup Time）を測っていない。** 公開の Worker を作ったり置き換えたりする操作なので、今回はしていない。`wrangler deploy --dry-run` で Total Upload だけを取った。案ごとに別名の Worker（例: `blog-adapter-spike`）でデプロイしてよければ、次の探索で測れる。
+- **案ごとの本番での起動時間（Worker Startup Time）は測っていない。** spike の段階では `wrangler deploy --dry-run` で Total Upload だけを取った。取り込んだ案 D' と main のアダプターは、その後 `make deploy` で測った（「取り込み」の節）。
 - **workerd の中での CPU 時間を測っていない。** Workers の中ではタイマーが I/O まで進まないので、前の調査と同じく Node で代わりに測った。本番の CPU 時間は、デプロイして Workers のダッシュボードかログ（`cpuTime`）で見られるかもしれない。
 - **案 D' と E を Go 版と `make compare` で比べていない**（上の「Go 版との比較」）。
 - **workerd の正式なドキュメントでのフラグの説明**は見つからなかった。Web 検索では Cloudflare の [Wasm のドキュメント](https://developers.cloudflare.com/workers/runtime-apis/webassembly/)にも builtins の話はなく、workerd のソース（`src/workerd/io/compatibility-date.capnp`）と PR を `gh` で読んで分かった。[互換性フラグの一覧](https://developers.cloudflare.com/workers/configuration/compatibility-flags/)に載ったかは、次に確かめる。
 
+## 取り込み（案 D' と案 G）
+
+2026-10-16 に、案 D'（線形メモリに UTF-8 で書く）と案 G（メソッドを渡す）を `moonbit/worker`、`moonbit/workers/worker.mjs`、`Site::render` に取り込んだ。`-Oz` はまだ入れていない。
+
+- `worker` は、線形メモリの読み書き（inline wasm と UTF-8 の読み書き）を `memory.mbt` に、`BASE_URL` ごとの `Site` の読み込みと要求の解釈を `worker.mbt` に置いた。export は `serve` と `memory`、import は 0。
+- `Site::render` に `verb~`（既定は `"GET"`）を足し、GET と HEAD 以外には、リダイレクトより先に 404 のページを返す。Go 版の `route` と同じ順番。`moon test` で確かめている。
+- 要求の 4 つの欄がそろわないとき（JS の誤りでしか起きない）は 400 を返す。
+
+### 確かめたこと
+
+- `make check` が通る（62 テスト）。
+- `make dev` と、ローカルの Go 版（`-base-url https://blog.podhmo.workers.dev`）を `make compare` で比べた。既定の 6 パス、`/` と `/docs/` からたどれる記事と文書（このメモを含む）とその `.md` 版、`/favicon.svg`、`/site.css`（`?v=` 付きと無し）、`/docs`、`/docs?x=1`、`//posts/../`、`/_livereload.js`、存在しないパスの 42 パス、日本語を含むパスとリダイレクト 4 つが、すべて一致した。
+- POST の `/posts/hello` と `/docs` は、Go 版と同じく 404 で、本文も一致した。
+- `make deploy` で `blog` にデプロイし、公開中の `https://blog.podhmo.workers.dev` と Go 版を 43 パスで比べて、すべて一致した。POST は 404 になった。
+
+### 比べた数字
+
+比べる相手は、同じ文書（このメモを含む）を埋め込み、`worker` と `worker.mjs` だけを main のものに戻したビルド。`Site::render` は両方とも `verb~` を足したもの。
+
+| | main のアダプター | 取り込んだアダプター |
+| --- | --- | --- |
+| export / import | 4 / 4 | 2（`serve`、`memory`）/ 0 |
+| `worker.mjs` | 65 行 | 34 行 |
+| Wasm | 290,116 B（gzip -9 後 92,561 B） | 291,380 B（同 93,010 B） |
+| wrangler の Total Upload | 285.01 KiB（gzip 後 91.84 KiB） | 285.74 KiB（gzip 後 92.05 KiB） |
+| Worker Startup Time | 2 ms | 2 ms と 3 ms（2 回デプロイした） |
+| `/`（Node） | 30 µs | 18 µs |
+| いちばん大きいページ（Node、`/docs/sketch/ja/moonbit-modernize`、53,784 B） | 675〜678 µs | 355〜361 µs |
+
+- Node の数字は、1,000 回 × 5 回の中央値を 2 回実行した範囲。最初は別の作業でマシンの負荷が高く（load average 41）、同じ測り方で main が 1.3〜1.7 ms、取り込んだ版が 0.6〜1.0 ms と大きくぶれた。負荷が下がってから測り直した値を載せた。負荷の高いときの数字は使わない。
+- 起動時間は ms 単位でしか出ないので、差は見えない。
+- Wasm は、UTF-8 の読み書きのぶん 1.3 KB 大きくなった。
+
 ## 次の一歩（一つずつ確かめる）
 
-1. 案 D'（UTF-8 の線形メモリ、export は `serve` と `memory`）と案 G（メソッドを渡す）を `moonbit/worker` と `worker.mjs` に取り込み、`make compare` で Go 版と一致することを確かめる。
+1. （済み）案 D'（UTF-8 の線形メモリ、export は `serve` と `memory`）と案 G（メソッドを渡す）を `moonbit/worker` と `worker.mjs` に取り込み、`make compare` で Go 版と一致することを確かめる。「取り込み」の節を参照。
 2. 案 F（`moon-wasm-opt -Oz`）を `make build` に入れ、サイズと `make compare` を確かめる。
-3. 1 と 2 をデプロイし、Total Upload と Worker Startup Time を[調査メモ](moonbit-workers-wasm.md)に記録する。
+3. 2 をデプロイし、Total Upload と Worker Startup Time を[調査メモ](moonbit-workers-wasm.md)に記録する（1 のデプロイは済み）。
 4. 2026-10-21 ごろ以降に、フラグ入りの wrangler で案 E を `wrangler dev` で動かす。動けば、本番でも試してから D' と比べ直す。
 5. 必要なら案 H（`/%FF` を Go 版と同じにする）と案 I（応答のキャッシュ）を試す。I は [Static Assets の TODO](moonbit-static-assets.md) で文章を JS から渡すときにも関わる。線形メモリの形にしておけば、文章をコード単位ずつではなく、UTF-8 のバイト列のまま渡せる。
 
