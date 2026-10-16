@@ -1,0 +1,84 @@
+// Runs the echo example's Wasm on Node through the adapter, with the same
+// Request and Response as Workers: `make test-echo`.
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { wasmApp } from "../../http/wasm/adapter.mjs";
+
+const app = wasmApp(new WebAssembly.Module(readFileSync(new URL("./build/echo.wasm", import.meta.url))));
+const env = { GREETING: "hi", NOT_A_STRING: { a: 1 } };
+const get = (path, init) => app.fetch(new Request(`http://localhost${path}`, init), env);
+
+test("path wildcard and query", async () => {
+  const res = await get("/hello/%E6%97%A5?greeting=hey+you");
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), "hey you, 日\n");
+});
+
+test("POST with a text body", async () => {
+  const res = await get("/echo?a=1&a=2", { method: "POST", body: "日本語\n\nline", headers: { "content-type": "text/plain" } });
+  assert.deepEqual(await res.json(), {
+    method: "POST",
+    host: "localhost",
+    path: "/echo",
+    query: [["a", "1"], ["a", "2"]],
+    content_type: "text/plain",
+    body: "日本語\n\nline",
+    body_bytes: 15,
+  });
+});
+
+test("JSON body", async () => {
+  const res = await get("/json", { method: "POST", body: JSON.stringify({ x: [1, "y"] }) });
+  assert.deepEqual(await res.json(), { got: { x: [1, "y"] } });
+  const bad = await get("/json", { method: "POST", body: "{" });
+  assert.equal(bad.status, 400);
+});
+
+test("urlencoded form", async () => {
+  const body = new URLSearchParams([["name", "日本 語"], ["tag", "a"], ["tag", "b"]]);
+  const res = await get("/form", { method: "POST", body });
+  assert.deepEqual(await res.json(), { values: [["name", "日本 語"], ["tag", "a"], ["tag", "b"]], files: [] });
+});
+
+test("multipart form with a binary file", async () => {
+  const form = new FormData();
+  form.append("name", "multipart");
+  const bytes = new Uint8Array(1000).map((_, i) => i % 256);
+  form.append("file", new Blob([bytes], { type: "application/x-test" }), "a.bin");
+  const res = await get("/form", { method: "POST", body: form });
+  assert.deepEqual(await res.json(), {
+    values: [["name", "multipart"]],
+    files: [{ name: "file", filename: "a.bin", content_type: "application/x-test", size: 1000 }],
+  });
+});
+
+test("a body larger than the memory's first page", async () => {
+  const body = "x".repeat(200_000);
+  const res = await get("/echo", { method: "PUT", body });
+  assert.equal((await res.json()).body_bytes, 200_000);
+});
+
+test("methods", async () => {
+  assert.equal((await get("/items/7", { method: "PUT", body: "v" })).status, 200);
+  const del = await get("/items/7", { method: "DELETE" });
+  assert.equal(del.status, 204);
+  assert.equal(del.body, null);
+  const res = await get("/items/7", { method: "GET" });
+  assert.equal(res.status, 405);
+  assert.equal(res.headers.get("allow"), "PUT, DELETE");
+  assert.equal((await get("/nothing")).status, 404);
+  assert.equal((await get("/%zz")).status, 400);
+});
+
+test("binary response, headers, redirect, env", async () => {
+  const bytes = new Uint8Array(await (await get("/bytes")).arrayBuffer());
+  assert.deepEqual([...bytes], [...Array(256).keys()]);
+  const res = await get("/cookie", { headers: { cookie: "x=1" } });
+  assert.equal(await res.text(), "cookie: x=1\n");
+  assert.deepEqual(res.headers.getSetCookie(), ["a=1; Path=/", "b=2; Path=/"]);
+  const r = await get("/redirect?to=/hello/x", { redirect: "manual" });
+  assert.equal(r.status, 303);
+  assert.equal(r.headers.get("location"), "/hello/x");
+  assert.equal(await (await get("/env")).text(), "GREETING=hi\n");
+});

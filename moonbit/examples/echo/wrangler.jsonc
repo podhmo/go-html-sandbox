@@ -1,0 +1,12 @@
+// Cloudflare Workers config for the echo example, for `make dev-echo` only
+// (it is not deployed).
+{
+  "name": "moonbit-echo",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "build": {
+    "command": "cd ../.. && make build-echo",
+    "watch_dir": ["../../http", "."]
+  },
+  "vars": { "GREETING": "hi" }
+}
