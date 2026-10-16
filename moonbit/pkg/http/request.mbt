@@ -46,20 +46,18 @@ pub fn Request::Request(
   body~ : Bytes = b"",
   env~ : Map[String, String] = {},
 ) -> Request raise BadRequest {
-  let mut rest = url[:]
-  if rest.find("#") is Some(i) {
-    rest = rest[:i]
+  let rest = match url.find("#") {
+    Some(i) => url[:i]
+    None => url
   }
-  let mut host = ""
-  if rest.find("://") is Some(i) {
-    let after = rest[i + 3:]
-    let end = after.find("/").unwrap_or(after.length())
-    let end = match after[:end].find("?") {
-      Some(q) => q
-      None => end
+  let (host, rest) = match rest.find("://") {
+    Some(i) => {
+      let after = rest[i + 3:]
+      let end = after.find("/").unwrap_or(after.length())
+      let end = after[:end].find("?").unwrap_or(end)
+      (after[:end].to_owned(), after[end:])
     }
-    host = after[:end].to_owned()
-    rest = after[end:]
+    None => ("", rest)
   }
   let (raw_path, raw_query) = match rest.find("?") {
     Some(i) => (rest[:i].to_owned(), rest[i + 1:].to_owned())

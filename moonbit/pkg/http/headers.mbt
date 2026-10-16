@@ -68,10 +68,8 @@ pub fn media_type(value : String) -> (String, Array[(String, String)]) {
   for part in parts[1:] {
     guard part.find("=") is Some(i) else { continue }
     let name = part[:i].trim(chars=" \t").to_owned().to_lower()
-    let mut v = part[i + 1:].trim(chars=" \t")
-    if v is [.. "\"", .. inner, .. "\""] {
-      v = inner
-    }
+    let v = part[i + 1:].trim(chars=" \t")
+    let v = if v is [.. "\"", .. inner, .. "\""] { inner } else { v }
     params.push((name, v.to_owned()))
   }
   let ty = if parts.is_empty() {
