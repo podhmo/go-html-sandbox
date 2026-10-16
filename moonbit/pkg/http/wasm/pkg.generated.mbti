@@ -6,10 +6,6 @@ import {
 }
 
 // Values
-pub fn decode_request(BytesView) -> @http.Request raise @http.BadRequest
-
-pub fn encode_head(@http.Response) -> String
-
 pub fn handle(Int, (@http.Request) -> @http.Response) -> Int
 
 // Errors

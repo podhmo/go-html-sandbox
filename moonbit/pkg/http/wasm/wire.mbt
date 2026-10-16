@@ -18,7 +18,7 @@
 ///|
 /// decode_request parses the request in the wire format above. It raises
 /// BadRequest for a request it cannot parse.
-pub fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
+fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
   // The head ends at the second empty line: the headers' and env's.
   let mut ends = 0
   let mut head_end = -1
@@ -72,7 +72,7 @@ pub fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest 
 ///|
 /// encode_head is the status and the headers of res in the wire format,
 /// with the empty line that ends them.
-pub fn encode_head(res : @http.Response) -> String {
+fn encode_head(res : @http.Response) -> String {
   let head = StringBuilder()
   head.write_string("\{res.status}\n")
   for (name, value) in res.headers {
