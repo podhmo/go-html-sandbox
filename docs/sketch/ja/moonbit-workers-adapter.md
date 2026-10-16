@@ -42,7 +42,7 @@ spike は `git archive HEAD` で `/tmp/go-html-sandbox/adapter` に取り出し�
 - **Workers では、どの案でも本文は chunked で返る。** `wrangler dev` では、本文を文字列で渡しても `Uint8Array` で渡しても `Transfer-Encoding: chunked` になり、`Content-Length` は付かない。Go 版のサーバーは `Content-Length: 1877` を付ける。`make compare` はこれを比べないので一致する。本番の Cloudflare の前段で変わるかは見ていない。
 - **HEAD**: `wrangler dev` では、どの案でも HEAD に本文が付かない。Go 版と同じく `Content-Type` が付く。
 - **メソッド**: 今の Worker は POST にも 200 で同じページを返す。Go 版は GET と HEAD 以外に 404 の「Page not found.」を返す。メソッドを Wasm に渡す案（C、D、D'、E）は、本文まで Go 版と一致した。
-- **壊れた `%` エスケープ**: `/%E0%A4%A` はどちらも 400（本文は違う。Go 版は `400 Bad Request`、Worker は `Bad request: malformed path`）。**`/%FF` は Go 版が 404、Worker は 400。** `%FF` は形の上では正しいエスケープだが UTF-8 として不正なので、`decodeURIComponent` が投げる。全案に共通の違いで、`make compare` の既定のパスには入っていない。
+- **壊れた `%` エスケープ**: `/%E0%A4%A` はどちらも 400（本文は違う。Go 版は `400 Bad Request`、Worker は `Bad request: malformed path`）。**`/%FF` は Go 版が 404、Worker は 400。** `%FF` は形の上では正しいエスケープだが UTF-8 として不正なので、`decodeURIComponent` が投げる。全案に共通の違いで、`make compare` の既定のパスには入っていない。その後、案 H で直した。
 - **workerd による URL の正規化**（`/docs/ja/../TODO` が届く前に `/docs/TODO` になる）は、どの案でも変わらない。アダプターの側では直せない。
 - `wrangler dev` の往復時間は、どの案も `/` が約 1.1 ms、いちばん大きいページが 1.5〜1.8 ms で、案の差（0.3 ms 程度）はばらつきに埋もれる。案の比較は Node で行った。
 - Node の `Request` / `Response` を作って本文を読むだけの Worker（Wasm を呼ばない）は、1,732 文字の本文で 6 µs、36,670 文字で 22 µs かかる。以下の Node の数字にはこれが含まれる。
@@ -64,7 +64,7 @@ spike は `git archive HEAD` で `/tmp/go-html-sandbox/adapter` に取り出し�
 | E | `use-js-builtin-string`。JS の文字列をそのまま渡す | `serve` / 221（すべてランタイムが解決） | 23 行 | Node でだけ試した |
 | F | `moon-wasm-opt -Oz` をビルドに入れる | — | — | 試した（推す） |
 | G | メソッドを Wasm に渡し、GET と HEAD 以外は 404 | — | — | C〜E に入れて試した |
-| H | パスのデコードを Wasm でする | — | — | 試していない |
+| H | パスのデコードを Wasm でする | — | — | 取り込んだ |
 | I | 応答を isolate の中でキャッシュする | — | — | 試していない |
 | J | MoonBit の `js` バックエンドにする | — | — | 対象外 |
 
@@ -86,7 +86,7 @@ spike は `git archive HEAD` で `/tmp/go-html-sandbox/adapter` に取り出し�
 
 ### 試していない案
 
-- **H（パスのデコードを Wasm で）**: `/%FF` を Go 版と同じ 404 にできるかもしれない。JS は `url.pathname` をエスケープしたまま渡し、Wasm がバイト列にデコードする。ただし、不正な UTF-8 を `String` にするときの置き換え（U+FFFD）が Go 版の 404 ページの表示と一致するかは分からない。D / D' の形なら入力をバイト列で渡せるので試しやすい。
+- **H（パスのデコードを Wasm で）**: その後、取り込んだ（「取り込み（案 H）」の節）。
 - **I（応答のキャッシュ）**: 内容は isolate の中で変わらないので、`(method, path, query)` ごとに応答を `Map` に持てば、2 回目からは `render` の 345 µs も省ける。メモリの上限（isolate あたり 128 MB）と、キャッシュの大きさの上限を決める必要がある。Cache API を使う手もある。アダプターというより `site` 側の最適化。
 - **J（`js` バックエンド）**: Workers 用の MoonBit ライブラリとして [mizchi/cloudflare](https://github.com/mizchi/cloudflare.mbt)（mooncakes.io の `mizchi/cloudflare` 0.1.13、KV、D1、R2 などのバインディング）が見つかった。前の調査では見つからなかったもの。ただし `moon.mod` は `preferred_target = "js"`、各パッケージは `supported_targets = "js"` で、`mizchi/js_*` に依存する **JS にコンパイルするためのライブラリ**であり、Wasm では使えない。このブログは Wasm で動かすこと自体が目的（ロマン）なので、対象外とする。Wasm 向けで Workers に使える MoonBit のライブラリは、今回も見つからなかった（mooncakes.io の一覧 3,029 件を `cloudflare`、`workers`、`workerd` で検索した）。
 
@@ -197,13 +197,35 @@ C、D、A のそれぞれを `wrangler dev` で動かし、ローカルの Go �
 - 起動時間は、このあいだのデプロイで 2 ms と 3 ms のどちらも出ており、ms 単位では差が分からない。
 - `make dev` とローカルの Go 版、デプロイした `blog` とローカルの Go 版を、それぞれ 44 パスで比べ、すべて一致した。
 
+## 取り込み（案 H、パスのデコード）
+
+`worker.mjs` は `url.pathname` をエスケープしたまま渡し、Wasm が `site` の `unescape`（リンクの解決のために移植してあった `%XX` の解釈）でデコードするようにした。Go の net/http がハンドラーの前にすることを、Worker では `worker` パッケージがする。
+
+- 形の壊れたエスケープ（`%zz`、`%E0%A4%A`、末尾の `%`）には、Go の net/http と同じ `400 Bad Request`（`text/plain; charset=utf-8`、改行なし）を返す。
+- 形は正しいが UTF-8 でないバイト（`%FF`、`%C3%28`、サロゲートの `%ED%A0%80`）は U+FFFD に置き換えてルーティングに回す。Go 版は 404 の本文にパスを書かないので、404 は本文まで一致する。
+- `worker.mjs` から `try` / `catch` がなくなり、29 行になった。
+
+### Go 版との比較
+
+44 パスに、変なエスケープを含む 14 パス（`/%FF`、`/posts/%FF`、`/docs/%FF`、`/posts/%FF.md`、`/%FF/`、`/%FF//`、`/a%00b`、`/%C3%28`、`/%ED%A0%80`、`/%E0%A4%A`、`/%zz`、`/docs%2F`、`/a%2Fb`、`/posts/hello%3F`）を足した 58 パスで比べた。
+
+| 比べた相手 | 一致しないパス |
+| --- | --- |
+| 取り込む前（`decodeURIComponent`）の、デプロイした `blog` | 14 パスのうち 11 |
+| 取り込んだ後の `make dev` | 58 パスのうち `/%FF//` の 1 つ |
+| 取り込んだ後の、デプロイした `blog` | 58 パスのうち `/%FF//`、`/a%00b`、`/%zz` の 3 つ |
+
+- **`/%FF//` は残る。** Go 版は `/%FF/` にリダイレクトするが、Wasm は U+FFFD に置き換えた後のパスを書くので `/%EF%BF%BD/` になる。MoonBit の `String` は不正な UTF-8 を持てないので、合わせるには、置き換えずに元のバイトを覚えておく仕組み（例えば Python の surrogateescape のように、バイト b を孤立したサロゲート U+DC00+b にして、リダイレクトの `escape` で `%XX` に戻す）が要る。UTF-8 でないパスが、さらに正規化されていない場合だけの違いなので、入れていない。
+- **本番では、`/a%00b` と `/%zz` は Worker に届かない。** Cloudflare の前段が、HTML の `400 Bad Request` ページ（`server: cloudflare`、`content-type: text/html`）を返す。`wrangler dev` では Worker に届き、Go 版と一致する。`/%E0%A4%A` と `/%` は本番でも Worker に届き、Go 版と同じ本文を返す。どのエスケープを前段が止めるのかの規則は調べていない。
+- デプロイした版の Total Upload は 273.08 KiB（gzip 後 86.86 KiB）、Worker Startup Time は 2 ms。
+
 ## 次の一歩（一つずつ確かめる）
 
 1. （済み）案 D'（UTF-8 の線形メモリ、export は `serve` と `memory`）と案 G（メソッドを渡す）を `moonbit/worker` と `worker.mjs` に取り込み、`make compare` で Go 版と一致することを確かめる。「取り込み」の節を参照。
 2. （済み）案 F（`moon-wasm-opt -Oz`）を `make build` に入れ、サイズと `make compare` を確かめる。「取り込み（案 F、`-Oz`）」の節を参照。
 3. （済み）1 と 2 をデプロイし、Total Upload と Worker Startup Time を記録する。
 4. 2026-10-21 ごろ以降に、フラグ入りの wrangler で案 E を `wrangler dev` で動かす。動けば、本番でも試してから D' と比べ直す。
-5. 必要なら案 H（`/%FF` を Go 版と同じにする）と案 I（応答のキャッシュ）を試す。I は [Static Assets の TODO](moonbit-static-assets.md) で文章を JS から渡すときにも関わる。線形メモリの形にしておけば、文章をコード単位ずつではなく、UTF-8 のバイト列のまま渡せる。
+5. （H は済み）必要なら案 I（応答のキャッシュ）を試す。I は [Static Assets の TODO](moonbit-static-assets.md) で文章を JS から渡すときにも関わる。線形メモリの形にしておけば、文章をコード単位ずつではなく、UTF-8 のバイト列のまま渡せる。
 
 ## spike のコード
 
