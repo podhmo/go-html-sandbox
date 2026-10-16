@@ -19,7 +19,7 @@ port of `el` or `picoel`.
   re-exports them from `tinymarkdown.mjs`, the js build of
   `moonbit/pkg/tinymarkdown/js`, which is committed: run `make ts` in
   `../moonbit` after changing the MoonBit code (`make check` there fails
-  when it is stale). Its tests are the Go test cases
+  when it is stale). Its tests are on the MoonBit side
 - `tinyfrontmatter` — a port of `go/pkg/tinyfrontmatter`: `split(src)`
   into the `key: value` pairs of a leading `---` block and the rest; its
   tests are the Go test cases

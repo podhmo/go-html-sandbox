@@ -6,14 +6,14 @@ ts 版のブログ（`ts/`）は、`go/pkg/tinymarkdown` を TS に移した `ts
 
 | 問い | 答え | 確かめ方 |
 | --- | --- | --- |
-| 1. TS の移植なしで、TS から型付きで使えるか | **使える** | MoonBit 側（`moonbit/pkg/tinymarkdown/js`）で、TS の型と同じ形の JS オブジェクトを組んで返す。`ts/` の型はそのまま残し、実装だけ `tinymarkdown.mjs` からの再 export にした。`npm run check`（vitest 146 件と `tsc --noEmit`）が通る |
+| 1. TS の移植なしで、TS から型付きで使えるか | **使える** | MoonBit 側（`moonbit/pkg/tinymarkdown/js`）で、TS の型と同じ形の JS オブジェクトを組んで返す。`ts/` の型はそのまま残し、実装だけ `tinymarkdown.mjs` からの再 export にした。置き換えた時点で、`npm run check`（vitest 146 件と `tsc --noEmit`）が通った |
 | 2. ブログが同じ HTML を返すか | **返す** | 替える前と後を `vite build` し、`wrangler dev` で配って全ページを比べた。49 パスで差分なし |
 | 3. 代わりに払うもの: 大きさ | Worker のバンドルが **+64 KB（gzip で +9 KB）** | `vite build` の出力。446.95 KB → 510.57 KB、gzip で 138.74 KB → 148.12 KB |
 | 4. 代わりに払うもの: 速さ | parse が **約 4 倍遅い** | Node 24 で、記事と文書 22 本（279 KiB）を解析。TS の移植 0.60 ms、MoonBit 2.46 ms（ウォーム） |
 
 ## 結論
 
-- **TS の移植は要らない。** MoonBit の js ビルドに TS の型を付けるだけで、ブログのコードは変えずに動き、出力も同じ。Markdown の解析の実装は MoonBit の 1 つになり、TS 側に残るのは型の定義と Go のテストケースだけ。
+- **TS の移植は要らない。** MoonBit の js ビルドに TS の型を付けるだけで、ブログのコードは変えずに動き、出力も同じ。Markdown の解析の実装は MoonBit の 1 つになり、TS 側に残るのは型の定義だけ。tinymarkdown のテスト（Go のテストケースを TS に移したもの）も、MoonBit 側のテストと重なるので消した。JS オブジェクトの形は `moonbit/pkg/tinymarkdown/js` のテストで見る。
 - **払うのは、バンドルの gzip で 9 KB と、起動時の解析の 2 ms 弱。** ts 版は isolate の起動時に全部の文章を解析するので、この差は起動時間に乗る。本番での起動時間はまだ測っていない（`blog-ts` は TS の移植のままデプロイされている）。
 - **生成した JS はコミットする。** `ts/` の作業に moon を要らないようにするため。MoonBit 側を直したら `moonbit/` で `make ts` を走らせる。忘れると `make check` が落ちる。
 
@@ -32,7 +32,7 @@ MoonBit の js ビルドでは、`String` は JS の文字列、`Int` は JS の
 
 ### 1. 型付きで使えるか
 
-spike では、`build/tinymarkdown.mjs` を空の結果を返すものに替えると 95 件が落ち、元に戻すと 146 件が通った。差し替えが実際に効いていることの確認。置き換えたあとは、`ts/` の vitest 146 件と `tsc --noEmit` が通る。Node 24 から `tinymarkdown.ts` を直接 import しても動く。
+spike では、`build/tinymarkdown.mjs` を空の結果を返すものに替えると 95 件が落ち、元に戻すと 146 件が通った。差し替えが実際に効いていることの確認。置き換えたあとは、`ts/` の vitest 146 件と `tsc --noEmit` が通った。その後 tinymarkdown のテストを消したので、今の `ts/` に残るのはブログのテストだけ。Node 24 から `tinymarkdown.ts` を直接 import しても動く。
 
 ### 2. ブログが同じ HTML を返すか
 

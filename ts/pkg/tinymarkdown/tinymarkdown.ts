@@ -1,8 +1,9 @@
 // tinymarkdown parses a tiny subset of Markdown into a pure-data tree. The
 // parser is MoonBit's (moonbit/pkg/tinymarkdown), built for js by
 // moonbit/pkg/tinymarkdown/js into tinymarkdown.mjs (`make ts` in
-// ../../../moonbit), which returns objects of the types here; its tests
-// are the Go test cases.
+// ../../../moonbit), which returns objects of the types here. The tests
+// are there too: moonbit/pkg/tinymarkdown's, and those of the objects in
+// moonbit/pkg/tinymarkdown/js.
 //
 // Supported: headings "#" to "#####" (which open nested sections), "- "
 // list items (which may continue on indented lines and nest by
