@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/blog/pkg/http"
+package "podhmo/html-sandbox/pkg/http"
 
 // Values
 pub fn media_type(String) -> (String, Array[(String, String)])

@@ -1,5 +1,5 @@
 import {
-  "podhmo/blog/pkg/http",
+  "podhmo/html-sandbox/pkg/http",
   "moonbitlang/core/encoding/utf8",
 }
 

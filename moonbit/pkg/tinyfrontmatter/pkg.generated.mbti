@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/blog/pkg/tinyfrontmatter"
+package "podhmo/html-sandbox/pkg/tinyfrontmatter"
 
 import {
   "moonbitlang/core/debug",

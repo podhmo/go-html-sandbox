@@ -1,6 +1,6 @@
 import {
-  "podhmo/blog/examples/blog/site",
-  "podhmo/blog/pkg/http",
+  "podhmo/html-sandbox/examples/blog/site",
+  "podhmo/html-sandbox/pkg/http",
 }
 
 // Only wasm-gc: the host imports do not compile on native, where the

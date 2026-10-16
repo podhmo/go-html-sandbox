@@ -1,5 +1,5 @@
 import {
-  "podhmo/blog/examples/blog/compare",
+  "podhmo/html-sandbox/examples/blog/compare",
   "moonbitlang/core/argparse",
   "moonbitlang/core/string",
   "moonbitlang/async",

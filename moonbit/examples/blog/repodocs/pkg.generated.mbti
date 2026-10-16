@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/blog/examples/blog/repodocs"
+package "podhmo/html-sandbox/examples/blog/repodocs"
 
 // Values
 pub let files : ReadOnlyArray[(String, String)]

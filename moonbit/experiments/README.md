@@ -3,7 +3,7 @@
 Spikes kept so that their numbers can be reproduced. Each directory with
 a `moon.mod` is a module of its own, outside the blog's module, so the
 blog's `make check` and `make build` do not see it; its `moon.work` adds
-the blog (`../..`) as a workspace member, so it imports `podhmo/blog/...`
+the blog (`../..`) as a workspace member, so it imports `podhmo/html-sandbox/...`
 as it is now. The code was adjusted to today's API where it had to be,
 and is otherwise as it was tried. Run `make help` in each directory.
 

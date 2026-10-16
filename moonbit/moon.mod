@@ -1,4 +1,4 @@
-name = "podhmo/blog"
+name = "podhmo/html-sandbox"
 
 version = "0.1.0"
 

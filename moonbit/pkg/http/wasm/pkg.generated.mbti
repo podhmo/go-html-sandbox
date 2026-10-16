@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/blog/pkg/http/wasm"
+package "podhmo/html-sandbox/pkg/http/wasm"
 
 import {
-  "podhmo/blog/pkg/http",
+  "podhmo/html-sandbox/pkg/http",
 }
 
 // Values

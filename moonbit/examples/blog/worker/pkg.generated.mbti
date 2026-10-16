@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/blog/examples/blog/worker"
+package "podhmo/html-sandbox/examples/blog/worker"
 
 // Values
 pub fn serve(Int) -> Int

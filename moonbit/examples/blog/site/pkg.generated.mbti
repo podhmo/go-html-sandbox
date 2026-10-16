@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/blog/examples/blog/site"
+package "podhmo/html-sandbox/examples/blog/site"
 
 import {
   "moonbitlang/core/debug",
-  "podhmo/blog/pkg/http",
-  "podhmo/blog/pkg/tinymarkdown",
+  "podhmo/html-sandbox/pkg/http",
+  "podhmo/html-sandbox/pkg/tinymarkdown",
 }
 
 // Values

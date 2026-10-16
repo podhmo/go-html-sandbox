@@ -1,7 +1,7 @@
 import {
-  "podhmo/blog/examples/blog/site",
-  "podhmo/blog/pkg/http",
-  "podhmo/blog/pkg/http/wasm",
+  "podhmo/html-sandbox/examples/blog/site",
+  "podhmo/html-sandbox/pkg/http",
+  "podhmo/html-sandbox/pkg/http/wasm",
 }
 
 // Only wasm-gc, as http/wasm, whose inline Wasm does not compile on

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/blog/examples/blog/compare"
+package "podhmo/html-sandbox/examples/blog/compare"
 
 // Values
 pub fn body_diff(String, moonbit~ : String, max_lines? : Int) -> String
