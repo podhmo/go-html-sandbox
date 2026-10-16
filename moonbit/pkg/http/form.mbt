@@ -51,12 +51,8 @@ fn parse_multipart(
   }
   let values = []
   let files = []
-  let mut pos = first + delim.length()
-  while true {
+  for pos = first + delim.length(); !body[pos:].has_prefix(b"--"); {
     let rest = body[pos:]
-    if rest.has_prefix(b"--") {
-      break
-    }
     guard rest.has_prefix(crlf) else {
       raise BadRequest("malformed multipart boundary")
     }
@@ -74,7 +70,7 @@ fn parse_multipart(
       raise BadRequest("multipart part without a closing boundary")
     }
     let data = rest[content_at:content_at + len]
-    pos = pos + 2 + content_at + len + next.length()
+    let next_pos = pos + 2 + content_at + len + next.length()
     let headers = Headers()
     for line in head.split("\r\n") {
       if line.find(":") is Some(i) {
@@ -91,7 +87,7 @@ fn parse_multipart(
         None => None
       }
     }
-    guard param("name") is Some(name) else { continue }
+    guard param("name") is Some(name) else { continue next_pos }
     match param("filename") {
       Some(filename) =>
         files.push({
@@ -104,6 +100,7 @@ fn parse_multipart(
         })
       None => values.push((name, @utf8.decode_lossy(data)))
     }
+    continue next_pos
   }
   { values: { pairs: values, }, files, }
 }

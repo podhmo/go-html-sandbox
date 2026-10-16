@@ -147,6 +147,13 @@ test "Request::form multipart" {
     #|Content-Disposition: form-data; name="empty"
     #|
     #|
+    #|--XyZ
+    #|Content-Type: text/plain
+    #|
+    #|a part without a name is skipped
+    #|--XyZ
+    #|
+    #|nor is one without headers kept
     #|--XyZ--
     #|epilogue
   let r = request(

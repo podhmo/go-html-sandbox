@@ -20,22 +20,21 @@
 /// BadRequest for a request it cannot parse.
 fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
   // The head ends at the second empty line: the headers' and env's.
-  let mut ends = 0
-  let mut head_end = -1
-  let mut prev = -1
-  for i, b in data {
-    if b == b'\n' {
-      if prev == i - 1 && ends < 2 {
-        ends += 1
-        if ends == 2 {
-          head_end = i + 1
-          break
-        }
-      }
-      prev = i
+  let head_end = for i, b in data; ends = 0, prev = -1 {
+    if b != b'\n' {
+      continue ends, prev
     }
+    let ends = if prev == i - 1 { ends + 1 } else { ends }
+    if ends == 2 {
+      break Some(i + 1)
+    }
+    continue ends, i
+  } nobreak {
+    None
   }
-  guard head_end >= 0 else { raise @http.BadRequest("truncated request") }
+  guard head_end is Some(head_end) else {
+    raise @http.BadRequest("truncated request")
+  }
   let head = @utf8.decode_lossy(data[:head_end])
   let lines = head.split("\n").collect()
   guard lines.length() >= 4 else { raise @http.BadRequest("truncated request") }
