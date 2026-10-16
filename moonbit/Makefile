@@ -3,6 +3,14 @@
 # again. Run `make help` for the targets.
 
 WASM := _build/wasm-gc/release/build/worker/worker.wasm
+# What the Worker imports: WASM after wasm-opt -Oz.
+APP_WASM := workers/build/app.wasm
+# binaryen's wasm-opt, which comes with moon. -all would also enable
+# features V8 cannot load yet, so only the ones moon's output uses.
+WASM_OPT ?= moon-wasm-opt
+WASM_OPT_FLAGS := -Oz --enable-gc --enable-reference-types --enable-bulk-memory \
+	--enable-sign-ext --enable-nontrapping-float-to-int --enable-mutable-globals \
+	--enable-multivalue
 PORT ?= 8787
 WRANGLER ?= npx wrangler@4
 # compare's base URLs: the Go blog (`go run ./examples/blog` in ../go) and
@@ -26,10 +34,12 @@ embed:
 	sh scripts/embed.sh repodocs/embedded.mbt .. $(DOCS)
 	sh scripts/embed-assets.sh assets/embedded.mbt $(ASSETS)
 
-## build: build the Wasm into _build/wasm-gc/release/build/worker/
+## build: build the Wasm into _build/wasm-gc/release/build/worker/, and shrink it with wasm-opt -Oz into workers/build/app.wasm
 build: embed
 	moon build --target wasm-gc --release
-	@ls -l $(WASM)
+	@mkdir -p $(dir $(APP_WASM))
+	$(WASM_OPT) $(WASM_OPT_FLAGS) $(WASM) -o $(APP_WASM)
+	@ls -l $(WASM) $(APP_WASM)
 
 ## test: run the tests
 test: embed

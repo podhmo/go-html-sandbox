@@ -60,7 +60,7 @@ From `moonbit/` (`make help` lists the targets):
 
 ```sh
 make test     # moon test
-make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm
+make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm, and after wasm-opt -Oz, workers/build/app.wasm
 make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test, moon info
 ```
 
@@ -79,7 +79,8 @@ in a subdirectory of `docs/` changes. `make build`, `make test`, and
 `make check` run it every time (`make embed` alone), so use them after
 editing a post or a document.
 
-Needs `moon` on `PATH`, and Node.js for wrangler.
+Needs `moon` and `moon-wasm-opt` (binaryen's `wasm-opt`, installed with
+moon) on `PATH`, and Node.js for wrangler.
 
 ## Running on Workers locally
 
@@ -88,8 +89,8 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 ```
 
 Then open <http://localhost:8787>. wrangler's build command runs
-`make build` and copies the Wasm to `workers/build/app.wasm`, ignored by
-git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
+`make build`, which writes the Wasm, shrunk by `wasm-opt -Oz`, to
+`workers/build/app.wasm`, ignored by git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
 `go/examples/blog/posts/`, or the documents in `docs/` change.
 
 ## Comparing with the Go blog

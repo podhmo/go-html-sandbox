@@ -57,7 +57,7 @@
     `wasm_esm_integration_builtins` フラグを使う案などを、一つずつ確かめる。
   - [x] 線形メモリに UTF-8 でまとめて渡す案（D'）と、メソッドを Wasm に渡す案（G）を
     取り込み、`make compare` で Go 版と一致することを確かめる。
-  - [ ] `moon-wasm-opt -Oz` を `make build` に入れる（案 F）。
+  - [x] `moon-wasm-opt -Oz` を `make build` に入れる（案 F）。
   - [ ] フラグ入りの wrangler が入れられるようになったら（2026-10-21 ごろ以降）、
     `wasm_esm_integration_builtins` を使う案 E を試す。
 

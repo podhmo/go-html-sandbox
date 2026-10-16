@@ -7,7 +7,7 @@
   "main": "./worker.mjs",
   "compatibility_date": "2026-10-01",
   "build": {
-    "command": "cd .. && make build && mkdir -p workers/build && cp _build/wasm-gc/release/build/worker/worker.wasm workers/build/app.wasm",
+    "command": "cd .. && make build",
     // Rebuild when the MoonBit sources or the embedded files change under
     // `wrangler dev`. Not ../posts, ../repodocs, or ../assets: the build
     // writes embedded.mbt there.

@@ -180,11 +180,28 @@ C、D、A のそれぞれを `wrangler dev` で動かし、ローカルの Go �
 - 起動時間は ms 単位でしか出ないので、差は見えない。
 - Wasm は、UTF-8 の読み書きのぶん 1.3 KB 大きくなった。
 
+## 取り込み（案 F、`-Oz`）
+
+`make build` で、`moon build` の後に `moon-wasm-opt -Oz` をかけ、結果を `workers/build/app.wasm` に書くようにした。wrangler のビルドコマンドは `cd .. && make build` だけになった（前は `make build` の後に Wasm をコピーしていた）。機能の指定は「サイズ」の節のもの（`-all` は使わない）。`moon-wasm-opt` は moon と一緒に入るので、依存は増えていない。
+
+| | `-Oz` なし | `-Oz` |
+| --- | --- | --- |
+| Wasm | 295,510 B（gzip -9 後 94,215 B） | 276,914 B（同 87,289 B） |
+| wrangler の Total Upload | — | 271.62 KiB（gzip 後 86.50 KiB） |
+| Worker Startup Time | — | 3 ms |
+| `/`（Node） | 17.5〜18.2 µs | 17.2〜17.3 µs |
+| いちばん大きいページ（Node） | 346〜350 µs | 354〜356 µs |
+
+- 文書がこのメモの分だけ増えたので、Wasm は「案 D' と案 G」の節より大きい。`-Oz` で 6.3% 小さくなった。
+- 速さは変わらない（差はばらつきの範囲）。
+- 起動時間は、このあいだのデプロイで 2 ms と 3 ms のどちらも出ており、ms 単位では差が分からない。
+- `make dev` とローカルの Go 版、デプロイした `blog` とローカルの Go 版を、それぞれ 44 パスで比べ、すべて一致した。
+
 ## 次の一歩（一つずつ確かめる）
 
 1. （済み）案 D'（UTF-8 の線形メモリ、export は `serve` と `memory`）と案 G（メソッドを渡す）を `moonbit/worker` と `worker.mjs` に取り込み、`make compare` で Go 版と一致することを確かめる。「取り込み」の節を参照。
-2. 案 F（`moon-wasm-opt -Oz`）を `make build` に入れ、サイズと `make compare` を確かめる。
-3. 2 をデプロイし、Total Upload と Worker Startup Time を[調査メモ](moonbit-workers-wasm.md)に記録する（1 のデプロイは済み）。
+2. （済み）案 F（`moon-wasm-opt -Oz`）を `make build` に入れ、サイズと `make compare` を確かめる。「取り込み（案 F、`-Oz`）」の節を参照。
+3. （済み）1 と 2 をデプロイし、Total Upload と Worker Startup Time を記録する。
 4. 2026-10-21 ごろ以降に、フラグ入りの wrangler で案 E を `wrangler dev` で動かす。動けば、本番でも試してから D' と比べ直す。
 5. 必要なら案 H（`/%FF` を Go 版と同じにする）と案 I（応答のキャッシュ）を試す。I は [Static Assets の TODO](moonbit-static-assets.md) で文章を JS から渡すときにも関わる。線形メモリの形にしておけば、文章をコード単位ずつではなく、UTF-8 のバイト列のまま渡せる。
 
