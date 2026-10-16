@@ -30,7 +30,7 @@ test "decode_request rejects a truncated request" {
 
 ///|
 test "encode_head" {
-  let res = @http.Response::text(201, "ok").header("set-cookie", value="a=1")
+  let res = @http.Response::text(201, "ok")..header("set-cookie", value="a=1")
   assert_eq(
     encode_head(res),
     "201\ncontent-type\ttext/plain; charset=utf-8\nset-cookie\ta=1\n\n",

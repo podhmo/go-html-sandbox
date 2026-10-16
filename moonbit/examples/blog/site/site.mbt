@@ -124,7 +124,7 @@ fn Site::new_router(self : Site) -> @http.Router {
   r.handle("GET /docs/{$}", _ => page(200, self.doc_list()))
   // Pages link to it without a version, so it is cached for a day.
   r.handle("GET /favicon.svg", _ => {
-    @http.Response::typed(200, "image/svg+xml", Text(@assets.favicon_svg)).header(
+    @http.Response::typed(200, "image/svg+xml", Text(@assets.favicon_svg))..header(
       "cache-control",
       value="public, max-age=86400",
     )
@@ -136,7 +136,7 @@ fn Site::new_router(self : Site) -> @http.Router {
       200,
       "text/css; charset=utf-8",
       Text(@assets.site_css),
-    ).header("cache-control", value="public, max-age=31536000, immutable")
+    )..header("cache-control", value="public, max-age=31536000, immutable")
   })
   // A pattern cannot end in ".md" after a wildcard, so the handlers look
   // at the suffix.
@@ -211,7 +211,7 @@ fn clean_path(p : String) -> String {
 /// markdown sends src as text. nosniff keeps browsers from guessing that
 /// Markdown containing tags is HTML.
 fn markdown(src : String) -> @http.Response {
-  @http.Response::typed(200, "text/markdown; charset=utf-8", Text(src)).header(
+  @http.Response::typed(200, "text/markdown; charset=utf-8", Text(src))..header(
     "x-content-type-options",
     value="nosniff",
   )

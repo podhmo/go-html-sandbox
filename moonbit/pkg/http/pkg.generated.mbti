@@ -79,7 +79,7 @@ pub struct Response {
   body : Body
 }
 pub fn Response::Response(Int, headers? : Headers, body? : Body) -> Self
-pub fn Response::header(Self, String, value~ : String) -> Self
+pub fn Response::header(Self, String, value~ : String) -> Unit
 pub fn Response::html(Int, String) -> Self
 pub fn Response::json(Int, Json) -> Self
 pub fn Response::redirect(Int, String) -> Self

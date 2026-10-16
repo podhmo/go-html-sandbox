@@ -89,8 +89,8 @@ fn router() -> @http.Router {
       200,
       "cookie: \{req.headers.get("cookie").unwrap_or("")}\n",
     )
-    .header("set-cookie", value="a=1; Path=/")
-    .header("set-cookie", value="b=2; Path=/")
+    ..header("set-cookie", value="a=1; Path=/")
+    ..header("set-cookie", value="b=2; Path=/")
   })
   r.handle("GET /env", req => {
     @http.Response::text(

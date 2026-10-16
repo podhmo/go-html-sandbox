@@ -46,7 +46,7 @@ pub fn Router::Router(
   decoded_path~ : Bool = false,
   not_found~ : Handler = _ => Response::text(404, "404 page not found\n"),
   method_not_allowed~ : (Request, Array[String]) -> Response = (_, allow) => {
-    Response::text(405, "Method Not Allowed\n").header(
+    Response::text(405, "Method Not Allowed\n")..header(
       "allow",
       value=allow.join(", "),
     )

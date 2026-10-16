@@ -70,13 +70,13 @@ pub fn Response::redirect(status : Int32, location : String) -> Response {
 }
 
 ///|
-/// Response::header adds a header field and returns the response, for
-/// chaining.
+/// Response::header adds a header field to the response. It changes the
+/// response in place; chain it with the cascade operator,
+/// `Response::text(200, "ok")..header("x", value="1")`.
 pub fn Response::header(
   self : Response,
   name : String,
   value~ : String,
-) -> Response {
+) -> Unit {
   self.headers.add(name, value~)
-  self
 }

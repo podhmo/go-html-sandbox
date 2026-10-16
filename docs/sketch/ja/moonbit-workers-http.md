@@ -44,7 +44,7 @@ pub fn Request::form(Self) -> Form raise BadRequest
 pub(all) enum Body { Text(String); Binary(Bytes) }
 pub struct Response { status : Int; headers : Headers; body : Body }
 pub fn Response::Response / text / html / json / typed / redirect
-pub fn Response::header(Self, String, value~ : String) -> Self   // つないで書ける
+pub fn Response::header(Self, String, value~ : String) -> Unit   // その場で書き換える。`..header(..)` でつなぐ
 
 pub struct Router { ... }
 pub fn Router::Router(decoded_path? : Bool, not_found? : Handler, method_not_allowed? : (Request, Array[String]) -> Response) -> Self
