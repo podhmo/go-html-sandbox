@@ -157,3 +157,14 @@ make deploy
 It deploys as the Worker `blog`, in place of the Go blog, at
 <https://blog.podhmo.workers.dev>. Deploying the Go blog again puts it
 back.
+
+It can also be deployed from GitHub Actions, by running the `deploy`
+workflow (`.github/workflows/deploy.yml`) by hand, from the Actions tab or
+the GitHub mobile app. It runs `make test` and then `make deploy`. It needs
+a `production` environment in the repository settings, with:
+
+- the secret `CLOUDFLARE_API_TOKEN`: an API token from the "Edit Cloudflare
+  Workers" template, limited to the account;
+- the variable `CLOUDFLARE_ACCOUNT_ID`;
+- deployment branches limited to `main`, since a manual run can pick any
+  branch.
