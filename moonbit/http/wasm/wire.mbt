@@ -1,0 +1,101 @@
+// How a request and a response cross between the host (adapter.mjs) and
+// the Wasm, through the Wasm's linear memory.
+//
+// The request, at address 0:
+//
+//   method \n url \n (name \t value \n)* \n (name \t value \n)* \n body
+//
+// the method, the URL, the headers, an empty line, the host's variables
+// (env), an empty line, and the body as bytes. Everything before the body
+// is UTF-8, and no name or value has a newline.
+//
+// The response, written over it:
+//
+//   status \n (name \t value \n)* \n body
+//
+// serve returns its length in bytes.
+
+///|
+/// decode_request parses the request in the wire format above. It raises
+/// BadRequest for a request it cannot parse.
+pub fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
+  // The head ends at the second empty line: the headers' and env's.
+  let mut ends = 0
+  let mut head_end = -1
+  let mut prev = -1
+  for i, b in data {
+    if b == b'\n' {
+      if prev == i - 1 && ends < 2 {
+        ends += 1
+        if ends == 2 {
+          head_end = i + 1
+          break
+        }
+      }
+      prev = i
+    }
+  }
+  guard head_end >= 0 else { raise @http.BadRequest("truncated request") }
+  let head = @utf8.decode_lossy(data[:head_end])
+  let lines = head.split("\n").collect()
+  guard lines.length() >= 4 else { raise @http.BadRequest("truncated request") }
+  let headers = @http.Headers::new()
+  let env = Map([])
+  let mut in_env = false
+  for line in lines[2:] {
+    if line.is_empty() {
+      if in_env {
+        break
+      }
+      in_env = true
+      continue
+    }
+    let (name, value) = match line.find("\t") {
+      Some(i) => (line[:i].to_owned(), line[i + 1:].to_owned())
+      None => (line.to_owned(), "")
+    }
+    if in_env {
+      env[name] = value
+    } else {
+      headers.add(name, value)
+    }
+  }
+  @http.Request::new(
+    verb=lines[0].to_owned(),
+    url=lines[1].to_owned(),
+    headers~,
+    body=data[head_end:].to_owned(),
+    env~,
+  )
+}
+
+///|
+/// encode_head is the status and the headers of res in the wire format,
+/// with the empty line that ends them.
+pub fn encode_head(res : @http.Response) -> String {
+  let head = StringBuilder()
+  head.write_string("\{res.status}\n")
+  for (name, value) in res.headers {
+    head.write_string("\{name}\t\{value}\n")
+  }
+  head.write_char('\n')
+  head.to_string()
+}
+
+///|
+/// handle answers the request in the wire format at address 0, n bytes
+/// long, with handler, and writes the response over it, returning its
+/// length. A request that cannot be parsed gets 400, as Go's net/http
+/// answers it.
+pub fn handle(n : Int32, handler : (@http.Request) -> @http.Response) -> Int32 {
+  let res = try decode_request(read(n)) catch {
+    _ => @http.Response::text(400, "400 Bad Request")
+  } noraise {
+    req => handler(req)
+  }
+  let end = write(0, encode_head(res))
+  match res.body {
+    Text(s) => write(end, s)
+    Binary(b) => write_bytes(end, b)
+  }
+}

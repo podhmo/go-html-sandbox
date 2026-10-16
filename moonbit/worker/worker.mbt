@@ -22,48 +22,27 @@ fn load(base : String) -> Result[@site.Site, String] {
 }
 
 ///|
-/// answer parses a request, "BASE_URL\nmethod\nquery\npath" (the path
-/// as it is in the URL, still percent-encoded), and returns the response as
-/// its head, "status\nname\tvalue\n...\n\n", and its body. If the
-/// embedded content cannot be loaded, every request gets a 500 saying why.
-fn answer(req : String) -> (String, String) {
-  let fields = []
-  let mut start = 0
-  for i in 0..<req.length() {
-    if fields.length() == 3 {
-      break
+/// answer renders the page for req, with the site for the BASE_URL
+/// variable. If the embedded content cannot be loaded, every request gets
+/// a 500 saying why.
+fn answer(req : @http.Request) -> @http.Response {
+  match load(req.env.get("BASE_URL").unwrap_or("")) {
+    Err(msg) => @http.Response::text(500, "\{msg}\n")
+    Ok(s) => {
+      let res = s.render(req.path, query=req.raw_query, verb=req.verb)
+      @http.Response::new(
+        res.status,
+        headers=@http.Headers::new(fields=res.headers),
+        body=Text(res.body),
+      )
     }
-    if req.code_unit_at(i) == '\n' {
-      fields.push(req.unsafe_substring(start~, end=i))
-      start = i + 1
-    }
   }
-  guard fields is [base, verb, query] else {
-    return ("400\ncontent-type\ttext/plain; charset=utf-8\n\n", "Bad request\n")
-  }
-  let raw = req.unsafe_substring(start~, end=req.length())
-  let res = match (@site.unescape_path(raw), load(base)) {
-    (None, _) => @site.Response::text(400, "400 Bad Request") // as Go's net/http
-    (_, Err(msg)) => @site.Response::text(500, "\{msg}\n")
-    (Some(path), Ok(s)) => s.render(path, query~, verb~)
-  }
-  let head = StringBuilder()
-  head.write_string("\{res.status}\n")
-  for (name, value) in res.headers {
-    head.write_string("\{name}\t\{value}\n")
-  }
-  head.write_char('\n')
-  (head.to_string(), res.body)
 }
 
 ///|
-/// serve answers the request the host wrote at address 0 of the memory,
-/// n bytes of UTF-8 (see answer), and writes the response over it in
-/// UTF-8, the head and then the body, returning its length in bytes.
-/// Strings cross this way, not as JS strings, since Workers compiles the
-/// Wasm without the JS string builtins; see
-/// docs/sketch/ja/moonbit-workers-adapter.md.
+/// serve answers the request the host (../http/wasm/adapter.mjs) wrote at
+/// address 0 of the memory, n bytes long, and writes the response over it,
+/// returning its length; see the http/wasm package for the format.
 pub fn serve(n : Int32) -> Int32 {
-  let (head, body) = answer(read(n))
-  write(write(0, head), body)
+  @wasm.handle(n, answer)
 }

@@ -1,11 +1,11 @@
 import {
   "podhmo/blog/site",
-  "moonbitlang/core/encoding/utf8",
+  "podhmo/blog/http",
+  "podhmo/blog/http/wasm",
 }
 
-// Only wasm-gc: the inline Wasm that reads and writes the linear memory
-// does not compile on native, where the comparison CLI in compare/cmd is
-// built.
+// Only wasm-gc, as http/wasm, whose inline Wasm does not compile on
+// native, where the comparison CLI in compare/cmd is built.
 
 supported_targets = "+wasm-gc"
 

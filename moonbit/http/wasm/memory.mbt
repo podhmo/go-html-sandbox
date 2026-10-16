@@ -1,6 +1,7 @@
 // The linear memory the host and the Wasm share. moon emits one page of it
 // even for wasm-gc and leaves it unused, so the whole of it is the
-// request and response buffer.
+// request and response buffer. The package that exports the entry point
+// must export it too ("export-memory-name": "memory").
 
 ///|
 extern "wasm" fn load8(addr : Int32) -> Int32 =
@@ -28,11 +29,19 @@ fn reserve(n : Int32) -> Unit {
 }
 
 ///|
-/// read decodes the n bytes of UTF-8 at address 0.
-fn read(n : Int32) -> String {
-  @utf8.decode(Bytes::makei(n, i => load8(i).to_byte())) catch {
-    _ => ""
+/// read copies the n bytes at address 0.
+fn read(n : Int32) -> Bytes {
+  Bytes::makei(n, i => load8(i).to_byte())
+}
+
+///|
+/// write_bytes copies b to address at, and returns where it ends.
+fn write_bytes(at : Int32, b : Bytes) -> Int32 {
+  reserve(at + b.length())
+  for i, x in b {
+    store8(at + i, x.to_int())
   }
+  at + b.length()
 }
 
 ///|

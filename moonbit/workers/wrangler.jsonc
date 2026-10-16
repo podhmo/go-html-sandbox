@@ -12,7 +12,7 @@
     // `wrangler dev`. Not ../posts, ../repodocs, or ../assets: the build
     // writes embedded.mbt there.
     "watch_dir": [
-      "../el", "../picoel", "../tinymarkdown", "../tinyfrontmatter", "../site", "../worker",
+      "../el", "../picoel", "../tinymarkdown", "../tinyfrontmatter", "../site", "../http", "../worker",
       "../../go/examples/blog/posts", "../../go/examples/blog/internal/site", "../../docs"
     ]
   },
