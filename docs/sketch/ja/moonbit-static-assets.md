@@ -80,7 +80,7 @@ TODO.md の「MoonBit 版のブログで、記事や文書を足しても Wasm �
 
 ### 文章の置き場所
 
-`moonbit/workers/build/` は、今も Wasm をコピーする、git で無視している置き場所になっている。ビルドのコマンドで、ここに `content/` を作って文章をコピーする。
+`moonbit/cloudflare/build/`（当時は `moonbit/workers/build/`）は、今も Wasm をコピーする、git で無視している置き場所になっている。ビルドのコマンドで、ここに `content/` を作って文章をコピーする。
 
 - `content/posts/*.md`（`go/examples/blog/posts` から）
 - `content/docs/TODO.md` と `content/docs/docs/**/*.md`（リポジトリから。パスは今の `repodocs` と同じ）

@@ -3,8 +3,8 @@ _build/
 .mooncakes/
 
 # The Wasm copied in by the Workers build, and wrangler's local state.
-workers/build/
-workers/.wrangler/
+cloudflare/build/
+cloudflare/.wrangler/
 examples/echo/build/
 examples/echo/.wrangler/
 
