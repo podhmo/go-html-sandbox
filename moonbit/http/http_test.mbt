@@ -15,10 +15,7 @@ fn request(
 
 ///|
 fn body_text(res : @http.Response) -> String {
-  match res.body {
-    Text(s) => s
-    Binary(b) => @utf8.decode_lossy(b)
-  }
+  res.body.text()
 }
 
 ///|
@@ -38,6 +35,23 @@ test "unescape" {
   assert_eq(@http.unescape("%FF"), Some("\u{FFFD}"))
   assert_eq(@http.unescape("%zz"), None)
   assert_eq(@http.unescape("%A"), None)
+}
+
+///|
+test "unescape paths" {
+  let cases : Array[(String, String?)] = [
+    ("/", Some("/")),
+    ("/a%3Cb%3E", Some("/a<b>")),
+    ("/%E6%97%A5%E6%9C%AC", Some("/日本")),
+    ("/docs%2F", Some("/docs/")),
+    ("/%FF", Some("/\u{FFFD}")),
+    ("/%E0%A4%A", None),
+    ("/%zz", None),
+    ("/%", None),
+  ]
+  for (raw, want) in cases {
+    assert_eq(@http.unescape(raw), want, msg=raw)
+  }
 }
 
 ///|
@@ -205,6 +219,18 @@ test "Router" {
   assert_eq(get("GET", "/docs/a/b"), (200, "docs "))
   assert_eq(get("GET", "/files/"), (200, "files path="))
   assert_eq(get("GET", "/files/a/%E6%97%A5"), (200, "files path=a/日"))
+}
+
+///|
+test "Router with decoded_path" {
+  let r = @http.Router::new(decoded_path=true)
+  r.handle("GET /posts/{slug}", req => {
+    @http.Response::text(200, req.param("slug"))
+  })
+  r.handle("GET /docs/{$}", _ => @http.Response::text(200, "docs"))
+  assert_eq(r.serve(request("GET", "/posts/a%2Fb")).status, 404)
+  assert_eq(body_text(r.serve(request("GET", "/posts/a%20b"))), "a b")
+  assert_eq(body_text(r.serve(request("GET", "/docs%2F"))), "docs")
 }
 
 ///|

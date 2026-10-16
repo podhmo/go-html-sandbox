@@ -8,6 +8,17 @@ pub(all) suberror BadRequest {
 }
 
 ///|
+/// output writes the reason, so "\{e}" reads as the error text.
+pub impl Show for BadRequest with fn output(self, logger) {
+  let BadRequest(msg) = self
+  logger.write_string(msg)
+}
+
+///|
+#deprecated("Use \"\\{e}\" or Show::to_string instead")
+pub extend BadRequest with Show::{to_string, output}
+
+///|
 /// Request is an HTTP request. verb is the method; path is raw_path decoded; params are the
 /// wildcards of the pattern the Router matched; env is what the host
 /// passes besides the request, such as a Worker's string variables.

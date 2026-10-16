@@ -14,12 +14,18 @@ pub fn unescape(StringView, plus? : Bool) -> String?
 pub(all) suberror BadRequest {
   BadRequest(String)
 }
+#deprecated
+pub fn BadRequest::output(Self, &Logger) -> Unit
+#deprecated
+pub fn BadRequest::to_string(Self) -> String
+pub impl Show for BadRequest
 
 // Types and methods
 pub(all) enum Body {
   Text(String)
   Binary(Bytes)
 }
+pub fn Body::text(Self) -> String
 
 pub struct File {
   name : String
@@ -77,12 +83,13 @@ pub fn Response::text(Int, String) -> Self
 pub fn Response::typed(Int, String, Body) -> Self
 
 pub struct Router {
+  decoded_path : Bool
   not_found : (Request) -> Response
   method_not_allowed : (Request, Array[String]) -> Response
   // private fields
 }
 pub fn Router::handle(Self, String, (Request) -> Response) -> Unit
-pub fn Router::new(not_found? : (Request) -> Response, method_not_allowed? : (Request, Array[String]) -> Response) -> Self
+pub fn Router::new(decoded_path? : Bool, not_found? : (Request) -> Response, method_not_allowed? : (Request, Array[String]) -> Response) -> Self
 pub fn Router::serve(Self, Request) -> Response
 
 pub struct Values {

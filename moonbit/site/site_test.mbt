@@ -62,7 +62,7 @@ fn new_site(
 }
 
 ///|
-fn header(res : @site.Response, name : String) -> String? {
+fn header(res : @http.Response, name : String) -> String? {
   for (n, v) in res.headers {
     if n == name {
       return Some(v)
@@ -77,7 +77,7 @@ fn header(res : @site.Response, name : String) -> String? {
 fn body(s : @site.Site, path : String, want~ : Int32 = 200) -> String raise {
   let res = s.render(path)
   assert_eq(res.status, want, msg="status of \{path}")
-  res.body
+  res.body.text()
 }
 
 ///|
@@ -176,13 +176,16 @@ test "list" {
   let res = new_site(test_posts).render("/")
   assert_eq(res.status, 200)
   assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
-  assert_true(res.body.has_prefix("<!doctype html>\n"))
-  let hello = res.body.find("<a href=\"/posts/hello\">")
-  let old = res.body.find("<a href=\"/posts/old\">")
+  assert_true(res.body.text().has_prefix("<!doctype html>\n"))
+  let hello = res.body.text().find("<a href=\"/posts/hello\">")
+  let old = res.body.text().find("<a href=\"/posts/old\">")
   guard hello is Some(hello) && old is Some(old) && hello < old else {
     fail("want links to hello then old")
   }
-  assert_false(res.body.contains("<script>"), msg="title must be escaped")
+  assert_false(
+    res.body.text().contains("<script>"),
+    msg="title must be escaped",
+  )
 }
 
 ///|
@@ -396,7 +399,7 @@ test "post markdown" {
   let s = new_site(test_posts)
   let res = s.render("/posts/hello.md")
   assert_eq(res.status, 200)
-  assert_eq(res.body, test_posts[1].1)
+  assert_eq(res.body.text(), test_posts[1].1)
   assert_eq(header(res, "content-type"), Some("text/markdown; charset=utf-8"))
   assert_eq(header(res, "x-content-type-options"), Some("nosniff"))
   assert_contains(body(s, "/posts/hello"), [
@@ -414,7 +417,7 @@ test "doc markdown" {
     ] {
     let res = s.render(path)
     assert_eq(res.status, 200, msg=path)
-    assert_eq(res.body, want, msg=path)
+    assert_eq(res.body.text(), want, msg=path)
     assert_eq(
       header(res, "content-type"),
       Some("text/markdown; charset=utf-8"),
@@ -437,7 +440,7 @@ test "more not found pages" {
     let res = s.render(path)
     assert_eq(res.status, 404, msg=path)
     assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
-    assert_contains(res.body, [
+    assert_contains(res.body.text(), [
       "<h1>404 Not Found</h1>", message, "<a href=\"/\">Back to all posts</a>",
     ])
   }
@@ -450,7 +453,7 @@ test "favicon and site.css" {
   assert_eq(res.status, 200)
   assert_eq(header(res, "content-type"), Some("image/svg+xml"))
   assert_eq(header(res, "cache-control"), Some("public, max-age=86400"))
-  assert_true(res.body.has_prefix("<svg"))
+  assert_true(res.body.text().has_prefix("<svg"))
   let page = body(s, "/")
   guard page.find("/site.css?v=") is Some(i) else { fail("no site.css link") }
   let version = page[i + "/site.css?v=".length():i + "/site.css?v=".length() + 8]
@@ -462,7 +465,7 @@ test "favicon and site.css" {
     header(res, "cache-control"),
     Some("public, max-age=31536000, immutable"),
   )
-  assert_true(res.body.contains("body > header"))
+  assert_true(res.body.text().contains("body > header"))
 }
 
 ///|
@@ -472,26 +475,11 @@ test "methods other than GET and HEAD get the 404 page" {
   for verb in ["POST", "PUT", "DELETE"] {
     let res = s.render("/posts/hello", verb~)
     assert_eq(res.status, 404, msg=verb)
-    assert_contains(res.body, ["<h1>404 Not Found</h1>", "Page not found."])
+    assert_contains(res.body.text(), [
+      "<h1>404 Not Found</h1>", "Page not found.",
+    ])
     // Even a path that would redirect.
     assert_eq(s.render("/docs", verb~).status, 404, msg=verb)
-  }
-}
-
-///|
-test "unescape_path" {
-  let cases : Array[(String, String?)] = [
-    ("/", Some("/")),
-    ("/a%3Cb%3E", Some("/a<b>")),
-    ("/%E6%97%A5%E6%9C%AC", Some("/日本")),
-    ("/docs%2F", Some("/docs/")),
-    ("/%FF", Some("/\u{FFFD}")),
-    ("/%E0%A4%A", None),
-    ("/%zz", None),
-    ("/%", None),
-  ]
-  for (raw, want) in cases {
-    assert_eq(@site.unescape_path(raw), want, msg=raw)
   }
 }
 
@@ -514,7 +502,7 @@ test "redirects" {
     assert_eq(header(res, "location"), Some(location), msg=path)
     assert_eq(header(res, "content-type"), Some("text/html; charset=utf-8"))
     assert_eq(
-      res.body,
+      res.body.text(),
       "<a href=\"\{@el.render_html(@el.Text(location))}\">Temporary Redirect</a>.\n\n",
       msg=path,
     )

@@ -22,20 +22,13 @@ fn load(base : String) -> Result[@site.Site, String] {
 }
 
 ///|
-/// answer renders the page for req, with the site for the BASE_URL
+/// answer answers req with the site for the BASE_URL
 /// variable. If the embedded content cannot be loaded, every request gets
 /// a 500 saying why.
 fn answer(req : @http.Request) -> @http.Response {
   match load(req.env.get("BASE_URL").unwrap_or("")) {
     Err(msg) => @http.Response::text(500, "\{msg}\n")
-    Ok(s) => {
-      let res = s.render(req.path, query=req.raw_query, verb=req.verb)
-      @http.Response::new(
-        res.status,
-        headers=@http.Headers::new(fields=res.headers),
-        body=Text(res.body),
-      )
-    }
+    Ok(s) => s.handle(req)
   }
 }
 

@@ -8,6 +8,16 @@ pub(all) enum Body {
 }
 
 ///|
+/// Body::text is the body as text, decoding bytes as UTF-8 with U+FFFD
+/// for those that are not.
+pub fn Body::text(self : Body) -> String {
+  match self {
+    Text(s) => s
+    Binary(b) => @utf8.decode_lossy(b)
+  }
+}
+
+///|
 /// Response is an HTTP response.
 pub struct Response {
   status : Int32

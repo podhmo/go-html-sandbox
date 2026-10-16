@@ -30,6 +30,7 @@ priv struct Route {
 /// matches none gets not_found (404 by default).
 pub struct Router {
   priv routes : Array[Route]
+  decoded_path : Bool
   not_found : Handler
   method_not_allowed : (Request, Array[String]) -> Response
 }
@@ -37,8 +38,12 @@ pub struct Router {
 ///|
 /// Router::new is a router without routes. not_found and
 /// method_not_allowed (given the methods the path allows) replace the
-/// default answers.
+/// default answers. Patterns match the path split at "/" and then
+/// decoded, as Go 1.22's ServeMux does, so "%2F" stays inside a segment;
+/// with decoded_path, they match the decoded path split at "/", as a
+/// handler routing on Go's r.URL.Path by hand does.
 pub fn Router::new(
+  decoded_path~ : Bool = false,
   not_found~ : Handler = _ => Response::text(404, "404 page not found\n"),
   method_not_allowed~ : (Request, Array[String]) -> Response = (_, allow) => {
     Response::text(405, "Method Not Allowed\n").header(
@@ -47,7 +52,7 @@ pub fn Router::new(
     )
   },
 ) -> Router {
-  { routes: [], not_found, method_not_allowed, }
+  { routes: [], decoded_path, not_found, method_not_allowed, }
 }
 
 ///|
@@ -167,10 +172,13 @@ fn Route::match_path(
 /// Router::serve answers req with the handler of the matching pattern,
 /// filling req.params with the wildcards.
 pub fn Router::serve(self : Router, req : Request) -> Response {
-  // Split before decoding, so that %2F stays inside a segment.
   let segs = []
-  for raw in req.raw_path[1:].split("/") {
-    segs.push(unescape(raw).unwrap_or(raw.to_owned()))
+  if self.decoded_path {
+    req.path[1:].split("/").each(s => segs.push(s.to_owned()))
+  } else {
+    for raw in req.raw_path[1:].split("/") {
+      segs.push(unescape(raw).unwrap_or(raw.to_owned()))
+    }
   }
   let allow = []
   for r in self.routes {
