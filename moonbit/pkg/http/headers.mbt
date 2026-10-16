@@ -65,19 +65,14 @@ pub fn Headers::iter(self : Headers) -> Iter[(String, String)] {
 /// and its parameters (with their names in lower case), e.g.
 /// ("multipart/form-data", [("boundary", "x")]).
 pub fn media_type(value : String) -> (String, Array[(String, String)]) {
-  let parts = value.split(";").collect()
+  guard value.split(";").collect() is [ty, .. rest] else { return ("", []) }
   let params = [
-    for part in parts[1:] if part.find("=") is Some(i) => {
+    for part in rest if part.find("=") is Some(i) => {
       let name = part[:i].trim(chars=" \t").to_owned().to_lower()
       let v = part[i + 1:].trim(chars=" \t")
       let v = if v is [.. "\"", .. inner, .. "\""] { inner } else { v }
       (name, v.to_owned())
     }
   ]
-  let ty = if parts.is_empty() {
-    ""
-  } else {
-    parts[0].trim(chars=" \t").to_owned()
-  }
-  (ty.to_lower(), params)
+  (ty.trim(chars=" \t").to_owned().to_lower(), params)
 }
