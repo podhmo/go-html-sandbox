@@ -1,0 +1,9 @@
+import {
+  "podhmo/html-sandbox/pkg/tinymarkdown",
+}
+
+supported_targets = "+wasm-gc"
+
+options(
+  link: { "wasm-gc": { "exports": [ "parse" ], "use-js-builtin-string": true } },
+)

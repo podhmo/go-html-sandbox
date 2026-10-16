@@ -1,0 +1,11 @@
+import {
+  "podhmo/wasm-pair/parser",
+}
+
+supported_targets = "+wasm-gc"
+
+options(
+  link: {
+    "wasm-gc": { "exports": [ "preview" ], "use-js-builtin-string": true },
+  },
+)

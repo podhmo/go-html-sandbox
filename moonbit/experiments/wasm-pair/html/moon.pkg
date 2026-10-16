@@ -1,0 +1,13 @@
+import {
+  "moonbitlang/core/json",
+  "podhmo/html-sandbox/pkg/el",
+  "podhmo/html-sandbox/pkg/picoel",
+}
+
+supported_targets = "+wasm-gc"
+
+options(
+  link: {
+    "wasm-gc": { "exports": [ "render" ], "use-js-builtin-string": true },
+  },
+)

@@ -1,0 +1,97 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>two Wasm modules (spike)</title>
+<!-- `make serve`: the editor page with the two Wasm modules joined three ways; /?check runs the check. -->
+<style>body{display:grid;grid-template-columns:1fr 1fr;gap:1em;margin:1em}textarea{width:100%;height:70vh}</style>
+<div>
+<select id="mode">
+  <option value="js">sync: JS passes parse's output to render</option>
+  <option value="linked">sync: linked.wasm imports html.wasm's render</option>
+  <option value="workers">async: two Workers, parser → html over a MessagePort</option>
+</select>
+<textarea id="src"># 記事タイトル
+
+本文に `code` と [リンク](https://example.com)。
+
+- 項目1
+  - 項目1-1
+- 項目2
+
+| a | b |
+| - | - |
+| 1 | 2 |
+</textarea></div>
+<div><div id="status"></div><div id="out"></div><pre id="check"></pre></div>
+<script type="module">
+// Errors go to the page, for check.mjs to see.
+const report = (e) => (document.getElementById("check").textContent += `error: ${e}\n`);
+addEventListener("error", (e) => report(e.message));
+addEventListener("unhandledrejection", (e) => report(e.reason));
+import { load } from "./wasm.mjs";
+
+const parser = await load("parser");
+const html = await load("html");
+const linked = await load("linked", { html: { render: html.render } });
+
+// The two services, joined by a channel of their own.
+const parserWorker = new Worker("./parser-worker.mjs", { type: "module" });
+const htmlWorker = new Worker("./html-worker.mjs", { type: "module" });
+const { port1, port2 } = new MessageChannel();
+parserWorker.postMessage({ port: port1 }, [port1]);
+htmlWorker.postMessage({ port: port2 }, [port2]);
+const waiting = new Map();
+let nextID = 0;
+htmlWorker.onmessage = ({ data }) => {
+  waiting.get(data.id)(data.html);
+  waiting.delete(data.id);
+};
+
+// The three ways, each a function from Markdown to (a Promise of) HTML.
+const modes = {
+  js: (md) => html.render(parser.parse(md)),
+  linked: (md) => linked.preview(md),
+  workers: (md) => new Promise((resolve) => {
+    const id = nextID++;
+    waiting.set(id, resolve);
+    parserWorker.postMessage({ id, md });
+  }),
+};
+
+const src = document.getElementById("src"), mode = document.getElementById("mode");
+let latest = 0;
+async function update() {
+  const ticket = ++latest, t = performance.now();
+  // render escapes the text of the Markdown, so its output is safe to set as HTML.
+  const out = await modes[mode.value](src.value);
+  if (ticket !== latest) return; // a newer input is on its way
+  document.getElementById("out").innerHTML = out;
+  document.getElementById("status").textContent = `${mode.value}: ${(performance.now() - t).toFixed(2)} ms`;
+}
+src.addEventListener("input", update);
+mode.addEventListener("change", update);
+await update();
+
+// /?check: give each way a large document and see how long the page's own
+// thread stops, by the longest gap between ticks of a 10 ms timer.
+if (new URLSearchParams(location.search).has("check")) {
+  const big = src.value.repeat(20000);
+  const lines = [`input: ${big.length} UTF-16 code units`];
+  const want = modes.js(big);
+  for (const name of Object.keys(modes)) {
+    await modes[name](big); // warm up
+    let last = performance.now(), gap = 0;
+    const timer = setInterval(() => {
+      const now = performance.now();
+      gap = Math.max(gap, now - last);
+      last = now;
+    }, 10);
+    const t = performance.now();
+    const out = await modes[name](big);
+    const took = performance.now() - t;
+    await new Promise((r) => setTimeout(r, 50));
+    clearInterval(timer);
+    lines.push(`${name}: ${took.toFixed(0)} ms, longest stop of the page ${gap.toFixed(0)} ms, same HTML: ${out === want}`);
+  }
+  document.getElementById("check").textContent = lines.join("\n");
+}
+</script>
