@@ -54,6 +54,8 @@ It is an experiment in progress; see
 - `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm with
   `http/wasm/adapter.mjs`, keeping each 200 response to GET and HEAD by
   path for the rest of the isolate's life, and `wrangler.jsonc` builds it
+- `experiments` — spikes kept to reproduce the numbers in the notes,
+  each a module of its own outside the blog's (see its README)
 - `examples/echo` — an example of `http` outside the blog (methods,
   wildcards, the query, text, JSON and form bodies, binary responses,
   cookies, and variables), run on Node by `make test-echo` and with

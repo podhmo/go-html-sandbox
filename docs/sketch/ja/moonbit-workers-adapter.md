@@ -24,7 +24,7 @@ TODO.md の「MoonBit の Workers 用アダプターを最適な形に磨く」�
 | Node.js | 24.21.0 |
 | wrangler | 4.148.0（`npx wrangler@4`）、同梱の workerd は 1.20261006.1 |
 
-spike は `git archive HEAD` で `/tmp/go-html-sandbox/adapter` に取り出したコピーに、案ごとのパッケージ（`worker_packed`、`worker_mem16`、`worker_utf8`、`worker_utf8d`、`worker_jsstr`）と `workers/worker-<案>.mjs` を足して作った。`/tmp` なので残らない。要点のコードは末尾に載せた。
+spike は `git archive HEAD` で `/tmp/go-html-sandbox/adapter` に取り出したコピーに、案ごとのパッケージ（`worker_packed`、`worker_mem16`、`worker_utf8`、`worker_utf8d`、`worker_jsstr`）と `workers/worker-<案>.mjs` を足して作った。要点のコードは末尾に載せた。spike は、その後 [`moonbit/experiments/adapter-abi`](../../../moonbit/experiments/README.md) に移した（今の `site` の API に合わせて直したので、`make bench` で今のブログに対して測り直せる。埋め込んだ文書が違うので、サイズと時間はこのメモの数字と同じにはならない。2026-10-16 に測り直したときも、速い順は同じだった）。
 
 ## 分かった前提
 

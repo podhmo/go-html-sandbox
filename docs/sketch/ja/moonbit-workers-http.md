@@ -223,19 +223,23 @@ Wasm がその import を呼ぶと、Wasm のスタックごと止まり、Promi
 
 - **どこで使えるか**: Node 24.21.0 と、wrangler 4.148.0 の workerd（1.20261006.1）の両方で、`WebAssembly.Suspending` と `WebAssembly.promising` が、フラグなしで関数として存在した。
 - **MoonBit の側**: 何も特別なことは要らない。`fn host_fetch(n : Int) -> Int = "host" "fetch"` という普通の import 宣言で、wasm-gc のまま動いた。止まっているあいだも、GC の参照を持ったままのスタックが保たれる。
-- **確かめたこと**: `/tmp` の spike（`examples/proxy` 相当）で、`GET /proxy?url=https://example.com/` が上流の 200 と本文を返した。1 つの要求の中で 2 回続けて `fetch` しても動いた。Node でも `wrangler dev` でも同じ。
+- **確かめたこと**: spike（[`moonbit/experiments/wasm-fetch`](../../../moonbit/experiments/README.md)。`make try`、`make concurrent`、`make dev`）で、`GET /proxy?url=https://example.com/` が上流の 200 と本文を返した。1 つの要求の中で 2 回続けて `fetch` しても動いた。Node でも `wrangler dev` でも同じ。
 - **同時に来た要求**: Wasm が 1 つの要求で止まっているあいだに、次の要求が `serve` に入ってくる。応答の長さが違う 3 つの要求（Node では上流が 300 ms と 50 ms で返す、`wrangler dev` では example.com / .org / .net）を同時に送り、どれも自分の応答を受け取った。
 
 ただし、線形メモリの番地 0 を共有する今の受け渡しは、そのままでは同時の要求で壊れる。spike では次のようにした。
 
 1. 要求は、`serve` を呼んだその場で（最初に止まる前に）Wasm が読み終える。
-2. `fetch` の結果は、止まる import（`host.fetch`）では JS の側に取っておくだけにし、Wasm が止まらない import（`host.take`）を呼んだときに番地 0 に写す。止まる import が値を返してから Wasm が動き出すまでのあいだに、ほかの要求の JS が走りうるため。
+2. `fetch` の結果は、止まる import（`host.fetch`）では JS の側に番号札を付けて取っておくだけにし、Wasm がその番号札で止まらない import（`host.take(ticket)`）を呼んだときに番地 0 に写す。止まる import が値を返してから Wasm が動き出すまでのあいだに、ほかの要求の JS が走りうるため。最初の版は結果を 1 つの変数に取っておいていたので、2 つの `fetch` がほぼ同時に解決すると、別の要求の結果を取りうる形だった（spike をリポジトリに移すときに気づいて直した。`make concurrent` は、同時に解決する 2 つの上流を含めて、どの要求も自分の結果を受け取ることを確かめる）。
 3. 応答も同じ理由で、`serve` の戻り値ではなく、止まらない import（`host.done(id, n)`）で、その場で JS に写させる。`serve` には要求ごとの id を渡す。
 
-ライブラリにするなら、`@wasm.handle` とアダプターをこの形（`serve(id, n)`、`take`、`done`）に変え、`Request` に「ホストの `fetch` を呼ぶ」関数を足せばよさそう。KV や R2 も、同じように import を足せば呼べるはず（試していない）。
+ライブラリにするなら、`@wasm.handle` とアダプターをこの形（`serve(id, n)`、`take(ticket)`、`done`）に変え、`Request` に「ホストの `fetch` を呼ぶ」関数を足せばよさそう。KV や R2 も、同じように import を足せば呼べるはず（試していない）。
 
 - 本番の Workers で JSPI が使えるかは確かめていない（spike の Worker をデプロイしていない）。
 - 止まるたびのコスト、止まったスタックのメモリ、例外が JS と Wasm をまたぐときの扱いは見ていない。
+
+## 計測の道具
+
+この節までの計測は [`moonbit/experiments/http-bench`](../../../moonbit/experiments/README.md) に置いた。`make build` が PR #31 の最後のコミット、ライブラリに切り出したコミット、`Router` に載せ替えたコミットのブログを git の worktree でビルドし、`make bench` が「処理時間（Node）」の表を、`make bench-body` が本文の大きさごとの数字を出す。
 
 ## 確かめられなかったこと
 
