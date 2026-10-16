@@ -80,7 +80,7 @@ fn parse_multipart(
       if line.find(":") is Some(i) {
         headers.add(
           line[:i].to_owned(),
-          line[i + 1:].trim(chars=" \t").to_owned(),
+          value=line[i + 1:].trim(chars=" \t").to_owned(),
         )
       }
     }

@@ -125,7 +125,8 @@ fn Site::new_router(self : Site) -> @http.Router {
   // Pages link to it without a version, so it is cached for a day.
   r.handle("GET /favicon.svg", _ => {
     @http.Response::typed(200, "image/svg+xml", Text(@assets.favicon_svg)).header(
-      "cache-control", "public, max-age=86400",
+      "cache-control",
+      value="public, max-age=86400",
     )
   })
   // Pages link to it with a version in the query, so it can be cached for
@@ -135,7 +136,7 @@ fn Site::new_router(self : Site) -> @http.Router {
       200,
       "text/css; charset=utf-8",
       Text(@assets.site_css),
-    ).header("cache-control", "public, max-age=31536000, immutable")
+    ).header("cache-control", value="public, max-age=31536000, immutable")
   })
   // A pattern cannot end in ".md" after a wildcard, so the handlers look
   // at the suffix.
@@ -211,7 +212,8 @@ fn clean_path(p : String) -> String {
 /// Markdown containing tags is HTML.
 fn markdown(src : String) -> @http.Response {
   @http.Response::typed(200, "text/markdown; charset=utf-8", Text(src)).header(
-    "x-content-type-options", "nosniff",
+    "x-content-type-options",
+    value="nosniff",
   )
 }
 

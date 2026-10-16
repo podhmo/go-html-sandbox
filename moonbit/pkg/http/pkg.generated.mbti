@@ -41,12 +41,12 @@ pub struct Headers {
   fields : Array[(String, String)]
 }
 pub fn Headers::Headers(fields? : Array[(String, String)]) -> Self
-pub fn Headers::add(Self, String, String) -> Unit
+pub fn Headers::add(Self, String, value~ : String) -> Unit
 pub fn Headers::delete(Self, String) -> Unit
 pub fn Headers::get(Self, String) -> String?
 pub fn Headers::get_all(Self, String) -> Array[String]
 pub fn Headers::iter(Self) -> Iter[(String, String)]
-pub fn Headers::set(Self, String, String) -> Unit
+pub fn Headers::set(Self, String, value~ : String) -> Unit
 
 pub struct Request {
   verb : String
@@ -73,7 +73,7 @@ pub struct Response {
   body : Body
 }
 pub fn Response::Response(Int, headers? : Headers, body? : Body) -> Self
-pub fn Response::header(Self, String, String) -> Self
+pub fn Response::header(Self, String, value~ : String) -> Self
 pub fn Response::html(Int, String) -> Self
 pub fn Response::json(Int, Json) -> Self
 pub fn Response::redirect(Int, String) -> Self

@@ -75,8 +75,8 @@ pub fn Response::redirect(status : Int32, location : String) -> Response {
 pub fn Response::header(
   self : Response,
   name : String,
-  value : String,
+  value~ : String,
 ) -> Response {
-  self.headers.add(name, value)
+  self.headers.add(name, value~)
   self
 }

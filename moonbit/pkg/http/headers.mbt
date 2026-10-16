@@ -34,13 +34,13 @@ pub fn Headers::get_all(self : Headers, name : String) -> Array[String] {
 
 ///|
 /// Headers::add appends a field, keeping those with the same name.
-pub fn Headers::add(self : Headers, name : String, value : String) -> Unit {
+pub fn Headers::add(self : Headers, name : String, value~ : String) -> Unit {
   self.fields.push((name, value))
 }
 
 ///|
 /// Headers::set replaces the fields named name with one.
-pub fn Headers::set(self : Headers, name : String, value : String) -> Unit {
+pub fn Headers::set(self : Headers, name : String, value~ : String) -> Unit {
   self.delete(name)
   self.fields.push((name, value))
 }

@@ -57,7 +57,7 @@ fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
     if in_env {
       env[name] = value
     } else {
-      headers.add(name, value)
+      headers.add(name, value~)
     }
   }
   @http.Request(

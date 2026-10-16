@@ -48,7 +48,7 @@ pub fn Router::Router(
   method_not_allowed~ : (Request, Array[String]) -> Response = (_, allow) => {
     Response::text(405, "Method Not Allowed\n").header(
       "allow",
-      allow.join(", "),
+      value=allow.join(", "),
     )
   },
 ) -> Router {

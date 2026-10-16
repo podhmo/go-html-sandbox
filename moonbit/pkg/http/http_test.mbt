@@ -92,10 +92,10 @@ test "Request::Request parses the URL" {
 test "Headers" {
   let h = @http.Headers(fields=[("Content-Type", "text/plain")])
   assert_eq(h.get("content-type"), Some("text/plain"))
-  h.add("set-cookie", "a=1")
-  h.add("Set-Cookie", "b=2")
+  h.add("set-cookie", value="a=1")
+  h.add("Set-Cookie", value="b=2")
   assert_eq(h.get_all("SET-COOKIE"), ["a=1", "b=2"])
-  h.set("set-cookie", "c=3")
+  h.set("set-cookie", value="c=3")
   assert_eq(h.get_all("set-cookie"), ["c=3"])
   h.delete("CONTENT-TYPE")
   assert_eq(h.get("content-type"), None)
