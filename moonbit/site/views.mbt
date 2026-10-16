@@ -7,6 +7,10 @@ const SITE_NAME = "blog"
 const SITE_DESCRIPTION = "Notes rendered with Wasm."
 
 ///|
+/// REPO_HOME_URL is the repository's top page, linked from the header.
+const REPO_HOME_URL = "https://github.com/podhmo/html-sandbox"
+
+///|
 /// PageMeta describes a page for <head>. title and description may hold
 /// inline Markdown, which layout reduces to plain text.
 priv struct PageMeta {
@@ -40,10 +44,13 @@ fn layout(meta : PageMeta, body : Array[@el.Node]) -> @el.Node {
   ]
   @picoel.document("ja", head~, [
     @picoel.header([
-      @picoel.nav([
-        @picoel.a("/", [@picoel.strong([@picoel.text(SITE_NAME)])]),
-        @picoel.a("/docs/", [@picoel.text("docs")]),
-      ]),
+      @picoel.spread(
+        [
+          @picoel.a("/", [@picoel.strong([@picoel.text(SITE_NAME)])]),
+          @picoel.a("/docs/", [@picoel.text("docs")]),
+        ],
+        end=[@picoel.a(REPO_HOME_URL, [@picoel.text("github")])],
+      ),
     ]),
     @picoel.main_(body),
     @picoel.footer([@picoel.small([@picoel.text("Rendered with Wasm.")])]),

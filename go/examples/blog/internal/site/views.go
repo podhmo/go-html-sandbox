@@ -14,6 +14,8 @@ import (
 const (
 	siteName        = "blog"
 	siteDescription = "Notes rendered with Wasm."
+	// repoHomeURL is the repository's top page, linked from the header.
+	repoHomeURL = "https://github.com/podhmo/html-sandbox"
 )
 
 // pageMeta describes a page for <head>. Title and Description may hold
@@ -49,9 +51,12 @@ func layout(env pageEnv, meta pageMeta, body ...pe.Node) pe.Node {
 		head = append(head, pe.Script(liveReloadScriptPath))
 	}
 	return pe.Document("ja", head,
-		pe.Header(pe.Nav(
-			pe.A("/", pe.Strong(pe.Text(siteName))),
-			pe.A("/docs/", pe.Text("docs")),
+		pe.Header(pe.Spread(
+			[]pe.Node{
+				pe.A("/", pe.Strong(pe.Text(siteName))),
+				pe.A("/docs/", pe.Text("docs")),
+			},
+			[]pe.Node{pe.A(repoHomeURL, pe.Text("github"))},
 		)),
 		pe.Main(body...),
 		pe.Footer(pe.Small(pe.Text("Rendered with Wasm."))),

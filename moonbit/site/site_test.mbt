@@ -202,6 +202,7 @@ test "pico only" {
   assert_false(body.contains("<style") || body.contains(" style="))
   assert_contains(body, [
     "<header class=\"container\">", "<main class=\"container\">", "<footer class=\"container\">",
+    "<ul><li><a href=\"https://github.com/podhmo/html-sandbox\">github</a></li></ul></nav></header>",
   ])
 }
 

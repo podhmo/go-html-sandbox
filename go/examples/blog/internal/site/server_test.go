@@ -79,7 +79,10 @@ func TestPicoOnly(t *testing.T) {
 	if strings.Contains(body, "<style") || strings.Contains(body, " style=") {
 		t.Error("want no inline CSS")
 	}
-	for _, want := range []string{`<header class="container">`, `<main class="container">`, `<footer class="container">`} {
+	for _, want := range []string{
+		`<header class="container">`, `<main class="container">`, `<footer class="container">`,
+		`<ul><li><a href="https://github.com/podhmo/html-sandbox">github</a></li></ul></nav></header>`,
+	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("body does not contain %q", want)
 		}
@@ -114,6 +117,7 @@ func TestPostPageText(t *testing.T) {
 	want := `Hello <script> - blog
 blog
 docs
+github
 2026-10-14
 Download .md
 Hello <script>

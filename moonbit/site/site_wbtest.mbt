@@ -91,6 +91,7 @@ test "post page text" {
       #|Hello <script> - blog
       #|blog
       #|docs
+      #|github
       #|2026-10-14
       #|Download .md
       #|Hello <script>
