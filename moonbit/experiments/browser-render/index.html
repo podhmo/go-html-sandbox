@@ -1,9 +1,9 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>tinymarkdown editor (spike)</title>
-<!-- `make serve`: the editor page; render runs in the page, from build/lib.wasm or build/lib.mjs. -->
+<!-- `make serve`: the editor page; render runs in the page, from build/lib.wasm; the page loads no JS that MoonBit generates. -->
 <style>body{display:grid;grid-template-columns:1fr 1fr;gap:1em;margin:1em}textarea{width:100%;height:80vh}</style>
-<div><select id="impl"><option value="wasm">wasm-gc</option><option value="js">js</option></select>
+<div>
 <textarea id="src"># 記事タイトル
 
 本文に `code` と [リンク](https://example.com)。
@@ -17,18 +17,16 @@
 </textarea></div>
 <div><div id="status"></div><div id="out"></div></div>
 <script type="module">
-import { render as renderJS } from "./build/lib.mjs";
 const { instance } = await WebAssembly.instantiateStreaming(fetch("./build/lib.wasm"), {},
   { builtins: ["js-string"], importedStringConstants: "_" });
-const impls = { wasm: instance.exports.render, js: renderJS };
-const src = document.getElementById("src"), impl = document.getElementById("impl");
+const { render } = instance.exports;
+const src = document.getElementById("src");
 function update() {
   const t = performance.now();
   // render escapes the text of the Markdown, so its output is safe to set as HTML.
-  document.getElementById("out").innerHTML = impls[impl.value](src.value);
-  document.getElementById("status").textContent = `${impl.value}: ${(performance.now() - t).toFixed(2)} ms`;
+  document.getElementById("out").innerHTML = render(src.value);
+  document.getElementById("status").textContent = `wasm-gc: ${(performance.now() - t).toFixed(2)} ms`;
 }
 src.addEventListener("input", update);
-impl.addEventListener("change", update);
 update();
 </script>

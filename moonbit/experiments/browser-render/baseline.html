@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>tinymarkdown editor (baseline)</title>
+<!-- `make serve`, then /baseline.html: index.html with the js build (build/lib.mjs) in place of the Wasm, to compare. -->
+<style>body{display:grid;grid-template-columns:1fr 1fr;gap:1em;margin:1em}textarea{width:100%;height:80vh}</style>
+<div>
+<textarea id="src"># 記事タイトル
+
+本文に `code` と [リンク](https://example.com)。
+
+- 項目1
+- 項目2
+
+| a | b |
+| - | - |
+| 1 | 2 |
+</textarea></div>
+<div><div id="status"></div><div id="out"></div></div>
+<script type="module">
+import { render } from "./build/lib.mjs";
+const src = document.getElementById("src");
+function update() {
+  const t = performance.now();
+  // render escapes the text of the Markdown, so its output is safe to set as HTML.
+  document.getElementById("out").innerHTML = render(src.value);
+  document.getElementById("status").textContent = `js (baseline): ${(performance.now() - t).toFixed(2)} ms`;
+}
+src.addEventListener("input", update);
+update();
+</script>

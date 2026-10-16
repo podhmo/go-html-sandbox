@@ -6,6 +6,7 @@ import {
 
 options(
   link: {
+    // The baseline: the same render through the JS that MoonBit generates.
     "js": { "exports": [ "render" ], "format": "esm" },
     "wasm-gc": { "exports": [ "render" ], "use-js-builtin-string": true },
   },
