@@ -72,15 +72,34 @@ fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
 
 ///|
 /// encode_head is the status and the headers of res in the wire format,
-/// with the empty line that ends them.
+/// with the empty line that ends them. As Go's net/http writes them, a
+/// field whose name is not a token is dropped, and a CR or LF in a value
+/// is a space, so that no value can start another field or end the head.
 fn encode_head(res : @http.Response) -> String {
   let head = StringBuilder()
   head <+ "\{res.status}\n"
   for (name, value) in res.headers {
+    guard is_token(name) else { continue }
+    let value = value
+      .replace_all(old="\r", new=" ")
+      .replace_all(old="\n", new=" ")
+      .trim(chars=" \t")
     head <+ "\{name}\t\{value}\n"
   }
   head <+ "\n"
   head.to_string()
+}
+
+///|
+/// is_token is whether name is a token (RFC 9110), as a field name must be.
+fn is_token(name : String) -> Bool {
+  !name.is_empty() &&
+  name
+  .iter()
+  .all(c => {
+    c is ('a'..<='z' | 'A'..<='Z' | '0'..<='9') ||
+    "!#$%&'*+-.^_`|~".contains_char(c)
+  })
 }
 
 ///|

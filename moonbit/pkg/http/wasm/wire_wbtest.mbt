@@ -36,3 +36,18 @@ test "encode_head" {
     "201\ncontent-type\ttext/plain; charset=utf-8\nset-cookie\ta=1\n\n",
   )
 }
+
+///|
+test "encode_head neutralizes newlines in values and drops bad names" {
+  // A redirect to a decoded ?to=/%0Aset-cookie%09session=x must not
+  // become a second field, nor end the head.
+  let res = @http.Response::redirect(302, "/\nset-cookie\tsession=x\r\n\nbody")
+  res.header("x-tab", value="a\tb")
+  res.header("bad name", value="1")
+  res.header("bad\nname", value="1")
+  res.header("", value="1")
+  assert_eq(
+    encode_head(res),
+    "302\nlocation\t/ set-cookie\tsession=x   body\nx-tab\ta\tb\n\n",
+  )
+}
