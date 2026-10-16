@@ -9,12 +9,13 @@ ts 版のブログ（`ts/`）は、`go/pkg/tinymarkdown` を TS に移した `ts
 | 1. TS の移植なしで、TS から型付きで使えるか | **使える** | MoonBit 側（`moonbit/pkg/tinymarkdown/js`）で、TS の型と同じ形の JS オブジェクトを組んで返す。`ts/` の型はそのまま残し、実装だけ `tinymarkdown.mjs` からの再 export にした。置き換えた時点で、`npm run check`（vitest 146 件と `tsc --noEmit`）が通った |
 | 2. ブログが同じ HTML を返すか | **返す** | 替える前と後を `vite build` し、`wrangler dev` で配って全ページを比べた。49 パスで差分なし |
 | 3. 代わりに払うもの: 大きさ | Worker のバンドルが **+64 KB（gzip で +9 KB）** | `vite build` の出力。446.95 KB → 510.57 KB、gzip で 138.74 KB → 148.12 KB |
-| 4. 代わりに払うもの: 速さ | parse が **約 4 倍遅い** | Node 24 で、記事と文書 22 本（279 KiB）を解析。TS の移植 0.60 ms、MoonBit 2.46 ms（ウォーム） |
+| 4. 代わりに払うもの: 速さ | parse が、温まった後で **約 4 倍**、JIT が効く前は **約 10 倍** 遅い | Node 24 で、記事と文書 22 本（279 KiB）を解析。温まった後は TS の移植 0.60 ms、MoonBit 2.46 ms。新しいプロセスで 1 回だけ、JIT なしで解析すると 3.0 ms と 29 ms |
+| 5. 本番の起動時間 | Worker Startup Time が **51 ms**（TS の移植のときは 11〜18 ms） | `npm run deploy` の表示（1 回のデプロイ） |
 
 ## 結論
 
 - **TS の移植は要らない。** MoonBit の js ビルドに TS の型を付けるだけで、ブログのコードは変えずに動き、出力も同じ。Markdown の解析の実装は MoonBit の 1 つになり、TS 側に残るのは型の定義だけ。tinymarkdown のテスト（Go のテストケースを TS に移したもの）も、MoonBit 側のテストと重なるので消した。JS オブジェクトの形は `moonbit/pkg/tinymarkdown/js` のテストで見る。
-- **払うのは、バンドルの gzip で 9 KB と、起動時の解析の 2 ms 弱。** ts 版は isolate の起動時に全部の文章を解析するので、この差は起動時間に乗る。本番での起動時間はまだ測っていない（`blog-ts` は TS の移植のままデプロイされている）。
+- **払うのは、バンドルの gzip で 9 KB と、起動時間の 30〜40 ms。** 温まった後の差は 2 ms 弱だが、ts 版は isolate の起動時に全部の文章を 1 回だけ解析するので、JIT が効く前の遅さがそのまま出る。MoonBit の js ビルドは最適化する JIT に頼っていて、それがないと TS の移植の約 10 倍かかる（下の「4. 速さ」）。本番の Worker Startup Time は 11〜18 ms から 51 ms になった。
 - **生成した JS はコミットする。** `ts/` の作業に moon を要らないようにするため。MoonBit 側を直したら `moonbit/` で `make ts` を走らせる。忘れると `make check` が落ちる。
 - **tinyfrontmatter は同じようにはできなかった。** MoonBit の `Map` が読み込みのときに乱数を使うので、workerd で Worker が起動しない（[下](#tinyfrontmatter-は同じようにできるか)）。
 
@@ -74,6 +75,27 @@ spike の `bench.mjs` の結果（Node 24.21、Apple Silicon（arm64）の Mac�
 | MoonBit の `inlines` | 0.40 ms | 0.27 ms |
 
 解析だけでもほぼ同じ時間がかかるので、遅いのは JS オブジェクトを組むところではなく、MoonBit の解析そのもの。どこが遅いか（行の分割や文字列の組み立てなど）は調べていない。
+
+JIT が効く前の速さは、新しい Node のプロセスで、モジュールを読み込んで 22 本を 1 回ずつ解析した時間で見た（5 回ずつ。TS の移植は esbuild で JS にしたもの）。V8 のフラグで、使う JIT を減らしていった。
+
+| V8 | TS の移植 | MoonBit |
+| --- | --- | --- |
+| 既定 | 2.3 ms | 7.0 ms |
+| `--no-opt --no-maglev`（最適化する JIT なし。Sparkplug まで） | 2.5 ms | 18 ms |
+| `--no-opt --no-maglev --no-sparkplug`（インタープリターだけ） | 3.0 ms | 29 ms |
+
+TS の移植はどれでもほとんど変わらないが、MoonBit は最適化する JIT がないと大きく遅くなる。読み込みはどちらも 1 ms 未満。どの関数が遅いか（小さい関数の呼び出しが多いのかなど）は調べていない。
+
+### 5. 本番の起動時間
+
+2026-10-17 に `npm run deploy` でデプロイしたときの表示。
+
+| | TS の移植（[前の記録](ts-hono-workers.md)） | MoonBit の js ビルド |
+| --- | --- | --- |
+| Total Upload | — | 502.26 KiB（gzip で 145.30 KiB） |
+| Worker Startup Time | 11〜18 ms（4 回） | 51 ms（1 回） |
+
+増えた 33〜40 ms は、上の表のインタープリターだけのときの差（26 ms）と同じくらいの大きさ。ただし 1 回のデプロイの値なので、ばらつきは分からない。同じ日の MoonBit 版（Wasm）の `blog` は 2 ms（Total Upload は 409.86 KiB、gzip で 128.18 KiB）で、こちらは最初のリクエストで解析している。
 
 ## tinyfrontmatter は同じようにできるか
 

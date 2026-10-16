@@ -119,6 +119,7 @@ wrangler が表示する `Worker Startup Time` は、記事と文書をいつ解
 | --- | --- | --- |
 | isolate の起動時（モジュールのトップレベル。今の形） | 15 ms、13 ms、11 ms、18 ms（4 回のデプロイ） | 25 件中 1 件が 15 ms、残りは 0〜3 ms |
 | 最初のリクエスト（MoonBit 版と同じ形） | 3 ms、3 ms（2 回） | 25 件中 9 件が 18〜43 ms、残りは 0〜2 ms |
+| isolate の起動時。tinymarkdown を MoonBit の js ビルドに替えたあと（2026-10-17） | 51 ms（1 回） | 測っていない |
 
 CPU 時間は、デプロイの直後に `wrangler tail --format json` をつなぎ、`/posts/hello` に 25 回続けて送ったときの `cpuTime`。リクエストはいくつもの isolate に振り分けられるので、温まっていない isolate に当たると重い。どちらの形でも `outcome` はすべて `ok` だった。
 
