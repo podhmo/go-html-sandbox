@@ -59,6 +59,18 @@ test("a body larger than the memory's first page", async () => {
   assert.equal((await res.json()).body_bytes, 200_000);
 });
 
+test("a body over maxBodySize", async () => {
+  const small = wasmApp(new WebAssembly.Module(readFileSync(new URL("./build/echo.wasm", import.meta.url))), { maxBodySize: 10 });
+  const at = (n) => small.fetch(new Request("http://localhost/echo", { method: "POST", body: "x".repeat(n) }));
+  assert.equal((await (await at(10)).json()).body_bytes, 10);
+  const res = await at(11);
+  assert.equal(res.status, 413);
+  // A stream without a Content-Length is cut off as well.
+  const stream = new ReadableStream({ pull(c) { c.enqueue(new Uint8Array(8)); } });
+  const res2 = await small.fetch(new Request("http://localhost/echo", { method: "POST", body: stream, duplex: "half" }));
+  assert.equal(res2.status, 413);
+});
+
 test("methods", async () => {
   assert.equal((await get("/items/7", { method: "PUT", body: "v" })).status, 200);
   const del = await get("/items/7", { method: "DELETE" });

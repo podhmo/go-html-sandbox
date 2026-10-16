@@ -12,11 +12,16 @@ const nullBodyStatus = new Set([101, 103, 204, 205, 304]);
 // with the response's parts ({ status, headers, body }), and fetch, which
 // answers it with a Response. env's string values cross as the request's
 // env, like a Worker's variables and secrets.
-export function wasmApp(module) {
+//
+// A body longer than maxBodySize bytes gets 413 without running the Wasm.
+// The body is copied into the Wasm's memory, which never shrinks, so the
+// limit keeps one large request from taking the isolate's memory.
+export function wasmApp(module, { maxBodySize = 1 << 20 } = {}) {
   const { memory, serve } = new WebAssembly.Instance(module).exports;
 
   async function call(request, env = {}) {
-    const body = request.body ? new Uint8Array(await request.arrayBuffer()) : noBody;
+    const body = request.body ? await readBody(request.body, maxBodySize) : noBody;
+    if (!body) return tooLarge;
     let head = `${request.method}\n${request.url}\n`;
     for (const [name, value] of request.headers) head += `${name}\t${value}\n`;
     head += "\n";
@@ -51,6 +56,35 @@ export function wasmApp(module) {
       return toResponse(await call(request, env));
     },
   };
+}
+
+const tooLarge = {
+  status: 413,
+  headers: [["content-type", "text/plain; charset=utf-8"]],
+  body: encoder.encode("413 Request Entity Too Large"),
+};
+
+// readBody reads stream up to max bytes, or returns null past them,
+// without reading the rest.
+async function readBody(stream, max) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of stream) {
+    size += chunk.length;
+    if (size > max) {
+      await stream.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(chunk);
+  }
+  if (chunks.length === 1) return chunks[0];
+  const body = new Uint8Array(size);
+  let at = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, at);
+    at += chunk.length;
+  }
+  return body;
 }
 
 // toResponse makes a Response of the parts call returns. It can be called

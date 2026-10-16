@@ -26,7 +26,13 @@ export default {
     const path = cacheable ? new URL(request.url).pathname : undefined;
     let res = cacheable ? cache.get(path) : undefined;
     if (!res) {
-      res = await app.call(request, env);
+      // The blog reads no request body (POST and the like get 404), so it
+      // is left behind rather than copied into the Wasm's memory.
+      // Only the method and the headers: new Request(request, { body: null })
+      // would keep the body.
+      const { url, method, headers } = request;
+      const bodiless = request.body ? new Request(url, { method, headers }) : request;
+      res = await app.call(bodiless, env);
       if (cacheable && res.status === 200) cache.set(path, res);
     }
     return toResponse(res);
