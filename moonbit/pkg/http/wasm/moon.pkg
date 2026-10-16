@@ -7,7 +7,3 @@ import {
 // does not compile on native.
 
 supported_targets = "+wasm-gc"
-
-import {
-  "moonbitlang/core/encoding/utf8",
-} for "test"

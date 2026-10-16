@@ -3,7 +3,7 @@
 // and forms. ./worker.mjs runs it on Workers; ./test.mjs on Node.
 
 ///|
-let page =
+const PAGE =
   #|<!doctype html>
   #|<title>echo</title>
   #|<h1>echo</h1>
@@ -18,7 +18,7 @@ let page =
 
 ///|
 fn values_json(v : @http.Values) -> Json {
-  Json::array(v.pairs.map(p => [p.0, p.1]))
+  Json::array([ for (name, value) in v.pairs => [name, value] ])
 }
 
 ///|
@@ -41,8 +41,8 @@ fn request_json(req : @http.Request) -> Json {
 
 ///|
 fn router() -> @http.Router {
-  let r = @http.Router::new()
-  r.handle("GET /{$}", _ => @http.Response::html(200, page))
+  let r = @http.Router()
+  r.handle("GET /{$}", _ => @http.Response::html(200, PAGE))
   r.handle("GET /hello/{name}", req => {
     let greeting = req.query().get("greeting").unwrap_or("hello")
     @http.Response::text(200, "\{greeting}, \{req.param("name")}\n")
@@ -50,13 +50,13 @@ fn router() -> @http.Router {
   r.handle("/echo", req => @http.Response::json(200, request_json(req)))
   r.handle("POST /json", req => {
     let value = req.json() catch {
-      @http.BadRequest(msg) => return @http.Response::text(400, "\{msg}\n")
+      e => return @http.Response::text(400, "\{e}\n")
     }
     @http.Response::json(200, { "got": value })
   })
   r.handle("POST /form", req => {
     let form = req.form() catch {
-      @http.BadRequest(msg) => return @http.Response::text(400, "\{msg}\n")
+      e => return @http.Response::text(400, "\{e}\n")
     }
     let files = form.files.map(f => {
       "name": Json(f.name),
@@ -75,7 +75,7 @@ fn router() -> @http.Router {
   r.handle("PUT /items/{id}", req => {
     @http.Response::json(200, { "id": req.param("id"), "body": req.text() })
   })
-  r.handle("DELETE /items/{id}", _ => @http.Response::new(204))
+  r.handle("DELETE /items/{id}", _ => @http.Response(204))
   r.handle("GET /redirect", req => {
     let to = req.query().get("to").unwrap_or("/")
     @http.Response::redirect(303, to)
@@ -89,8 +89,8 @@ fn router() -> @http.Router {
       200,
       "cookie: \{req.headers.get("cookie").unwrap_or("")}\n",
     )
-    .header("set-cookie", "a=1; Path=/")
-    .header("set-cookie", "b=2; Path=/")
+    ..header("set-cookie", value="a=1; Path=/")
+    ..header("set-cookie", value="b=2; Path=/")
   })
   r.handle("GET /env", req => {
     @http.Response::text(

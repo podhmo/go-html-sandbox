@@ -4,19 +4,23 @@
 /// BadRequest is raised for a request that cannot be parsed, such as a
 /// path with a malformed %XX escape. Hosts answer it with 400.
 pub(all) suberror BadRequest {
-  BadRequest(String)
-}
+  BadRequest(message~ : String)
+} derive(Debug)
 
 ///|
-/// output writes the reason, so "\{e}" reads as the error text.
+/// output writes the message alone, so "\{e}" reads as the error text.
 pub impl Show for BadRequest with fn output(self, logger) {
-  let BadRequest(msg) = self
-  logger.write_string(msg)
+  let BadRequest(message~) = self
+  logger.write_string(message)
 }
 
 ///|
 #deprecated("Use \"\\{e}\" or Show::to_string instead")
 pub extend BadRequest with Show::{to_string, output}
+
+///|
+#deprecated("Use Debug::to_repr instead")
+pub extend BadRequest with Debug::{to_repr}
 
 ///|
 /// Request is an HTTP request. verb is the method; path is raw_path decoded; params are the
@@ -36,30 +40,28 @@ pub struct Request {
 }
 
 ///|
-/// Request::new parses url, either absolute ("https://host/path?q") or
+/// Request::Request parses url, either absolute ("https://host/path?q") or
 /// only the path and the query, and decodes the path. It raises
 /// BadRequest when the path has a malformed escape.
-pub fn Request::new(
+pub fn Request::Request(
   verb~ : String,
   url~ : String,
-  headers~ : Headers = Headers::new(),
+  headers~ : Headers = Headers(),
   body~ : Bytes = b"",
   env~ : Map[String, String] = {},
 ) -> Request raise BadRequest {
-  let mut rest = url[:]
-  if rest.find("#") is Some(i) {
-    rest = rest[:i]
+  let rest = match url.find("#") {
+    Some(i) => url[:i]
+    None => url
   }
-  let mut host = ""
-  if rest.find("://") is Some(i) {
-    let after = rest[i + 3:]
-    let end = after.find("/").unwrap_or(after.length())
-    let end = match after[:end].find("?") {
-      Some(q) => q
-      None => end
+  let (host, rest) = match rest.find("://") {
+    Some(i) => {
+      let after = rest[i + 3:]
+      let end = after.find("/").unwrap_or(after.length())
+      let end = after[:end].find("?").unwrap_or(end)
+      (after[:end].to_owned(), after[end:])
     }
-    host = after[:end].to_owned()
-    rest = after[end:]
+    None => ("", rest)
   }
   let (raw_path, raw_query) = match rest.find("?") {
     Some(i) => (rest[:i].to_owned(), rest[i + 1:].to_owned())
@@ -67,7 +69,7 @@ pub fn Request::new(
   }
   let raw_path = if raw_path == "" { "/" } else { raw_path }
   guard unescape(raw_path) is Some(path) else {
-    raise BadRequest("malformed path \{raw_path.escape()}")
+    raise BadRequest(message="malformed path \{raw_path.escape()}")
   }
   {
     verb,
@@ -107,6 +109,6 @@ pub fn Request::text(self : Request) -> String {
 /// Request::json parses the body as JSON.
 pub fn Request::json(self : Request) -> Json raise BadRequest {
   @json.parse(self.text()) catch {
-    e => raise BadRequest("malformed JSON: \{e}")
+    e => raise BadRequest(message="malformed JSON: \{e}")
   }
 }

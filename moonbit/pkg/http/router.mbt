@@ -36,19 +36,19 @@ pub struct Router {
 }
 
 ///|
-/// Router::new is a router without routes. not_found and
+/// Router::Router is a router without routes. not_found and
 /// method_not_allowed (given the methods the path allows) replace the
 /// default answers. Patterns match the path split at "/" and then
 /// decoded, as Go 1.22's ServeMux does, so "%2F" stays inside a segment;
 /// with decoded_path, they match the decoded path split at "/", as a
 /// handler routing on Go's r.URL.Path by hand does.
-pub fn Router::new(
+pub fn Router::Router(
   decoded_path~ : Bool = false,
   not_found~ : Handler = _ => Response::text(404, "404 page not found\n"),
   method_not_allowed~ : (Request, Array[String]) -> Response = (_, allow) => {
-    Response::text(405, "Method Not Allowed\n").header(
+    Response::text(405, "Method Not Allowed\n")..header(
       "allow",
-      allow.join(", "),
+      value=allow.join(", "),
     )
   },
 ) -> Router {
@@ -110,11 +110,7 @@ fn rank(s : Segment?, subtree : Bool) -> Int32 {
 /// more_specific tells whether a matches fewer paths than b, comparing
 /// segment by segment, and a method over none.
 fn more_specific(a : Route, b : Route) -> Bool {
-  let n = if a.segments.length() > b.segments.length() {
-    a.segments.length()
-  } else {
-    b.segments.length()
-  }
+  let n = a.segments.length().max(b.segments.length())
   // One past the longer, so that a subtree is less specific than the
   // same path alone.
   for i in 0..<=n {
@@ -172,13 +168,16 @@ fn Route::match_path(
 /// Router::serve answers req with the handler of the matching pattern,
 /// filling req.params with the wildcards.
 pub fn Router::serve(self : Router, req : Request) -> Response {
-  let segs = []
-  if self.decoded_path {
-    req.path[1:].split("/").each(s => segs.push(s.to_owned()))
+  let segs = if self.decoded_path {
+    [
+      for s in req.path[1:].split("/") => s.to_owned()
+    ]
   } else {
-    for raw in req.raw_path[1:].split("/") {
-      segs.push(unescape(raw).unwrap_or(raw.to_owned()))
-    }
+    [
+      for raw in req.raw_path[1:].split("/") => {
+        unescape(raw).unwrap_or(raw.to_owned())
+      }
+    ]
   }
   let allow = []
   for r in self.routes {

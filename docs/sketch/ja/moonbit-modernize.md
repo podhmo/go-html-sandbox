@@ -359,3 +359,78 @@ skill の Step 0 に従い、`moonbit-refactoring` の「Local refactoring」よ
 
 - Map パターンとカスケード: 元の書き方より読みやすくならないか、初見で分かりにくい規則がある。
 - suberror の `impl Show`、インラインテスト、`mbt check`: 設計やテスト方針の判断を含むので、カタログと個人ポリシーの側に置いたままにした。
+
+## 追記: 3 回目のパス
+
+2 回目のパスの後に、Worker のアダプタが汎用の `http` ライブラリ（`pkg/http`、`pkg/http/wasm`）に分かれ、その使用例の `examples/echo` が加わり、ライブラリが `pkg/` に、ブログが `examples/blog/` に移った。
+そこで、同じ skill を、同じく「仮想的に実行」する形でもう一度当てた。作業はブランチ `moonbit-modernize-3` で行い、書き換えの種類ごとに 1 コミットにした。
+
+| | バージョン |
+| --- | --- |
+| moon | 0.1.20261012 |
+| moonc | v0.10.15（2026-10-12） |
+| moonbit-individual-handbook | 0c35763 |
+
+### 結論
+
+- Step 0 の構造の確認で公開 API を 2 コミット分減らし、そのあと 12 種類の書き換えを 1 コミットずつ適用した。挙動は変えていない。各コミットで `moon fmt`、wasm-gc と native の `moon check --deny-warn`、`moon test`、`moon info` を通し、最後に `make check` と、Node 上で実際の Wasm を動かす `make test-echo`（9 件）も通した。テストは 76 件から 77 件になった。
+- 対象はほぼ `pkg/http` と `pkg/http/wasm` だった。`tinymarkdown` の入れ子のリスト（`nest_items`）など、ほかに加わったコードは、すでに functional-for や内包表記で書かれていた。
+- opt-in の警告で見つかったのは `unnecessary_annotation` の 188 件（wasm-gc と native で重複して数えた件数）だけで、方針どおり書き換えなかった。
+- 公開 API の変更は `http`（constructor の名前、`value~` のラベル、`BadRequest` の payload、`parse_multipart` を非公開に）と `http/wasm`（`decode_request` と `encode_head` を非公開に）。`pkg.generated.mbti` の diff がそのまま API の変更点になっている。`docs/sketch/ja/moonbit-workers-http.md` の API の一覧も合わせて直した。
+- release の Wasm（wasm-opt 後）は、ブログの `app.wasm` が 330,935 バイトから 331,067 バイトに、echo の `echo.wasm` が 92,613 バイトから 92,750 バイトになった（どちらも 140 バイト弱の増加）。
+
+### Step 0: 全体の構造の確認
+
+今回は Step 0 を省かずに行い、構造の問題があればコミットとして直すことにした。
+
+- **パッケージの大きさ:** どのパッケージも 1,000 行前後以下、関数も 200 行を大きく下回る。分ける必要はない。
+- **依存関係:** `pkg/` の下のパッケージは `examples/` を参照しない。`examples/blog/worker` → `site` → `pkg/*` と、`examples/echo` → `pkg/http/wasm` → `pkg/http` の一方向で、循環はない。
+- **公開 API:** `moon ide` の代わりに grep で `pub` の呼び出し元を数えた（native 専用の `compare/cmd` も含めるため）。
+  - `http/wasm` の `decode_request` と `encode_head` は、パッケージの外からはテストしか呼んでいなかった。アプリが使うのは `handle` だけなので、非公開にし、テストを white-box テストにした（63a7e68）。
+  - `http` の `parse_multipart` は `Request::form` からしか呼ばれていなかったので非公開にした（c79bfd0）。
+  - `media_type` と `parse_values` も外からはテストしか呼ばないが、Go の `mime.ParseMediaType` と `url.ParseQuery` に当たる汎用の部品で、ハンドラが自分で Content-Type やクエリを読むときに使えるので公開のままにした。
+- **`experiments/`:** 別のモジュールで、計測を再現するためのスパイクなので、skill の判断基準（古い形そのものが目的のコードは書き換えない）に従って書き換えの対象から外した。ただし `moon.work` でこのモジュールを今の API のまま import しているので、API を変えた結果、`wasm-fetch` の `@http.Router::new()` が通らなくなった。README の「今の API に合わせる必要のあるところだけ直す」に従い、constructor のコミットで `@http.Router()` に直した。
+
+### コミットの一覧
+
+| commit | 種類 | 内容 |
+| --- | --- | --- |
+| 63a7e68 | 公開 API | `http/wasm` の `decode_request` と `encode_head` を非公開に。テストは `wire_wbtest.mbt` に |
+| c79bfd0 | 公開 API | `http` の `parse_multipart` を非公開に |
+| d352669 | constructor | `Headers::new`、`Request::new`、`Response::new`、`Router::new` を `Type::Type` に。呼び出しは `@http.Router(..)` など |
+| f427e68 | ラベル付き引数 | 文字列を 2 つ取る `Headers::add`、`Headers::set`、`Response::header` の値を `value~` に |
+| fc6f656 | functional-for | `decode_request` の head の終わりの探索（for-in の累積変数と `break Some(i + 1)`）、`parse_multipart` のパートの走査（`break` を条件に移し、`continue next_pos`）。名前のないパートを飛ばす経路のテストを足した |
+| 997af2f | 文字の反復 | `http/wasm` の `write` が手で組み合わせていたサロゲートペアを、`for ch in s` に任せた。書き換えの前に、孤立したサロゲートを含む出力のバイト列を固定する white-box テストを足した |
+| dda8df1 | `let mut` の除去 | `Request::Request` の `rest` / `host` と、`media_type` の `v` を、`match` / `if` の式で束縛 |
+| f82f03e | リスト内包 | `get_all` の `filter(..).map(..)`、`media_type` のパラメータ、`Router::serve` のセグメント、echo の `values_json` |
+| 356dcc2 | 配列パターン | `media_type` の空の確認と `parts[0]` / `parts[1:]` を `[ty, .. rest]` に |
+| 2e1f48e | core の関数 | `search_by` で添字を取ってから `params[i].1` を読む形を、`iter().find_first` に |
+| 3db37a8 | core の関数 | `more_specific` の手書きの最大値を `Int::max` に |
+| 9dea2ca | `<+` | `encode_head` の `write_string` / `write_char` を `<+` に |
+| 7146e9e | const | echo の `let page`（`#|` の文字列）を `const PAGE` に |
+| fed60c9 | エラーの設計 | `BadRequest(String)` を `BadRequest(message~ : String) derive(Debug)` に。`site` の `LoadError` や `tinyfrontmatter` の `SplitError` と同じ形 |
+| b8b5a36 | カスケード | `Response::header` を `-> Self` から `-> Unit` に。呼び出しは `..header(..)` でつなぐ |
+
+### 方針を決めたもの
+
+- **ラベル:** これまでのパスと同じく、同じ型の引数が並ぶ箇所にだけ付けた。`Response::text(status, body)` や `Router::handle(pattern, handler)` は型が違うので位置引数のまま。`Response::typed(status, content_type, body)` も、`Body` の値が `Text(..)` / `Binary(..)` と書かれるので、`content_type` との取り違えは型で分かる。
+- **constructor の呼び出し:** skill のとおり `@http.Router()` と型名だけで書く。doc コメントとテスト名は `Router::Router` と書いた。`Site` の private なメソッド `Site::new_router` は「新しい router を作る」という意味の名前なので、そのままにした。
+
+- **破壊的更新は `Unit` を返し、カスケード `..` でつなぐ。** `Response::header` は `self.headers` に `push` してから同じ `self` を返していたので、新しい値を返すように読めた（`let b = a.header(..)` で `a` も変わる）。新しい値を返すにはヘッダの配列を毎回複製する必要があり、ハンドラの中で 1 回組み立てるだけの使い方には合わないので、`-> Unit` にした。`-> Self` のメソッドを `..` でつなぐと、警告 `invalid_cascade` が出る。この書き換えは、パスの後のレビューで指摘を受けて足した。
+
+### 見送ったもの
+
+- **`decode_request` の、ヘッダと env を分けるループ。** `let mut in_env` が 1 つだけで、functional-for にするとすべての経路の最後に `continue in_env` を書くことになる。最初の空行の位置で配列を分ける書き方も考えたが、空行が必ず 2 つあることを読み手が知っていないと追えない。
+- **`Router::handle` のセグメントの組み立て。** 最後の空のセグメントは `subtree` を立てるだけで、配列には入らない。内包表記にすると、この特別扱いが別の場所に分かれる。
+- **`Route::match_path` の末尾の `if` / `else if` の連鎖。** 3 つの条件が別々のものを見ているので、`match` にしても読みやすくならない。
+- **`Headers::get` と `Values::get` の `return` するループ。** `find_first(..).map(p => p.1)` と書けるが、for-in の分解で名前の付いた今の形の方が読みやすい。
+- **echo の `form.files.map(f => { .. })`。** 2 回目のパスの `render_blocks` と同じく、内包表記にしても読みやすさは変わらない。
+- **`Map([])`。** `let params : Map[String, String] = {}` と書けるが、型の注釈が増えるだけ。
+
+### 気づいたこと
+
+- **文字列の for-in は、サロゲートペアを 1 つの `Char` にまとめ、孤立したサロゲートはそのまま 1 つの `Char` として返す。** `write` が手で行っていた処理と同じ結果になる（孤立した U+D800 は `ED A0 80` の 3 バイトになる）。white-box テストで、書き換えの前と後の両方で確かめた（moon 0.1.20261012）。
+- **3 部形式の functional-for の条件に、本体の先頭の `break` を移せる。** `parse_multipart` は `while true` の先頭で `--` を見て抜けていたので、`for pos = ..; !body[pos:].has_prefix(b"--"); { .. }` と書けた。本体の最後の `continue next_pos` を忘れると、2 回目のパスの Pitfall と同じく警告なしで無限ループになるので、名前のないパートを飛ばす `continue` の経路にテストを足した。
+- **`match` の一方の腕がビューのとき、もう一方の腕の `url[:]` には `unnecessary_view_op` が出る。** 期待される型がビューになるので、`url` だけでよい。
+- **`experiments/` は、ルートの `moon check` にも `make check` にも入らない。** 最初はこれに気づかず、全体を検証した後に README を読んで `wasm-fetch` が壊れていることを見つけた。`moon.work` でこのモジュールを参照する別のモジュールがあるときは、公開 API を変えたら、その中でも `moon check` を実行する必要がある。
+- **作業の途中まで、検証用のスクリプトが `moon check` の失敗を見落としていた。** 出力を `tail` に渡していたので、`set -e` があっても失敗が伝わらなかった。上の警告で気づき、`pipefail` を付けて直した。それより前のコミットは、出力に警告もエラーもなかったことを確かめてある。

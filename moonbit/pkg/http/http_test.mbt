@@ -5,10 +5,10 @@ fn request(
   headers~ : Array[(String, String)] = [],
   body~ : String = "",
 ) -> @http.Request raise {
-  @http.Request::new(
+  @http.Request(
     verb~,
     url~,
-    headers=@http.Headers::new(fields=headers),
+    headers=@http.Headers(fields=headers),
     body=@utf8.encode(body),
   )
 }
@@ -70,7 +70,7 @@ test "parse_values" {
 }
 
 ///|
-test "Request::new parses the URL" {
+test "Request::Request parses the URL" {
   let r = request("GET", "https://example.com:8787/a%20b/c?x=1&y=2#frag")
   assert_eq(r.host, "example.com:8787")
   assert_eq(r.raw_path, "/a%20b/c")
@@ -90,12 +90,12 @@ test "Request::new parses the URL" {
 
 ///|
 test "Headers" {
-  let h = @http.Headers::new(fields=[("Content-Type", "text/plain")])
+  let h = @http.Headers(fields=[("Content-Type", "text/plain")])
   assert_eq(h.get("content-type"), Some("text/plain"))
-  h.add("set-cookie", "a=1")
-  h.add("Set-Cookie", "b=2")
+  h.add("set-cookie", value="a=1")
+  h.add("Set-Cookie", value="b=2")
   assert_eq(h.get_all("SET-COOKIE"), ["a=1", "b=2"])
-  h.set("set-cookie", "c=3")
+  h.set("set-cookie", value="c=3")
   assert_eq(h.get_all("set-cookie"), ["c=3"])
   h.delete("CONTENT-TYPE")
   assert_eq(h.get("content-type"), None)
@@ -147,6 +147,13 @@ test "Request::form multipart" {
     #|Content-Disposition: form-data; name="empty"
     #|
     #|
+    #|--XyZ
+    #|Content-Type: text/plain
+    #|
+    #|a part without a name is skipped
+    #|--XyZ
+    #|
+    #|nor is one without headers kept
     #|--XyZ--
     #|epilogue
   let r = request(
@@ -177,7 +184,7 @@ test "Request::form multipart" {
 
 ///|
 fn router() -> @http.Router {
-  let r = @http.Router::new()
+  let r = @http.Router()
   let says = (name : String) => {
     (req : @http.Request) => {
       @http.Response::text(
@@ -223,7 +230,7 @@ test "Router" {
 
 ///|
 test "Router with decoded_path" {
-  let r = @http.Router::new(decoded_path=true)
+  let r = @http.Router(decoded_path=true)
   r.handle("GET /posts/{slug}", req => {
     @http.Response::text(200, req.param("slug"))
   })
@@ -235,9 +242,9 @@ test "Router with decoded_path" {
 
 ///|
 test "Router without a catch-all" {
-  let r = @http.Router::new()
+  let r = @http.Router()
   r.handle("GET /items/{id}", req => @http.Response::text(200, req.param("id")))
-  r.handle("DELETE /items/{id}", _ => @http.Response::new(204))
+  r.handle("DELETE /items/{id}", _ => @http.Response(204))
   let res = r.serve(request("GET", "/items/7"))
   assert_eq((res.status, body_text(res)), (200, "7"))
   let res = r.serve(request("PUT", "/items/7"))
@@ -245,6 +252,6 @@ test "Router without a catch-all" {
   assert_eq(res.headers.get("allow"), Some("GET, HEAD, DELETE"))
   let res = r.serve(request("GET", "/items/"))
   assert_eq(res.status, 404)
-  let r = @http.Router::new(not_found=_ => @http.Response::text(404, "custom"))
+  let r = @http.Router(not_found=_ => @http.Response::text(404, "custom"))
   assert_eq(body_text(r.serve(request("GET", "/"))), "custom")
 }

@@ -9,7 +9,7 @@ pub struct Headers {
 }
 
 ///|
-pub fn Headers::new(fields~ : Array[(String, String)] = []) -> Headers {
+pub fn Headers::Headers(fields~ : Array[(String, String)] = []) -> Headers {
   { fields, }
 }
 
@@ -29,18 +29,20 @@ pub fn Headers::get(self : Headers, name : String) -> String? {
 /// Headers::get_all is every value for name, in order.
 pub fn Headers::get_all(self : Headers, name : String) -> Array[String] {
   let name = name.to_lower()
-  self.fields.filter(f => f.0.to_lower() == name).map(f => f.1)
+  [
+    for (n, v) in self.fields if n.to_lower() == name => v
+  ]
 }
 
 ///|
 /// Headers::add appends a field, keeping those with the same name.
-pub fn Headers::add(self : Headers, name : String, value : String) -> Unit {
+pub fn Headers::add(self : Headers, name : String, value~ : String) -> Unit {
   self.fields.push((name, value))
 }
 
 ///|
 /// Headers::set replaces the fields named name with one.
-pub fn Headers::set(self : Headers, name : String, value : String) -> Unit {
+pub fn Headers::set(self : Headers, name : String, value~ : String) -> Unit {
   self.delete(name)
   self.fields.push((name, value))
 }
@@ -63,21 +65,14 @@ pub fn Headers::iter(self : Headers) -> Iter[(String, String)] {
 /// and its parameters (with their names in lower case), e.g.
 /// ("multipart/form-data", [("boundary", "x")]).
 pub fn media_type(value : String) -> (String, Array[(String, String)]) {
-  let parts = value.split(";").collect()
-  let params = []
-  for part in parts[1:] {
-    guard part.find("=") is Some(i) else { continue }
-    let name = part[:i].trim(chars=" \t").to_owned().to_lower()
-    let mut v = part[i + 1:].trim(chars=" \t")
-    if v is [.. "\"", .. inner, .. "\""] {
-      v = inner
+  guard value.split(";").collect() is [ty, .. rest] else { return ("", []) }
+  let params = [
+    for part in rest if part.find("=") is Some(i) => {
+      let name = part[:i].trim(chars=" \t").to_owned().to_lower()
+      let v = part[i + 1:].trim(chars=" \t")
+      let v = if v is [.. "\"", .. inner, .. "\""] { inner } else { v }
+      (name, v.to_owned())
     }
-    params.push((name, v.to_owned()))
-  }
-  let ty = if parts.is_empty() {
-    ""
-  } else {
-    parts[0].trim(chars=" \t").to_owned()
-  }
-  (ty.to_lower(), params)
+  ]
+  (ty.trim(chars=" \t").to_owned().to_lower(), params)
 }

@@ -117,15 +117,16 @@ pub fn Site::handle(self : Site, req : @http.Request) -> @http.Response {
 /// path, as the Go blog's route does with r.URL.Path, so "/docs%2F" is
 /// "/docs/".
 fn Site::new_router(self : Site) -> @http.Router {
-  let r = @http.Router::new(decoded_path=true, not_found=_ => {
+  let r = @http.Router(decoded_path=true, not_found=_ => {
     not_found("Page not found.")
   })
   r.handle("GET /{$}", _ => page(200, self.post_list()))
   r.handle("GET /docs/{$}", _ => page(200, self.doc_list()))
   // Pages link to it without a version, so it is cached for a day.
   r.handle("GET /favicon.svg", _ => {
-    @http.Response::typed(200, "image/svg+xml", Text(@assets.favicon_svg)).header(
-      "cache-control", "public, max-age=86400",
+    @http.Response::typed(200, "image/svg+xml", Text(@assets.favicon_svg))..header(
+      "cache-control",
+      value="public, max-age=86400",
     )
   })
   // Pages link to it with a version in the query, so it can be cached for
@@ -135,7 +136,7 @@ fn Site::new_router(self : Site) -> @http.Router {
       200,
       "text/css; charset=utf-8",
       Text(@assets.site_css),
-    ).header("cache-control", "public, max-age=31536000, immutable")
+    )..header("cache-control", value="public, max-age=31536000, immutable")
   })
   // A pattern cannot end in ".md" after a wildcard, so the handlers look
   // at the suffix.
@@ -187,7 +188,7 @@ pub fn Site::render(
   } else {
     "\{escape(path, fragment=false)}?\{query}"
   }
-  let req = @http.Request::new(verb~, url~) catch {
+  let req = @http.Request(verb~, url~) catch {
     // escape writes only well-formed escapes.
     e => abort("\{e}")
   }
@@ -210,8 +211,9 @@ fn clean_path(p : String) -> String {
 /// markdown sends src as text. nosniff keeps browsers from guessing that
 /// Markdown containing tags is HTML.
 fn markdown(src : String) -> @http.Response {
-  @http.Response::typed(200, "text/markdown; charset=utf-8", Text(src)).header(
-    "x-content-type-options", "nosniff",
+  @http.Response::typed(200, "text/markdown; charset=utf-8", Text(src))..header(
+    "x-content-type-options",
+    value="nosniff",
   )
 }
 
@@ -226,9 +228,9 @@ fn redirect(path : String, query~ : String) -> @http.Response {
     "\{escape(path, fragment=false)}?\{query}"
   }
   let location = hex_escape_non_ascii(url)
-  @http.Response::new(
+  @http.Response(
     307,
-    headers=@http.Headers::new(fields=[
+    headers=@http.Headers(fields=[
       ("location", location),
       ("content-type", "text/html; charset=utf-8"),
     ]),

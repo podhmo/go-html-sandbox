@@ -18,28 +18,29 @@
 ///|
 /// decode_request parses the request in the wire format above. It raises
 /// BadRequest for a request it cannot parse.
-pub fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
+fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
   // The head ends at the second empty line: the headers' and env's.
-  let mut ends = 0
-  let mut head_end = -1
-  let mut prev = -1
-  for i, b in data {
-    if b == b'\n' {
-      if prev == i - 1 && ends < 2 {
-        ends += 1
-        if ends == 2 {
-          head_end = i + 1
-          break
-        }
-      }
-      prev = i
+  let head_end = for i, b in data; ends = 0, prev = -1 {
+    if b != b'\n' {
+      continue ends, prev
     }
+    let ends = if prev == i - 1 { ends + 1 } else { ends }
+    if ends == 2 {
+      break Some(i + 1)
+    }
+    continue ends, i
+  } nobreak {
+    None
   }
-  guard head_end >= 0 else { raise @http.BadRequest("truncated request") }
+  guard head_end is Some(head_end) else {
+    raise @http.BadRequest(message="truncated request")
+  }
   let head = @utf8.decode_lossy(data[:head_end])
   let lines = head.split("\n").collect()
-  guard lines.length() >= 4 else { raise @http.BadRequest("truncated request") }
-  let headers = @http.Headers::new()
+  guard lines.length() >= 4 else {
+    raise @http.BadRequest(message="truncated request")
+  }
+  let headers = @http.Headers()
   let env = Map([])
   let mut in_env = false
   for line in lines[2:] {
@@ -57,10 +58,10 @@ pub fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest 
     if in_env {
       env[name] = value
     } else {
-      headers.add(name, value)
+      headers.add(name, value~)
     }
   }
-  @http.Request::new(
+  @http.Request(
     verb=lines[0].to_owned(),
     url=lines[1].to_owned(),
     headers~,
@@ -72,13 +73,13 @@ pub fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest 
 ///|
 /// encode_head is the status and the headers of res in the wire format,
 /// with the empty line that ends them.
-pub fn encode_head(res : @http.Response) -> String {
+fn encode_head(res : @http.Response) -> String {
   let head = StringBuilder()
-  head.write_string("\{res.status}\n")
+  head <+ "\{res.status}\n"
   for (name, value) in res.headers {
-    head.write_string("\{name}\t\{value}\n")
+    head <+ "\{name}\t\{value}\n"
   }
-  head.write_char('\n')
+  head <+ "\n"
   head.to_string()
 }
 
