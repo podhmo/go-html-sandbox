@@ -52,6 +52,10 @@
   - [x] MoonBit 版（`moonbit/tinymarkdown`）も同じように直す。
   - 完了の条件: `TODO.md` の入れ子がそのまま描画され、`make compare` で Go 版と
     一致する。
+- [ ] **ts 版のブログを本番にデプロイして、起動時間を測る**: `ts/`（Hono と
+  hono/jsx、Vite）は `vite preview` までで、デプロイしていない。`npm run deploy` で
+  `blog-ts` としてデプロイし、起動時間とアップロードの大きさを MoonBit 版と比べる。
+  - 完了の条件: 結果を[探索メモ](docs/sketch/ja/ts-hono-workers.md)に記録する。
 
 ### Future work
 
