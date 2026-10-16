@@ -29,7 +29,9 @@ pub fn Headers::get(self : Headers, name : String) -> String? {
 /// Headers::get_all is every value for name, in order.
 pub fn Headers::get_all(self : Headers, name : String) -> Array[String] {
   let name = name.to_lower()
-  self.fields.filter(f => f.0.to_lower() == name).map(f => f.1)
+  [
+    for (n, v) in self.fields if n.to_lower() == name => v
+  ]
 }
 
 ///|
@@ -64,14 +66,14 @@ pub fn Headers::iter(self : Headers) -> Iter[(String, String)] {
 /// ("multipart/form-data", [("boundary", "x")]).
 pub fn media_type(value : String) -> (String, Array[(String, String)]) {
   let parts = value.split(";").collect()
-  let params = []
-  for part in parts[1:] {
-    guard part.find("=") is Some(i) else { continue }
-    let name = part[:i].trim(chars=" \t").to_owned().to_lower()
-    let v = part[i + 1:].trim(chars=" \t")
-    let v = if v is [.. "\"", .. inner, .. "\""] { inner } else { v }
-    params.push((name, v.to_owned()))
-  }
+  let params = [
+    for part in parts[1:] if part.find("=") is Some(i) => {
+      let name = part[:i].trim(chars=" \t").to_owned().to_lower()
+      let v = part[i + 1:].trim(chars=" \t")
+      let v = if v is [.. "\"", .. inner, .. "\""] { inner } else { v }
+      (name, v.to_owned())
+    }
+  ]
   let ty = if parts.is_empty() {
     ""
   } else {

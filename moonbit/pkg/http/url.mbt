@@ -68,7 +68,9 @@ pub fn Values::get(self : Values, name : String) -> String? {
 ///|
 /// Values::get_all is every value for name, in order.
 pub fn Values::get_all(self : Values, name : String) -> Array[String] {
-  self.pairs.filter(p => p.0 == name).map(p => p.1)
+  [
+    for (n, v) in self.pairs if n == name => v
+  ]
 }
 
 ///|

@@ -18,7 +18,7 @@ let page =
 
 ///|
 fn values_json(v : @http.Values) -> Json {
-  Json::array(v.pairs.map(p => [p.0, p.1]))
+  Json::array([ for (name, value) in v.pairs => [name, value] ])
 }
 
 ///|

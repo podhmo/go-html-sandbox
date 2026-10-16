@@ -172,13 +172,16 @@ fn Route::match_path(
 /// Router::serve answers req with the handler of the matching pattern,
 /// filling req.params with the wildcards.
 pub fn Router::serve(self : Router, req : Request) -> Response {
-  let segs = []
-  if self.decoded_path {
-    req.path[1:].split("/").each(s => segs.push(s.to_owned()))
+  let segs = if self.decoded_path {
+    [
+      for s in req.path[1:].split("/") => s.to_owned()
+    ]
   } else {
-    for raw in req.raw_path[1:].split("/") {
-      segs.push(unescape(raw).unwrap_or(raw.to_owned()))
-    }
+    [
+      for raw in req.raw_path[1:].split("/") => {
+        unescape(raw).unwrap_or(raw.to_owned())
+      }
+    ]
   }
   let allow = []
   for r in self.routes {
