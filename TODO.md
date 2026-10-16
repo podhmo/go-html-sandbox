@@ -60,6 +60,7 @@
   - [x] `moon-wasm-opt -Oz` を `make build` に入れる（案 F）。
   - [x] パスのデコードを Wasm に移し、`/%FF` のような UTF-8 でないパスにも Go 版と
     同じ 404 を返す（案 H）。
+  - [x] GET と HEAD への 200 の応答を、isolate の中でパスごとにキャッシュする（案 I）。
   - [ ] フラグ入りの wrangler が入れられるようになったら（2026-10-21 ごろ以降）、
     `wasm_esm_integration_builtins` を使う案 E を試す。
 

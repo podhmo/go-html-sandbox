@@ -65,7 +65,7 @@ spike は `git archive HEAD` で `/tmp/go-html-sandbox/adapter` に取り出し�
 | F | `moon-wasm-opt -Oz` をビルドに入れる | — | — | 試した（推す） |
 | G | メソッドを Wasm に渡し、GET と HEAD 以外は 404 | — | — | C〜E に入れて試した |
 | H | パスのデコードを Wasm でする | — | — | 取り込んだ |
-| I | 応答を isolate の中でキャッシュする | — | — | 試していない |
+| I | 応答を isolate の中でキャッシュする | — | — | 取り込んだ |
 | J | MoonBit の `js` バックエンドにする | — | — | 対象外 |
 
 ### C、D、D' に共通の形
@@ -87,7 +87,7 @@ spike は `git archive HEAD` で `/tmp/go-html-sandbox/adapter` に取り出し�
 ### 試していない案
 
 - **H（パスのデコードを Wasm で）**: その後、取り込んだ（「取り込み（案 H）」の節）。
-- **I（応答のキャッシュ）**: 内容は isolate の中で変わらないので、`(method, path, query)` ごとに応答を `Map` に持てば、2 回目からは `render` の 345 µs も省ける。メモリの上限（isolate あたり 128 MB）と、キャッシュの大きさの上限を決める必要がある。Cache API を使う手もある。アダプターというより `site` 側の最適化。
+- **I（応答のキャッシュ）**: その後、取り込んだ（「取り込み（案 I）」の節）。Cache API（`caches.default`）を使う形は試していない。
 - **J（`js` バックエンド）**: Workers 用の MoonBit ライブラリとして [mizchi/cloudflare](https://github.com/mizchi/cloudflare.mbt)（mooncakes.io の `mizchi/cloudflare` 0.1.13、KV、D1、R2 などのバインディング）が見つかった。前の調査では見つからなかったもの。ただし `moon.mod` は `preferred_target = "js"`、各パッケージは `supported_targets = "js"` で、`mizchi/js_*` に依存する **JS にコンパイルするためのライブラリ**であり、Wasm では使えない。このブログは Wasm で動かすこと自体が目的（ロマン）なので、対象外とする。Wasm 向けで Workers に使える MoonBit のライブラリは、今回も見つからなかった（mooncakes.io の一覧 3,029 件を `cloudflare`、`workers`、`workerd` で検索した）。
 
 ## 計測
@@ -219,13 +219,35 @@ C、D、A のそれぞれを `wrangler dev` で動かし、ローカルの Go �
 - **本番では、`/a%00b` と `/%zz` は Worker に届かない。** Cloudflare の前段が、HTML の `400 Bad Request` ページ（`server: cloudflare`、`content-type: text/html`）を返す。`wrangler dev` では Worker に届き、Go 版と一致する。`/%E0%A4%A` と `/%` は本番でも Worker に届き、Go 版と同じ本文を返す。どのエスケープを前段が止めるのかの規則は調べていない。
 - デプロイした版の Total Upload は 273.08 KiB（gzip 後 86.86 KiB）、Worker Startup Time は 2 ms。
 
+## 取り込み（案 I、応答のキャッシュ）
+
+`worker.mjs` が、GET と HEAD への 200 の応答を、エスケープしたままのパスごとに isolate の `Map` に持ち、2 回目からは Wasm を呼ばずに返すようにした。
+
+- **なぜパスだけをキーにしてよいか**: 内容は Wasm に埋め込んであり、isolate の中では変わらない。クエリーが応答に効くのはリダイレクト（307）の `Location` だけで、200 の応答には効かない。`/site.css?v=...` のように任意のクエリーが付いても、キーは増えない。
+- **200 だけ**: 404 は存在しないパスの数だけ増えうるので持たない。リダイレクトはクエリーで変わるので持たない。POST などは 404 なので持たない。
+- **上限**: 同じパスでも `/posts/hell%6F` のようにエスケープの書き方を変えると別のキーになり、いくらでも増やせる。そこで 1,024 パスになったら全部捨てて始め直す。今のページは記事と文書とその `.md` 版、`/`、`/docs/`、`/favicon.svg`、`/site.css` で 40 ほどなので、普段は捨てることはない。`BASE_URL` が変わったときも捨てる。
+- **本文の再利用**: `new Response(body, ...)` に同じ `Uint8Array` を何度渡しても、本文は毎回同じだった（`wrangler dev` で同じパスを 3 回取って Go 版と同じハッシュ、`make compare` を続けて 3 回）。`Response` は本文のバイト列をコピーする。
+- Wasm には手を入れていない。キャッシュは JS の側だけにある。
+
+### 数字
+
+| | キャッシュなし | キャッシュに当たったとき |
+| --- | --- | --- |
+| `/`（Node） | 17.1〜17.6 µs | 4.9〜5.0 µs |
+| いちばん大きいページ（Node） | 347〜351 µs | 33 µs |
+
+- キャッシュに当たったときの 33 µs は、ほぼ Node が 53,784 B の本文の `Response` を作って読む時間。最初のリクエストは今までと同じ時間がかかる。
+- 本番で、どれくらいの割合のリクエストが同じ isolate に当たるかは分からない（isolate はデータセンターごとにあり、いつ捨てられるかも決まっていない）。本番での CPU 時間の変化も測っていない。
+- `make dev` とローカルの Go 版を、44 パス + 変なエスケープの 14 パス + `/posts/hell%6F` と `/site.css?v=other` の 60 パスで、続けて 3 回比べた。2 回目と 3 回目はキャッシュから返る。どの回も、一致しないのは案 H の節の `/%FF//` だけだった。デプロイした `blog` でも同じく 3 回比べ、一致しないのは案 H の節の 3 パスだけだった。
+- デプロイした版の Total Upload は 276.63 KiB（gzip 後 88.03 KiB。文書がこのメモの分だけ増えた）、Worker Startup Time は 2 ms。
+
 ## 次の一歩（一つずつ確かめる）
 
 1. （済み）案 D'（UTF-8 の線形メモリ、export は `serve` と `memory`）と案 G（メソッドを渡す）を `moonbit/worker` と `worker.mjs` に取り込み、`make compare` で Go 版と一致することを確かめる。「取り込み」の節を参照。
 2. （済み）案 F（`moon-wasm-opt -Oz`）を `make build` に入れ、サイズと `make compare` を確かめる。「取り込み（案 F、`-Oz`）」の節を参照。
 3. （済み）1 と 2 をデプロイし、Total Upload と Worker Startup Time を記録する。
 4. 2026-10-21 ごろ以降に、フラグ入りの wrangler で案 E を `wrangler dev` で動かす。動けば、本番でも試してから D' と比べ直す。
-5. （H は済み）必要なら案 I（応答のキャッシュ）を試す。I は [Static Assets の TODO](moonbit-static-assets.md) で文章を JS から渡すときにも関わる。線形メモリの形にしておけば、文章をコード単位ずつではなく、UTF-8 のバイト列のまま渡せる。
+5. （済み）案 H（パスのデコード）と案 I（応答のキャッシュ）を試す。I は [Static Assets の TODO](moonbit-static-assets.md) で文章を JS から渡すときにも関わる。線形メモリの形にしておけば、文章をコード単位ずつではなく、UTF-8 のバイト列のまま渡せる。
 
 ## spike のコード
 
