@@ -27,8 +27,9 @@ pub fn Request::form(self : Request) -> Form raise BadRequest {
     "application/x-www-form-urlencoded" =>
       { values: parse_values(self.text()), files: [], }
     "multipart/form-data" =>
-      match params.search_by(p => p.0 == "boundary") {
-        Some(i) if params[i].1 != "" => parse_multipart(self.body, params[i].1)
+      match params.iter().find_first(p => p.0 == "boundary") {
+        Some((_, boundary)) if boundary != "" =>
+          parse_multipart(self.body, boundary)
         _ => raise BadRequest("multipart form without a boundary")
       }
     _ => raise BadRequest("not a form: \{ty.escape()}")
@@ -82,10 +83,7 @@ fn parse_multipart(
     }
     let (_, disp) = media_type(headers.get("content-disposition").unwrap_or(""))
     let param = (name : String) => {
-      match disp.search_by(p => p.0 == name) {
-        Some(i) => Some(disp[i].1)
-        None => None
-      }
+      disp.iter().find_first(p => p.0 == name).map(p => p.1)
     }
     guard param("name") is Some(name) else { continue next_pos }
     match param("filename") {
