@@ -80,6 +80,5 @@ builtins を有効にしてコンパイルすると `WebAssembly.Module.imports`
 
 ## 次の一歩
 
-1. ブログの `render_blocks` と `render_inlines` を、`site` の外の公開パッケージに切り出す。そうすれば、ブラウザーのプレビューとブログのページが同じ HTML になる。
-2. 編集ページを作るなら、ブログの `site.css` を当てて、見た目もブログに合わせる。
-3. Worker の中でも同じ Wasm を使いたくなったら、`wasm_esm_integration_builtins` を試す。
+1. 編集ページを作るなら、ブログの `site.css` を当てて、見た目もブログに合わせる。
+2. Worker の中でも同じ Wasm を使いたくなったら、`wasm_esm_integration_builtins` を試す。
