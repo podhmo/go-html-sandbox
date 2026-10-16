@@ -73,11 +73,11 @@ fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
 /// with the empty line that ends them.
 fn encode_head(res : @http.Response) -> String {
   let head = StringBuilder()
-  head.write_string("\{res.status}\n")
+  head <+ "\{res.status}\n"
   for (name, value) in res.headers {
-    head.write_string("\{name}\t\{value}\n")
+    head <+ "\{name}\t\{value}\n"
   }
-  head.write_char('\n')
+  head <+ "\n"
   head.to_string()
 }
 
