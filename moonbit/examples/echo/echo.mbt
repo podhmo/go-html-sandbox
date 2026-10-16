@@ -3,7 +3,7 @@
 // and forms. ./worker.mjs runs it on Workers; ./test.mjs on Node.
 
 ///|
-let page =
+const PAGE =
   #|<!doctype html>
   #|<title>echo</title>
   #|<h1>echo</h1>
@@ -42,7 +42,7 @@ fn request_json(req : @http.Request) -> Json {
 ///|
 fn router() -> @http.Router {
   let r = @http.Router()
-  r.handle("GET /{$}", _ => @http.Response::html(200, page))
+  r.handle("GET /{$}", _ => @http.Response::html(200, PAGE))
   r.handle("GET /hello/{name}", req => {
     let greeting = req.query().get("greeting").unwrap_or("hello")
     @http.Response::text(200, "\{greeting}, \{req.param("name")}\n")
