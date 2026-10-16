@@ -1,0 +1,16 @@
+import {
+  "podhmo/blog/pkg/el",
+  "podhmo/blog/pkg/picoel",
+  "podhmo/blog/pkg/tinymarkdown",
+  "podhmo/blog/pkg/tinyfrontmatter",
+  "podhmo/blog/examples/blog/posts",
+  "podhmo/blog/examples/blog/repodocs",
+  "podhmo/blog/examples/blog/assets",
+  "podhmo/blog/pkg/http",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "podhmo/blog/pkg/el",
+  "podhmo/blog/pkg/http",
+} for "test"

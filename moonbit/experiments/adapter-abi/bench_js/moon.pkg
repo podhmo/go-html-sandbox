@@ -1,5 +1,5 @@
 import {
-  "podhmo/blog/site",
+  "podhmo/blog/examples/blog/site",
 }
 
 supported_targets = "+wasm-gc"

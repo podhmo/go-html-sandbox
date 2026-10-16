@@ -1,0 +1,66 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "podhmo/blog/pkg/tinymarkdown"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn inlines(String) -> Array[Inline]
+
+pub fn parse(String) -> Document
+
+// Errors
+
+// Types and methods
+pub(all) enum Block {
+  Section(level~ : Int, title~ : String, children~ : Array[Block])
+  Paragraph(String)
+  List(Array[Item])
+  Quote(Array[Block])
+  Table(header~ : Array[String], rows~ : Array[Array[String]])
+  CodeBlock(String)
+} derive(Eq, @debug.Debug)
+#deprecated
+pub fn Block::equal(Self, Self) -> Bool
+#deprecated
+pub fn Block::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn Block::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Document {
+  children : Array[Block]
+} derive(Eq, @debug.Debug)
+#deprecated
+pub fn Document::equal(Self, Self) -> Bool
+#deprecated
+pub fn Document::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn Document::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Inline {
+  Text(String)
+  Code(String)
+  Link(children~ : Array[Inline], url~ : String)
+} derive(Eq, @debug.Debug)
+#deprecated
+pub fn Inline::equal(Self, Self) -> Bool
+#deprecated
+pub fn Inline::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn Inline::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Item {
+  text : String
+  children : Array[Item]
+} derive(Eq, @debug.Debug)
+#deprecated
+pub fn Item::equal(Self, Self) -> Bool
+#deprecated
+pub fn Item::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn Item::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

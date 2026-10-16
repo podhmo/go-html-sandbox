@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { wasmApp } from "../../http/wasm/adapter.mjs";
+import { wasmApp } from "../../pkg/http/wasm/adapter.mjs";
 
 const app = wasmApp(new WebAssembly.Module(readFileSync(new URL("./build/echo.wasm", import.meta.url))));
 const env = { GREETING: "hi", NOT_A_STRING: { a: 1 } };

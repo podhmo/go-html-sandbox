@@ -1,6 +1,6 @@
 import {
-  "podhmo/blog/http",
-  "podhmo/blog/http/wasm",
+  "podhmo/blog/pkg/http",
+  "podhmo/blog/pkg/http/wasm",
 }
 
 supported_targets = "+wasm-gc"

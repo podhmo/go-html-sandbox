@@ -6,29 +6,17 @@ It is an experiment in progress; see
 [the research notes](../docs/sketch/ja/moonbit-workers-wasm.md) and
 `TODO.md` for what is next.
 
+The libraries are in `pkg/` and the applications on them in `examples/`,
+as in `../go`.
+
+`pkg/`:
+
 - `el` — the HTML builder ported from `go/pkg/el`: nodes as plain data,
   `render_html` (escaping like Go's `html.EscapeString`) and
   `render_plain`
 - `picoel` — the part of `go/pkg/picoel` the blog's pages use: pages
   styled by pico.css v2 (`document`, `header`, `main_`, `nav`, `article`,
   `table`, ...) as `el` nodes; `date` takes a `YYYY-MM-DD` string
-- `site` — the blog, ported from the Go blog's `internal/site`:
-  `load_posts` and `load_docs` read the embedded files, and
-  `Site::handle(req)` answers an `@http.Request` (methods other than GET
-  and HEAD get the 404 page) for every route of the Go blog: `/`,
-  `/posts/{slug}` and `/docs/{path}` with their `.md` sources, `/docs/`,
-  `/favicon.svg`, `/site.css`, the redirects to cleaned paths, and the
-  404 pages, routing with an `@http.Router`
-- `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
-  `site.css` that pages put in its URL, generated into
-  `assets/embedded.mbt` by `scripts/embed-assets.sh`
-- `posts` — `files`, the blog's posts (`posts/*.md` in the repository root)
-  as pairs of file name and content, generated into `posts/embedded.mbt`
-  (ignored by git) by `scripts/embed.sh`
-- `repodocs` — `files`, the repository's own `TODO.md` and
-  `docs/**/*.md` as pairs of path (from the repository root) and content,
-  generated into `repodocs/embedded.mbt` the same way, as the Go blog's
-  `repodocs` embeds them
 - `tinymarkdown` — a port of `go/pkg/tinymarkdown`: `parse(src)` into a
   tree of sections, paragraphs, lists, quotes, tables, and code blocks, and
   `inlines(text)` into text, code spans, and links; its tests are the Go
@@ -48,21 +36,47 @@ It is an experiment in progress; see
   memory as UTF-8 (the method, the URL, the headers, the variables, and
   the body as bytes) and writes the response over it; `adapter.mjs` is
   the host side, `wasmApp(module)`, which gives a `fetch` handler
+
+`examples/blog/`, the blog:
+
+- `site` — the blog, ported from the Go blog's `internal/site`:
+  `load_posts` and `load_docs` read the embedded files, and
+  `Site::handle(req)` answers an `@http.Request` (methods other than GET
+  and HEAD get the 404 page) for every route of the Go blog: `/`,
+  `/posts/{slug}` and `/docs/{path}` with their `.md` sources, `/docs/`,
+  `/favicon.svg`, `/site.css`, the redirects to cleaned paths, and the
+  404 pages, routing with an `@http.Router`
+- `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
+  `site.css` that pages put in its URL, generated into
+  `assets/embedded.mbt` by `scripts/embed-assets.sh`
+- `posts` — `files`, the blog's posts (`posts/*.md` in the repository root)
+  as pairs of file name and content, generated into `posts/embedded.mbt`
+  (ignored by git) by `scripts/embed.sh`
+- `repodocs` — `files`, the repository's own `TODO.md` and
+  `docs/**/*.md` as pairs of path (from the repository root) and content,
+  generated into `repodocs/embedded.mbt` the same way, as the Go blog's
+  `repodocs` embeds them
 - `worker` — the blog's Wasm entry point, a MoonBit package: `serve` and
   the linear memory exported, nothing imported; `serve` hands the request
   to `Site::handle` through `http/wasm`
 - `cloudflare` — the Cloudflare Worker that runs it, in JS: `worker.mjs` runs the Wasm with
   `http/wasm/adapter.mjs`, keeping each 200 response to GET and HEAD by
   path for the rest of the isolate's life, and `wrangler.jsonc` builds it
-- `experiments` — spikes kept to reproduce the numbers in the notes,
-  each a module of its own outside the blog's (see its README)
-- `examples/echo` — an example of `http` outside the blog (methods,
-  wildcards, the query, text, JSON and form bodies, binary responses,
-  cookies, and variables), run on Node by `make test-echo` and with
-  wrangler by `make dev-echo`
 - `compare` — compares the Go blog with the Worker path by path (status,
   `Content-Type`, and a diff of the body); `compare/cmd` is its native
   CLI, built on `moonbitlang/async`, and the only package that uses it
+
+`examples/echo/`:
+
+- `echo` — an example of `http` outside the blog (methods,
+  wildcards, the query, text, JSON and form bodies, binary responses,
+  cookies, and variables), run on Node by `make test-echo` and with
+  wrangler by `make dev-echo`
+
+And outside the module:
+
+- `experiments` — spikes kept to reproduce the numbers in the notes,
+  each a module of its own outside the blog's (see its README)
 
 Strings cross between JS and Wasm as UTF-8 in the Wasm's memory because
 Workers compiles imported Wasm modules without the JS string builtins,
@@ -77,20 +91,20 @@ From `moonbit/` (`make help` lists the targets):
 
 ```sh
 make test     # moon test
-make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm, and after wasm-opt -Oz, cloudflare/build/app.wasm
+make build    # the Wasm, into _build/wasm-gc/release/build/examples/blog/worker/worker.wasm, and after wasm-opt -Oz, examples/blog/cloudflare/build/app.wasm
 make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test, moon info
-make test-echo  # the echo example on Node through http/wasm/adapter.mjs
+make test-echo  # the echo example on Node through pkg/http/wasm/adapter.mjs
 ```
 
-`worker`, `http/wasm`, and `examples/echo` are built for wasm-gc only
+The blog's `worker`, `http/wasm`, and `examples/echo` are built for wasm-gc only
 (their inline Wasm does not compile on native) and `compare/cmd` for
 native only (async's I/O is native only), so the CLI and its dependency
 stay out of the Wasm.
 
-MoonBit has no `go:embed`, so `scripts/embed.sh` writes the posts into
-`posts/embedded.mbt`, and `TODO.md` and `docs/**/*.md` into
-`repodocs/embedded.mbt`, as MoonBit source. `posts/moon.pkg` and
-`repodocs/moon.pkg` run it before every `moon check`, `moon build`, and
+MoonBit has no `go:embed`, so `examples/blog/scripts/embed.sh` writes the
+posts into `posts/embedded.mbt`, and `TODO.md` and `docs/**/*.md` into
+`repodocs/embedded.mbt`, as MoonBit source (both in `examples/blog/`).
+`posts/moon.pkg` and `repodocs/moon.pkg` run it before every `moon check`, `moon build`, and
 `moon test`, but moon looks only at the mtime of its inputs: it reruns
 the script when a post or a file directly in `docs/` is added or removed,
 or `TODO.md` is edited, not when a post or document is edited or a file
@@ -109,8 +123,9 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 
 Then open <http://localhost:8787>. wrangler's build command runs
 `make build`, which writes the Wasm, shrunk by `wasm-opt -Oz`, to
-`cloudflare/build/app.wasm`, ignored by git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
-`posts/`, or the documents in `docs/` change.
+`examples/blog/cloudflare/build/app.wasm`, ignored by git, and `wrangler dev`
+rebuilds when `pkg/`, `examples/blog/site/`, `examples/blog/worker/`, the
+posts in `posts/`, or the documents in `docs/` change.
 
 ## Comparing with the Go blog
 
@@ -125,7 +140,7 @@ make compare PORT=8798 PATHS="/posts/hello /docs/"           # only these paths
 
 `go generate` copies `TODO.md` and `docs/` into the Go blog; without it
 the Go side serves no documents. `-base-url` gives the Go blog the
-Worker's `BASE_URL` (from `cloudflare/wrangler.jsonc`), so that the OGP tags
+Worker's `BASE_URL` (from `examples/blog/cloudflare/wrangler.jsonc`), so that the OGP tags
 match. For each path `compare` prints `same`, or
 which of status, `Content-Type`, and body differ with a unified diff of
 the body (split after each `>` and newline, since the pages are mostly on

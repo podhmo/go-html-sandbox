@@ -1,10 +1,10 @@
 // usage: node bench.mjs <name>...
 // Times the blog's Wasm in build/<name>.wasm through its own commit's
 // adapter: "pr31" through PR #31's worker.mjs (reimplemented below, as it
-// imported the Wasm), anything else through ../../http/wasm/adapter.mjs.
+// imported the Wasm), anything else through ../../pkg/http/wasm/adapter.mjs.
 // Checks first that every variant answers / and the largest page alike.
 import { readFileSync } from "node:fs";
-import { wasmApp } from "../../http/wasm/adapter.mjs";
+import { wasmApp } from "../../pkg/http/wasm/adapter.mjs";
 
 const env = { BASE_URL: "https://blog.podhmo.workers.dev" };
 const encoder = new TextEncoder();

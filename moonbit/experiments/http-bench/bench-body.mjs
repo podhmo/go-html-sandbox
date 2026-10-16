@@ -1,7 +1,7 @@
 // usage: node bench-body.mjs (after make -C ../.. build-echo)
 // Times the echo example with request headers and bodies of each size.
 import { readFileSync } from "node:fs";
-import { wasmApp } from "../../http/wasm/adapter.mjs";
+import { wasmApp } from "../../pkg/http/wasm/adapter.mjs";
 const app = wasmApp(new WebAssembly.Module(readFileSync("../../examples/echo/build/echo.wasm")));
 const browser = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "accept-language": "ja,en-US;q=0.9,en;q=0.8", "accept-encoding": "gzip, deflate, br, zstd", cookie: "a=".padEnd(300, "x"), "sec-ch-ua": "\"Chromium\";v=\"141\"", "sec-fetch-mode": "navigate", "sec-fetch-site": "none", "upgrade-insecure-requests": "1" };
 async function bench(label, mk, count = 1000) {

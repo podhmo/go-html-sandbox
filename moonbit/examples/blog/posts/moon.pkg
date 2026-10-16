@@ -1,0 +1,8 @@
+// The blog's posts, posts/ in the repository root, embedded by
+// ../scripts/embed.sh into embedded.mbt, which is generated and ignored by git.
+rule(
+  name: "embed-md",
+  command: "sh examples/blog/scripts/embed.sh $output $input",
+)
+
+dev_build(rule: "embed-md", input: "../../../../posts", output: "embedded.mbt")

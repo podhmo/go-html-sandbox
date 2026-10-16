@@ -1,6 +1,6 @@
 import {
-  "podhmo/blog/site",
-  "podhmo/blog/http",
+  "podhmo/blog/examples/blog/site",
+  "podhmo/blog/pkg/http",
   "moonbitlang/core/encoding/utf8",
 }
 

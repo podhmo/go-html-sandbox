@@ -1,0 +1,13 @@
+import {
+  "podhmo/blog/pkg/http",
+  "moonbitlang/core/encoding/utf8",
+}
+
+// Only wasm-gc: the inline Wasm that reads and writes the linear memory
+// does not compile on native.
+
+supported_targets = "+wasm-gc"
+
+import {
+  "moonbitlang/core/encoding/utf8",
+} for "test"

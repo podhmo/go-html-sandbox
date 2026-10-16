@@ -6,7 +6,7 @@
   "compatibility_date": "2026-10-01",
   "build": {
     "command": "cd ../.. && make build-echo",
-    "watch_dir": ["../../http", "."]
+    "watch_dir": ["../../pkg/http", "."]
   },
   "vars": { "GREETING": "hi" }
 }
