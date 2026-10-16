@@ -32,6 +32,9 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: moon version --all
+      # A fresh install has no registry index, so moonbitlang/async is not
+      # found until it is fetched.
+      - run: moon update
       - run: make test
       # wrangler's build command runs make build (embed, moon, wasm-opt).
       - run: make deploy
