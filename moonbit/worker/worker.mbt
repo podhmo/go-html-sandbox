@@ -1,80 +1,20 @@
 ///|
-/// put appends one UTF-16 code unit to the host's buffer. The Wasm passes
-/// strings this way since Workers cannot compile it with the JS string
-/// builtins; see docs/sketch/ja/moonbit-workers-wasm.md.
-fn put(code : Int32) = "host" "put"
-
-///|
-/// status sets the status code of the response.
-fn status(code : Int32) = "host" "status"
-
-///|
-/// header_name takes the host's buffer as the name of the next header.
-fn header_name() = "host" "header_name"
-
-///|
-/// header_value takes the host's buffer as the value of the header named
-/// last.
-fn header_value() = "host" "header_value"
-
-///|
-fn put_string(s : String) -> Unit {
-  for i in 0..<s.length() {
-    put(s.code_unit_at(i).to_int())
-  }
-}
-
-///|
-let path : StringBuilder = StringBuilder()
-
-///|
-/// path_push appends one UTF-16 code unit of the request path, or of the
-/// base URL before set_base_url, or of the query before set_query.
-pub fn path_push(code : Int32) -> Unit {
-  path.write_char(code.unsafe_to_char())
-}
-
-///|
-/// base_url is the public origin set by set_base_url.
+/// base_url is the public origin the site was loaded with.
 let base_url : Ref[String] = Ref("")
 
 ///|
-/// site is the content being served, loaded on the first request, or why
-/// it could not be.
+/// site is the content being served, loaded on the first request (and
+/// again if BASE_URL changes), or why it could not be.
 let site : Ref[Result[@site.Site, String]?] = Ref(None)
 
 ///|
-/// set_base_url takes what path_push pushed as the public origin for the
-/// OGP tags (BASE_URL in wrangler.jsonc). The host calls it once, before
-/// the first serve.
-pub fn set_base_url() -> Unit {
-  base_url.val = path.to_string()
-  path.reset()
-  site.val = None
-}
-
-///|
-/// query is the raw query string of the next request, set by set_query.
-let query : Ref[String] = Ref("")
-
-///|
-/// set_query takes what path_push pushed as the raw query string (without
-/// "?") of the next request. The host calls it before pushing the path,
-/// when the request has a query; serve clears it.
-pub fn set_query() -> Unit {
-  query.val = path.to_string()
-  path.reset()
-}
-
-///|
-/// load returns the site, loading it on first use.
-fn load() -> Result[@site.Site, String] {
+/// load returns the site for base, loading it on first use.
+fn load(base : String) -> Result[@site.Site, String] {
   match site.val {
-    Some(s) => s
-    None => {
-      let s = Ok(@site.Site::embedded(base_url=base_url.val)) catch {
-        e => Err("\{e}")
-      }
+    Some(s) if base == base_url.val => s
+    _ => {
+      base_url.val = base
+      let s = Ok(@site.Site::embedded(base_url=base)) catch { e => Err("\{e}") }
       site.val = Some(s)
       s
     }
@@ -82,25 +22,47 @@ fn load() -> Result[@site.Site, String] {
 }
 
 ///|
-/// serve answers the pushed path, and clears it for the next request. It
-/// sends the status, then each header as a name and a value, then the
-/// body, which is what the host's buffer holds when serve returns. If the
+/// answer parses a request, "BASE_URL\nmethod\nquery\npath" (the path
+/// last, since only it may hold a newline), and returns the response as
+/// its head, "status\nname\tvalue\n...\n\n", and its body. If the
 /// embedded content cannot be loaded, every request gets a 500 saying why.
-pub fn serve() -> Unit {
-  let p = path.to_string()
-  path.reset()
-  let q = query.val
-  query.val = ""
-  let res = match load() {
-    Ok(s) => s.render(p, query=q)
+fn answer(req : String) -> (String, String) {
+  let fields = []
+  let mut start = 0
+  for i in 0..<req.length() {
+    if fields.length() == 3 {
+      break
+    }
+    if req.code_unit_at(i) == '\n' {
+      fields.push(req.unsafe_substring(start~, end=i))
+      start = i + 1
+    }
+  }
+  guard fields is [base, verb, query] else {
+    return ("400\ncontent-type\ttext/plain; charset=utf-8\n\n", "Bad request\n")
+  }
+  let path = req.unsafe_substring(start~, end=req.length())
+  let res = match load(base) {
+    Ok(s) => s.render(path, query~, verb~)
     Err(msg) => @site.Response::text(500, "\{msg}\n")
   }
-  status(res.status)
+  let head = StringBuilder()
+  head.write_string("\{res.status}\n")
   for (name, value) in res.headers {
-    put_string(name)
-    header_name()
-    put_string(value)
-    header_value()
+    head.write_string("\{name}\t\{value}\n")
   }
-  put_string(res.body)
+  head.write_char('\n')
+  (head.to_string(), res.body)
+}
+
+///|
+/// serve answers the request the host wrote at address 0 of the memory,
+/// n bytes of UTF-8 (see answer), and writes the response over it in
+/// UTF-8, the head and then the body, returning its length in bytes.
+/// Strings cross this way, not as JS strings, since Workers compiles the
+/// Wasm without the JS string builtins; see
+/// docs/sketch/ja/moonbit-workers-adapter.md.
+pub fn serve(n : Int32) -> Int32 {
+  let (head, body) = answer(read(n))
+  write(write(0, head), body)
 }

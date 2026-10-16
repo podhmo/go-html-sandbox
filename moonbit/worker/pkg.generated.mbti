@@ -2,13 +2,7 @@
 package "podhmo/blog/worker"
 
 // Values
-pub fn path_push(Int) -> Unit
-
-pub fn serve() -> Unit
-
-pub fn set_base_url() -> Unit
-
-pub fn set_query() -> Unit
+pub fn serve(Int) -> Int
 
 // Errors
 

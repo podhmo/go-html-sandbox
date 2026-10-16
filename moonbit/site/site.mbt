@@ -92,12 +92,18 @@ pub fn Site::embedded(base_url~ : String) -> Site raise LoadError {
 
 ///|
 /// render answers the request for path, with query the raw query string
-/// (without "?"), which only redirects keep.
+/// (without "?"), which only redirects keep. Like the Go blog, it answers
+/// only GET and HEAD (verb is the HTTP method; `method` is reserved), and
+/// any other method gets the 404 page.
 pub fn Site::render(
   self : Site,
   path : String,
   query~ : String = "",
+  verb~ : String = "GET",
 ) -> Response {
+  if verb != "GET" && verb != "HEAD" {
+    return Response::page(404, error_page(404, "Page not found."))
+  }
   // Redirect like ServeMux: to the cleaned path, and from a directory
   // without its trailing slash.
   let c = clean_path(path)

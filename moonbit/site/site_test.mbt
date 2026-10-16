@@ -466,6 +466,19 @@ test "favicon and site.css" {
 }
 
 ///|
+test "methods other than GET and HEAD get the 404 page" {
+  let s = new_site(test_posts)
+  assert_eq(s.render("/", verb="HEAD").status, 200)
+  for verb in ["POST", "PUT", "DELETE"] {
+    let res = s.render("/posts/hello", verb~)
+    assert_eq(res.status, 404, msg=verb)
+    assert_contains(res.body, ["<h1>404 Not Found</h1>", "Page not found."])
+    // Even a path that would redirect.
+    assert_eq(s.render("/docs", verb~).status, 404, msg=verb)
+  }
+}
+
+///|
 test "redirects" {
   let s = new_site(test_posts)
   let cases = [
