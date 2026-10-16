@@ -110,11 +110,7 @@ fn rank(s : Segment?, subtree : Bool) -> Int32 {
 /// more_specific tells whether a matches fewer paths than b, comparing
 /// segment by segment, and a method over none.
 fn more_specific(a : Route, b : Route) -> Bool {
-  let n = if a.segments.length() > b.segments.length() {
-    a.segments.length()
-  } else {
-    b.segments.length()
-  }
+  let n = a.segments.length().max(b.segments.length())
   // One past the longer, so that a subtree is less specific than the
   // same path alone.
   for i in 0..<=n {
