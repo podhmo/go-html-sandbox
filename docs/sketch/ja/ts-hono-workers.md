@@ -13,7 +13,7 @@ Go 版と MoonBit 版のブログは、どちらも Wasm として Cloudflare Wo
 | 3. 書くコードはどれだけ減るか | **アプリは Go 版の約 6 割。ライブラリは 3 分の 1、Workers との糊は 55 行** | 下の「コードの量」の表。テストを除いた行数 |
 | 4. Workers と Vite の何が、自分で書かずに済んだか | **ルーティング、HEAD、静的ファイル、JS と Wasm の受け渡し、記事の埋め込み、ビルドの糊** | 下の「書かずに済んだもの」 |
 | 5. 大きさはどうか | **アップロードは 423 KiB（gzip 後 131 KiB）**。ほとんどは埋め込んだ文章で、Hono とアプリは数十 KB | `wrangler deploy --dry-run` と、esbuild の metafile |
-| 6. 本番の起動時間はどうか | **Startup Time は 11〜15 ms**（MoonBit 版は 2 ms）。ただし MoonBit 版と同じく最初のリクエストで解析すると 3 ms になる。リクエストの CPU 時間まで見ると、起動時に解析するほうがよい | `blog-ts` として 5 回デプロイし、`wrangler tail` の `cpuTime` を 25 件ずつ見た（下の「デプロイ」） |
+| 6. 本番の起動時間はどうか | **Startup Time は 11〜18 ms**（MoonBit 版は 2 ms）。ただし MoonBit 版と同じく最初のリクエストで解析すると 3 ms になる。リクエストの CPU 時間まで見ると、起動時に解析するほうがよい | `blog-ts` として 6 回デプロイし、`wrangler tail` の `cpuTime` を 25 件ずつ見た（下の「デプロイ」） |
 | 7. Node 24 なら TypeScript をそのまま使えるか | **`.ts` は使える。`.tsx` は使えない**。Vite の構成では、どちらも Node で直接は動かさなくなった | Node から `pkg/tinymarkdown/tinymarkdown.ts` を import すると動く。`node src/app.tsx` は `ERR_UNKNOWN_FILE_EXTENSION` |
 
 ## 結論
@@ -115,7 +115,7 @@ wrangler が表示する `Worker Startup Time` は、記事と文書をいつ解
 
 | 解析するとき | Startup Time | 新しい isolate のリクエストの CPU 時間 |
 | --- | --- | --- |
-| isolate の起動時（モジュールのトップレベル。今の形） | 15 ms、13 ms、11 ms（3 回のデプロイ） | 25 件中 1 件が 15 ms、残りは 0〜3 ms |
+| isolate の起動時（モジュールのトップレベル。今の形） | 15 ms、13 ms、11 ms、18 ms（4 回のデプロイ） | 25 件中 1 件が 15 ms、残りは 0〜3 ms |
 | 最初のリクエスト（MoonBit 版と同じ形） | 3 ms、3 ms（2 回） | 25 件中 9 件が 18〜43 ms、残りは 0〜2 ms |
 
 CPU 時間は、デプロイの直後に `wrangler tail --format json` をつなぎ、`/posts/hello` に 25 回続けて送ったときの `cpuTime`。リクエストはいくつもの isolate に振り分けられるので、温まっていない isolate に当たると重い。どちらの形でも `outcome` はすべて `ok` だった。
@@ -123,7 +123,7 @@ CPU 時間は、デプロイの直後に `wrangler tail --format json` をつな
 - 起動時の処理は、ほとんどの場合リクエストの CPU 時間に数えられない。最初のリクエストに回すと、Startup Time は小さく見えるが、解析のコストがリクエストに移る。そこで、起動時に解析する形に戻した。
 - 解析そのものは、Node で測ると 1 回目（JIT が効く前）が 8.7 ms、温まった後が 0.7 ms。
 - 残る 3 ms は、426 KiB の JS を読み込んで評価する分と考えられる。
-- MoonBit 版（`blog`）は最初のリクエストで解析している（`worker.mbt` の `Ref(None)`）。同じように 15 件を見ると、1 件が 16 ms、残りは 0〜1 ms だった。MoonBit 版の 2 ms と ts 版の 11〜15 ms は、解析を含むかどうかが違うので、そのままは比べられない。
+- MoonBit 版（`blog`）は最初のリクエストで解析している（`worker.mbt` の `Ref(None)`）。同じように 15 件を見ると、1 件が 16 ms、残りは 0〜1 ms だった。MoonBit 版の 2 ms と ts 版の 11〜18 ms は、解析を含むかどうかが違うので、そのままは比べられない。
 
 本番での応答時間（`curl` の最初のバイトまでの時間、20 回の中央値）は、`/` で ts 版 68 ms、MoonBit 版 66 ms、`/docs/sketch/ja/moonbit-modernize` で 76 ms と 61 ms。ほとんどはネットワークの往復で、違いは測れなかった。
 
