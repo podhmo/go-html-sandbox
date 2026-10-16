@@ -4,8 +4,6 @@ package "podhmo/html-sandbox/pkg/http"
 // Values
 pub fn media_type(String) -> (String, Array[(String, String)])
 
-pub fn parse_multipart(BytesView, String) -> Form raise BadRequest
-
 pub fn parse_values(StringView) -> Values
 
 pub fn unescape(StringView, plus? : Bool) -> String?

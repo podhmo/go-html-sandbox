@@ -38,7 +38,7 @@ pub fn Request::form(self : Request) -> Form raise BadRequest {
 ///|
 /// parse_multipart splits body into its parts at boundary (RFC 7578).
 /// Parts without a name are skipped.
-pub fn parse_multipart(
+fn parse_multipart(
   body : BytesView,
   boundary : String,
 ) -> Form raise BadRequest {
