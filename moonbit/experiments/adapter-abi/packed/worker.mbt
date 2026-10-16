@@ -28,7 +28,12 @@ fn put_string(s : String) -> Unit {
   let mut i = 0
   while i + 8 <= n {
     let u = fn(k) { s.code_unit_at(i + k).to_int() }
-    put8(u(0) | (u(1) << 16), u(2) | (u(3) << 16), u(4) | (u(5) << 16), u(6) | (u(7) << 16))
+    put8(
+      u(0) | (u(1) << 16),
+      u(2) | (u(3) << 16),
+      u(4) | (u(5) << 16),
+      u(6) | (u(7) << 16),
+    )
     i += 8
   }
   for j in i..<n {

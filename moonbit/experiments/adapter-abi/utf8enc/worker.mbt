@@ -1,5 +1,5 @@
 ///|
-fn write8(at : Int, s : String) -> Int {
+fn write8(at : Int32, s : String) -> Int32 {
   let b = @utf8.encode(s)
   reserve(at + b.length())
   for i in 0..<b.length() {
@@ -11,7 +11,7 @@ fn write8(at : Int, s : String) -> Int {
 ///|
 /// serve reads the request, n UTF-8 bytes at address 0, and writes the
 /// response there in UTF-8, returning its length in bytes.
-pub fn serve(n : Int) -> Int {
+pub fn serve(n : Int32) -> Int32 {
   let req = @utf8.decode(Bytes::makei(n, i => load8(i).to_byte())) catch {
     _ => ""
   }

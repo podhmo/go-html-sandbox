@@ -1,5 +1,5 @@
 ///|
-fn write16(at : Int, s : String) -> Int {
+fn write16(at : Int32, s : String) -> Int32 {
   for i in 0..<s.length() {
     store16(at + i * 2, s.code_unit_at(i).to_int())
   }
@@ -9,7 +9,7 @@ fn write16(at : Int, s : String) -> Int {
 ///|
 /// serve reads the request, n UTF-16 code units at address 0, and writes
 /// the response there in UTF-16, returning its length in code units.
-pub fn serve(n : Int) -> Int {
+pub fn serve(n : Int32) -> Int32 {
   let sb = StringBuilder()
   for i in 0..<n {
     sb.write_char(load16(i * 2).unsafe_to_char())

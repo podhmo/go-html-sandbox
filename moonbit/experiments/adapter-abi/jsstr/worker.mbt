@@ -10,9 +10,7 @@ fn load(base : String) -> Result[@site.Site, String] {
     Some(s) if base == base_url.val => s
     _ => {
       base_url.val = base
-      let s = Ok(@site.Site::embedded(base_url=base)) catch {
-        e => Err("\{e}")
-      }
+      let s = Ok(@site.Site::embedded(base_url=base)) catch { e => Err("\{e}") }
       site.val = Some(s)
       s
     }

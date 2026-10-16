@@ -1,30 +1,30 @@
 ///|
-extern "wasm" fn load8(addr : Int) -> Int =
+extern "wasm" fn load8(addr : Int32) -> Int32 =
   #|(func (param i32) (result i32) (i32.load8_u (local.get 0)))
 
 ///|
-extern "wasm" fn store8(addr : Int, v : Int) =
+extern "wasm" fn store8(addr : Int32, v : Int32) =
   #|(func (param i32) (param i32) (i32.store8 (local.get 0) (local.get 1)))
 
 ///|
-extern "wasm" fn load16(addr : Int) -> Int =
+extern "wasm" fn load16(addr : Int32) -> Int32 =
   #|(func (param i32) (result i32) (i32.load16_u (local.get 0)))
 
 ///|
-extern "wasm" fn store16(addr : Int, v : Int) =
+extern "wasm" fn store16(addr : Int32, v : Int32) =
   #|(func (param i32) (param i32) (i32.store16 (local.get 0) (local.get 1)))
 
 ///|
-extern "wasm" fn memory_size() -> Int =
+extern "wasm" fn memory_size() -> Int32 =
   #|(func (result i32) (memory.size))
 
 ///|
-extern "wasm" fn memory_grow(pages : Int) -> Int =
+extern "wasm" fn memory_grow(pages : Int32) -> Int32 =
   #|(func (param i32) (result i32) (memory.grow (local.get 0)))
 
 ///|
 /// reserve grows the memory to hold at least n bytes.
-fn reserve(n : Int) -> Unit {
+fn reserve(n : Int32) -> Unit {
   let more = (n + 65535) / 65536 - memory_size()
   if more > 0 {
     ignore(memory_grow(more))
@@ -43,9 +43,7 @@ fn load(base : String) -> Result[@site.Site, String] {
     Some(s) if base == base_url.val => s
     _ => {
       base_url.val = base
-      let s = Ok(@site.Site::embedded(base_url=base)) catch {
-        e => Err("\{e}")
-      }
+      let s = Ok(@site.Site::embedded(base_url=base)) catch { e => Err("\{e}") }
       site.val = Some(s)
       s
     }

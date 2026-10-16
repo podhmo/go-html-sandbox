@@ -1,6 +1,6 @@
 ///|
 /// write8 encodes s in UTF-8 at address at, and returns the end.
-fn write8(at : Int, s : String) -> Int {
+fn write8(at : Int32, s : String) -> Int32 {
   reserve(at + s.length() * 3)
   let mut p = at
   let n = s.length()
@@ -39,7 +39,7 @@ fn write8(at : Int, s : String) -> Int {
 }
 
 ///|
-pub fn serve(n : Int) -> Int {
+pub fn serve(n : Int32) -> Int32 {
   let req = @utf8.decode(Bytes::makei(n, i => load8(i).to_byte())) catch {
     _ => ""
   }
