@@ -479,6 +479,23 @@ test "methods other than GET and HEAD get the 404 page" {
 }
 
 ///|
+test "unescape_path" {
+  let cases : Array[(String, String?)] = [
+    ("/", Some("/")),
+    ("/a%3Cb%3E", Some("/a<b>")),
+    ("/%E6%97%A5%E6%9C%AC", Some("/日本")),
+    ("/docs%2F", Some("/docs/")),
+    ("/%FF", Some("/\u{FFFD}")),
+    ("/%E0%A4%A", None),
+    ("/%zz", None),
+    ("/%", None),
+  ]
+  for (raw, want) in cases {
+    assert_eq(@site.unescape_path(raw), want, msg=raw)
+  }
+}
+
+///|
 test "redirects" {
   let s = new_site(test_posts)
   let cases = [

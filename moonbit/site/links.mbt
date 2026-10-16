@@ -110,6 +110,15 @@ fn unescape(s : StringView) -> String? {
 }
 
 ///|
+/// unescape_path decodes the path of a request URL as Go's net/http does
+/// before a handler sees it: None for a malformed %XX escape, which gets
+/// 400, and bytes that are not UTF-8 replaced with U+FFFD, where Go keeps
+/// them as they are.
+pub fn unescape_path(raw : String) -> String? {
+  unescape(raw)
+}
+
+///|
 fn hex_value(c : UInt16) -> Int32? {
   let n = c.to_int()
   match c {

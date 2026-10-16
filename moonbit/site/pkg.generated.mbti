@@ -11,6 +11,8 @@ pub fn load_docs(ReadOnlyArray[(String, String)]) -> Array[Doc] raise LoadError
 
 pub fn load_posts(ReadOnlyArray[(String, String)]) -> Array[Post] raise LoadError
 
+pub fn unescape_path(String) -> String?
+
 // Errors
 pub(all) suberror LoadError {
   LoadError(message~ : String)

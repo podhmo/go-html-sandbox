@@ -23,7 +23,7 @@ fn load(base : String) -> Result[@site.Site, String] {
 
 ///|
 /// answer parses a request, "BASE_URL\nmethod\nquery\npath" (the path
-/// last, since only it may hold a newline), and returns the response as
+/// as it is in the URL, still percent-encoded), and returns the response as
 /// its head, "status\nname\tvalue\n...\n\n", and its body. If the
 /// embedded content cannot be loaded, every request gets a 500 saying why.
 fn answer(req : String) -> (String, String) {
@@ -41,10 +41,11 @@ fn answer(req : String) -> (String, String) {
   guard fields is [base, verb, query] else {
     return ("400\ncontent-type\ttext/plain; charset=utf-8\n\n", "Bad request\n")
   }
-  let path = req.unsafe_substring(start~, end=req.length())
-  let res = match load(base) {
-    Ok(s) => s.render(path, query~, verb~)
-    Err(msg) => @site.Response::text(500, "\{msg}\n")
+  let raw = req.unsafe_substring(start~, end=req.length())
+  let res = match (@site.unescape_path(raw), load(base)) {
+    (None, _) => @site.Response::text(400, "400 Bad Request") // as Go's net/http
+    (_, Err(msg)) => @site.Response::text(500, "\{msg}\n")
+    (Some(path), Ok(s)) => s.render(path, query~, verb~)
   }
   let head = StringBuilder()
   head.write_string("\{res.status}\n")
