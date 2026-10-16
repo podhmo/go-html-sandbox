@@ -70,7 +70,7 @@ as in `../go`.
 
 - `echo` — an example of `http` outside the blog (methods,
   wildcards, the query, text, JSON and form bodies, binary responses,
-  cookies, and variables), run on Node by `make test-echo` and with
+  cookies, and variables), run on Node by `make test` and with
   wrangler by `make dev-echo`
 
 And outside the module:
@@ -87,13 +87,17 @@ writes it with inline Wasm. See
 
 ## Development
 
-From `moonbit/` (`make help` lists the targets):
+From `moonbit/` (`make help` lists the targets). The blog, `pkg/`, and
+`examples/echo` are maintained, and `make test` runs all their tests;
+echo's Node test is the integration test of `pkg/http/wasm` through
+`adapter.mjs`. The modules in `experiments/` are one-off spikes, and
+`make check` only makes sure they still build. To work on one part, run
+moon directly (`moon test -p podhmo/html-sandbox/pkg/http`).
 
 ```sh
-make test     # moon test
-make build    # the Wasm, into _build/wasm-gc/release/build/examples/blog/worker/worker.wasm, and after wasm-opt -Oz, examples/blog/cloudflare/build/app.wasm
-make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test, moon info
-make test-echo  # the echo example on Node through pkg/http/wasm/adapter.mjs
+make build    # the blog's Wasm, into _build/wasm-gc/release/build/examples/blog/worker/worker.wasm, and after wasm-opt -Oz, examples/blog/cloudflare/build/app.wasm
+make test     # moon test, and the echo example on Node through pkg/http/wasm/adapter.mjs
+make check    # before every commit: make test, moon fmt --check, moon check (wasm-gc, native, and in experiments/), moon info
 ```
 
 The blog's `worker`, `http/wasm`, and `examples/echo` are built for wasm-gc only

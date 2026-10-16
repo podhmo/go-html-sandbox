@@ -432,5 +432,5 @@ skill の Step 0 に従い、`moonbit-refactoring` の「Local refactoring」よ
 - **文字列の for-in は、サロゲートペアを 1 つの `Char` にまとめ、孤立したサロゲートはそのまま 1 つの `Char` として返す。** `write` が手で行っていた処理と同じ結果になる（孤立した U+D800 は `ED A0 80` の 3 バイトになる）。white-box テストで、書き換えの前と後の両方で確かめた（moon 0.1.20261012）。
 - **3 部形式の functional-for の条件に、本体の先頭の `break` を移せる。** `parse_multipart` は `while true` の先頭で `--` を見て抜けていたので、`for pos = ..; !body[pos:].has_prefix(b"--"); { .. }` と書けた。本体の最後の `continue next_pos` を忘れると、2 回目のパスの Pitfall と同じく警告なしで無限ループになるので、名前のないパートを飛ばす `continue` の経路にテストを足した。
 - **`match` の一方の腕がビューのとき、もう一方の腕の `url[:]` には `unnecessary_view_op` が出る。** 期待される型がビューになるので、`url` だけでよい。
-- **`experiments/` は、ルートの `moon check` にも `make check` にも入らない。** 最初はこれに気づかず、全体を検証した後に README を読んで `wasm-fetch` が壊れていることを見つけた。`moon.work` でこのモジュールを参照する別のモジュールがあるときは、公開 API を変えたら、その中でも `moon check` を実行する必要がある。
+- **`experiments/` は、ルートの `moon check` にも `make check` にも入らない。** 最初はこれに気づかず、全体を検証した後に README を読んで `wasm-fetch` が壊れていることを見つけた。`moon.work` でこのモジュールを参照する別のモジュールがあるときは、公開 API を変えたら、その中でも `moon check` を実行する必要がある。その後、`make check` が `experiments/` の各モジュールでも `moon check` を実行するようにした。
 - **作業の途中まで、検証用のスクリプトが `moon check` の失敗を見落としていた。** 出力を `tail` に渡していたので、`set -e` があっても失敗が伝わらなかった。上の警告で気づき、`pipefail` を付けて直した。それより前のコミットは、出力に警告もエラーもなかったことを確かめてある。

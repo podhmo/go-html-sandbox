@@ -5,7 +5,7 @@
   "main": "./worker.mjs",
   "compatibility_date": "2026-10-01",
   "build": {
-    "command": "cd ../.. && make build-echo",
+    "command": "cd ../.. && moon build --target wasm-gc --release examples/echo",
     "watch_dir": ["../../pkg/http", "."]
   },
   "vars": { "GREETING": "hi" }

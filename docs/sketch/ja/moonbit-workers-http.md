@@ -107,7 +107,7 @@ pub fn serve(n : Int) -> Int {
 ```
 
 ```js
-import wasm from "./build/echo.wasm";
+import wasm from "../../_build/wasm-gc/release/build/examples/echo/echo.wasm";
 import { wasmApp } from "../../http/wasm/adapter.mjs";
 export default wasmApp(wasm);
 ```
@@ -124,7 +124,7 @@ export default wasmApp(wasm);
 
 ### 2. 例（`moonbit/examples/echo`）
 
-ライブラリの機能を一通り使う例を作った。`make test-echo` は Node で、`make dev-echo` は `wrangler dev` で動かす（デプロイはしない）。
+ライブラリの機能を一通り使う例を作った。`make test` は Node で、`make dev-echo` は `wrangler dev` で動かす（デプロイはしない）。
 
 | ルート | 確かめたこと |
 | --- | --- |

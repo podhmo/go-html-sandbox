@@ -1,11 +1,14 @@
 // Runs the echo example's Wasm on Node through the adapter, with the same
-// Request and Response as Workers: `make test-echo`.
+// Request and Response as Workers: `make test` runs it.
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { wasmApp } from "../../pkg/http/wasm/adapter.mjs";
 
-const app = wasmApp(new WebAssembly.Module(readFileSync(new URL("./build/echo.wasm", import.meta.url))));
+// The Wasm as `moon build --target wasm-gc --release examples/echo` writes it.
+const wasmURL = new URL("../../_build/wasm-gc/release/build/examples/echo/echo.wasm", import.meta.url);
+
+const app = wasmApp(new WebAssembly.Module(readFileSync(wasmURL)));
 const env = { GREETING: "hi", NOT_A_STRING: { a: 1 } };
 const get = (path, init) => app.fetch(new Request(`http://localhost${path}`, init), env);
 
@@ -60,7 +63,7 @@ test("a body larger than the memory's first page", async () => {
 });
 
 test("a body over maxBodySize", async () => {
-  const small = wasmApp(new WebAssembly.Module(readFileSync(new URL("./build/echo.wasm", import.meta.url))), { maxBodySize: 10 });
+  const small = wasmApp(new WebAssembly.Module(readFileSync(wasmURL)), { maxBodySize: 10 });
   const at = (n) => small.fetch(new Request("http://localhost/echo", { method: "POST", body: "x".repeat(n) }));
   assert.equal((await (await at(10)).json()).body_bytes, 10);
   const res = await at(11);
