@@ -344,7 +344,7 @@ Go 版の `pkg/el` を `moonbit/el` に移植した。`picoel` はまだ。
 
 ## spike のコード
 
-記録として残す。今のコードは `moonbit/` にある（[`worker/worker.mbt`](../../../moonbit/worker/worker.mbt)、[`workers/worker.mjs`](../../../moonbit/workers/worker.mjs)）。
+記録として残す。今のコードは `moonbit/` にある（[`worker/worker.mbt`](../../../moonbit/worker/worker.mbt)、[`cloudflare/worker.mjs`](../../../moonbit/cloudflare/worker.mjs)（当時は `workers/`））。
 
 `moon new mbspike` で作ったプロジェクトのルートパッケージ。
 

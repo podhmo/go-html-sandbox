@@ -48,10 +48,10 @@ It is an experiment in progress; see
   memory as UTF-8 (the method, the URL, the headers, the variables, and
   the body as bytes) and writes the response over it; `adapter.mjs` is
   the host side, `wasmApp(module)`, which gives a `fetch` handler
-- `worker` — the blog's Wasm entry point: `serve` and the linear memory
-  exported, nothing imported; `serve` hands the request to
-  `Site::handle` through `http/wasm`
-- `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm with
+- `worker` — the blog's Wasm entry point, a MoonBit package: `serve` and
+  the linear memory exported, nothing imported; `serve` hands the request
+  to `Site::handle` through `http/wasm`
+- `cloudflare` — the Cloudflare Worker that runs it, in JS: `worker.mjs` runs the Wasm with
   `http/wasm/adapter.mjs`, keeping each 200 response to GET and HEAD by
   path for the rest of the isolate's life, and `wrangler.jsonc` builds it
 - `experiments` — spikes kept to reproduce the numbers in the notes,
@@ -77,7 +77,7 @@ From `moonbit/` (`make help` lists the targets):
 
 ```sh
 make test     # moon test
-make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm, and after wasm-opt -Oz, workers/build/app.wasm
+make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm, and after wasm-opt -Oz, cloudflare/build/app.wasm
 make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test, moon info
 make test-echo  # the echo example on Node through http/wasm/adapter.mjs
 ```
@@ -109,7 +109,7 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 
 Then open <http://localhost:8787>. wrangler's build command runs
 `make build`, which writes the Wasm, shrunk by `wasm-opt -Oz`, to
-`workers/build/app.wasm`, ignored by git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
+`cloudflare/build/app.wasm`, ignored by git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
 `go/examples/blog/posts/`, or the documents in `docs/` change.
 
 ## Comparing with the Go blog
@@ -125,7 +125,7 @@ make compare PORT=8798 PATHS="/posts/hello /docs/"           # only these paths
 
 `go generate` copies `TODO.md` and `docs/` into the Go blog; without it
 the Go side serves no documents. `-base-url` gives the Go blog the
-Worker's `BASE_URL` (from `workers/wrangler.jsonc`), so that the OGP tags
+Worker's `BASE_URL` (from `cloudflare/wrangler.jsonc`), so that the OGP tags
 match. For each path `compare` prints `same`, or
 which of status, `Content-Type`, and body differ with a unified diff of
 the body (split after each `>` and newline, since the pages are mostly on

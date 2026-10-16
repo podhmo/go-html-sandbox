@@ -12,5 +12,11 @@ trap 'git -C "$here" worktree remove --force "$tree"' EXIT
 git -C "$here" worktree add --detach -q "$tree" "$commit"
 make -C "$tree/moonbit" build >/dev/null
 mkdir -p "$here/build"
-cp "$tree/moonbit/workers/build/app.wasm" "$here/build/$name.wasm"
+# The Worker's directory was workers/ before it became cloudflare/.
+for dir in cloudflare workers; do
+  if [ -f "$tree/moonbit/$dir/build/app.wasm" ]; then
+    cp "$tree/moonbit/$dir/build/app.wasm" "$here/build/$name.wasm"
+    break
+  fi
+done
 ls -l "$here/build/$name.wasm"

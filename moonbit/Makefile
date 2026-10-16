@@ -1,10 +1,10 @@
 # Build steps for the MoonBit blog. The Wasm is built by moon, then run by
-# the Worker in workers/ through wrangler, whose build command runs moon
+# the Worker in cloudflare/ through wrangler, whose build command runs moon
 # again. Run `make help` for the targets.
 
 WASM := _build/wasm-gc/release/build/worker/worker.wasm
 # What the Worker imports: WASM after wasm-opt -Oz.
-APP_WASM := workers/build/app.wasm
+APP_WASM := cloudflare/build/app.wasm
 # binaryen's wasm-opt, which comes with moon. -all would also enable
 # features V8 cannot load yet, so only the ones moon's output uses.
 WASM_OPT ?= moon-wasm-opt
@@ -34,7 +34,7 @@ embed:
 	sh scripts/embed.sh repodocs/embedded.mbt .. $(DOCS)
 	sh scripts/embed-assets.sh assets/embedded.mbt $(ASSETS)
 
-## build: build the Wasm into _build/wasm-gc/release/build/worker/, and shrink it with wasm-opt -Oz into workers/build/app.wasm
+## build: build the Wasm into _build/wasm-gc/release/build/worker/, and shrink it with wasm-opt -Oz into cloudflare/build/app.wasm
 build: embed
 	moon build --target wasm-gc --release
 	@mkdir -p $(dir $(APP_WASM))
@@ -58,11 +58,11 @@ check: embed
 
 ## dev: serve the Worker on localhost:PORT (default 8787), rebuilding on changes
 dev:
-	cd workers && $(WRANGLER) dev --port $(PORT)
+	cd cloudflare && $(WRANGLER) dev --port $(PORT)
 
 ## deploy: deploy the Worker as blog, replacing the Go blog
 deploy:
-	cd workers && $(WRANGLER) deploy
+	cd cloudflare && $(WRANGLER) deploy
 
 ## compare: compare the Go blog at GO_URL with the Worker at MOONBIT_URL (PATHS= to pick paths)
 compare:
@@ -89,7 +89,7 @@ dev-echo:
 
 ## clean: remove the build output
 clean:
-	rm -rf _build workers/build examples/echo/build posts/embedded.mbt repodocs/embedded.mbt assets/embedded.mbt
+	rm -rf _build cloudflare/build examples/echo/build posts/embedded.mbt repodocs/embedded.mbt assets/embedded.mbt
 
 help:
 	@sed -n 's/^## //p' $(MAKEFILE_LIST)

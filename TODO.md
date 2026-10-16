@@ -56,7 +56,7 @@
 ### Future work
 
 - [-] **MoonBit の Workers 用アダプターを最適な形に磨く**: 今のアダプター
-  （`moonbit/workers/worker.mjs` と `moonbit/worker` の export、host の
+  （`moonbit/cloudflare/worker.mjs`（当時は `moonbit/workers/`）と `moonbit/worker` の export、host の
   import）は、ブログに必要十分で、足りないものはない。ただ、spike から必要に
   応じて継ぎ足してきたものなので、これまでの知見を総動員して最適な形に設計し
   直す。知見とは、Workers では
