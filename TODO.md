@@ -39,8 +39,9 @@
     [探索メモ](docs/sketch/ja/moonbit-workers-http.md)に記録する。
 - [ ] **MoonBit の http ライブラリから非同期の I/O を使えるようにする**: `serve` は
   同期なので、ハンドラーから KV、R2、D1、Static Assets、外への `fetch` を呼べない。
-  Wasm が「この I/O をして」と返し、JS が実行して結果を付けて呼び直す形を試す。
-  上の Static Assets の TODO の「文章を Wasm にどう渡すか」とつながる。
+  JSPI（`WebAssembly.Suspending` / `promising`）で Wasm から JS の `fetch` を待つ形が、
+  `/tmp` の spike では Node と `wrangler dev` で動いた。これをライブラリに取り込み、
+  本番の Workers で確かめる。上の Static Assets の TODO の「文章を Wasm にどう渡すか」とつながる。
   [探索メモ](docs/sketch/ja/moonbit-workers-http.md)の「ライブラリとして出すときに考えること」を参照。
 - [x] **tinymarkdown: ネストした箇条書きを扱う**: ブログで `TODO.md` をそのまま
   読めるように、インデントした `- ` を親の項目の子のリストにする。今は

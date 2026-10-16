@@ -9,11 +9,11 @@ TODO.md の「MoonBit の Workers 用アダプターを汎用化する」（[iss
 - **切り出せる。** 形は次の 3 つに分かれる。
   1. `http`（`moonbit/http`）: 要求、応答、ヘッダー、クエリー、フォーム、ルーター。ホストに依存しない純粋な MoonBit で、native でもテストできる。
   2. `http/wasm`（`moonbit/http/wasm`）: 線形メモリを通した受け渡し（wire 形式、`handle`）。wasm-gc 専用。
-  3. `http/wasm/adapter.mjs`: JS の側。`wasmApp(module)` が `fetch` を返す（60 行）。
+  3. `http/wasm/adapter.mjs`: JS の側。`wasmApp(module, { maxBodySize })` が `fetch` を返す（94 行）。
 - アプリの側に要るのは、`pub fn serve(n : Int) -> Int { @wasm.handle(n, handler) }` の 1 関数と、`moon.pkg` の link 設定（`"exports": ["serve"]`、`"export-memory-name": "memory"`）だけ。
 - **POST、クエリー、本文（テキスト、JSON、バイト列）、フォーム（urlencoded と multipart）、パスの wildcard、メソッドごとのルート、405、複数の `Set-Cookie`、バイナリの応答、Worker の変数**が、Node と `wrangler dev` の両方で使えた（例: `moonbit/examples/echo`）。
 - **ブログもこのライブラリの上に載せ替えた。** `worker` は要求を `Site::handle` に渡すだけになり、`Site` のルーティングは `Router` になった。`make compare` は前と同じく `/%FF//` 以外が Go 版と一致し、Wasm は約 5 KB（1.8%）増え、速さは変わらない。
-- 汎用化で新しく分かった制約: **`serve` は同期なので、ハンドラーから KV、R2、D1、`fetch` などの非同期の I/O を呼べない。** 本文はすべて一度に受け渡すのでストリーミングもできない。ここがライブラリとしての次の壁。
+- 汎用化で新しく分かった制約: **いまの `serve` は同期なので、ハンドラーから KV、R2、D1、`fetch` などの非同期の I/O を呼べない。** ただし **JSPI（JavaScript Promise Integration）を使えば、Wasm から JS の `fetch` を同期の関数のように呼んで待てることを、Node と `wrangler dev` で確かめた**（「JSPI で JS の fetch を待つ」の節）。本文はすべて一度に受け渡すので、ストリーミングはできない。
 
 ## ライブラリの形
 
@@ -88,6 +88,7 @@ status \n (name \t value \n)* \n body
 - 本文の前までは UTF-8 のテキストで、名前と値に改行は入らない（`Headers` が改行を受け付けないため）。値にはタブが入りうるので、名前と値は**最初の**タブで分ける。PR #31 の `worker.mjs` は `split("\t")` で全部のタブで分けていたので、タブを含む値が壊れる可能性があった（ブログの応答のヘッダーには入らない）。
 - env は、文字列の値で改行を含まないものだけを渡す（`vars` の JSON の値やバインディングのオブジェクトは渡さない）。PR #31 では `BASE_URL` だけを決め打ちで渡していた。
 - 応答の本文は `Body::Text` なら UTF-8 に書き、`Body::Binary` ならバイトをそのまま写す。
+- **本文の上限**: `wasmApp` の `maxBodySize`（既定は 1 MiB）を超える本文には、Wasm を呼ばずに 413 を返す。本文はストリームのまま上限まで読み、超えたらそこで捨てる（`Content-Length` のない要求にも効く）。Wasm の線形メモリは一度増えると減らないので、上限がないと、大きな POST を 1 つ送るだけで isolate のメモリ（128 MB）を食いつぶしうる。Workers は要求の本文をプランに応じて 100 MB 以上まで通す。PR #31 のアダプターは本文を読まなかったので、この危険は汎用にして初めて生じた。
 - JS の側では、101、103、204、205、304 の応答は本文を `null` にする。`new Response(body, { status: 204 })` は本文があると `TypeError` になる。ブログでは起きなかったが、汎用にすると要る。
 
 ### アプリから見た形
@@ -112,6 +113,8 @@ export default wasmApp(wasm);
 ```
 
 `wasmApp` は `fetch` のほかに、応答を部品（`{ status, headers, body }`）で返す `call` も返す。ブログの `worker.mjs` は `call` の結果をキャッシュし、`toResponse` で毎回 `Response` を作る（PR #31 の案 I をそのまま残した）。
+ブログは本文を読まない（GET と HEAD 以外は 404）ので、`worker.mjs` は本文のない `Request` を作り直して `call` に渡す。413 にせず、Go 版と同じ 404 を返すため。50,000,000 B の POST にも、Go 版と同じ 404 を返した（`wrangler dev`）。
+`new Request(request, { body: null })` では本文が消えない（Node で確かめた。`init.body` が `null` でも、元の要求の本文が使われる）。`new Request(request.url, request)` も、`request` を init として読むので本文が付いてくる。`new Request(url, { method, headers })` と書く。
 
 ## 試したこと
 
@@ -162,7 +165,7 @@ export default wasmApp(wasm);
 - `/%FF//` は PR #31 の案 H の節にある既知の違い。
 - POST の `/posts/hello`、`/docs`、`/` は、どちらも 404 で本文が一致した。
 - 最初に比べたとき、`/docs/TODO` などが一致しなかった。Go 版の `repodocs` は `go generate` でコピーした文書を埋め込むので、`TODO.md` を書き換えた後に `go generate ./examples/blog/repodocs` を忘れていた。アダプターとは関係ない。
-- デプロイした `blog` とは比べていない（この branch はデプロイしていない）。
+- 本文の上限を入れた版を `make deploy` で `blog` にデプロイし（Total Upload 310.05 KiB、gzip 後 98.60 KiB、Worker Startup Time 2 ms）、同じ 55 パスで比べた。一致しないのは PR #31 の案 H の節と同じ `/%FF//`、`/%zz`、`/a%00b` の 3 つだった。50,000,000 B の POST にも、Go 版と同じ 404 を返した。
 
 ### サイズ
 
@@ -204,21 +207,44 @@ PR #31 と同じ測り方（`fetch` に `Request` を渡して本文を読み終
 
 ## ライブラリとして出すときに考えること
 
-- **非同期の I/O。** いまの `serve` は同期で、ハンドラーは要求を受けて応答を返すだけ。KV、R2、D1、Static Assets、外への `fetch` を使うには、(a) Wasm が「この I/O をして」という応答を返し、JS が実行して結果を付けて呼び直す、(b) JSPI（JavaScript Promise Integration）で Wasm から Promise を待つ、のどちらかが要る。(a) は wire 形式を広げれば今の形のまま書ける。(b) は Workers と MoonBit の対応を調べていない。[Static Assets の TODO](moonbit-static-assets.md) で文章を Wasm の外に出すときも、同じ問題になる。
+- **非同期の I/O。** いまの `serve` は同期で、ハンドラーは要求を受けて応答を返すだけ。KV、R2、D1、Static Assets、外への `fetch` を使うには、(a) Wasm が「この I/O をして」という応答を返し、JS が実行して結果を付けて呼び直す、(b) JSPI で Wasm から Promise を待つ、のどちらかが要る。(a) は wire 形式を広げれば今の形のまま書ける。(b) は spike で動いた（次の節）。[Static Assets の TODO](moonbit-static-assets.md) で文章を Wasm の外に出すときも、同じ問題になる。
 - **ストリーミング。** 要求も応答も、全部を線形メモリに置く。大きなアップロードやストリーミングの応答（SSE）はできない。ブログの Go 版の live reload（SSE）は、Worker 版では元からない。
 - **線形メモリ。** moon は wasm-gc でも 1 ページの線形メモリを出し、使っていない、という前提に乗っている（PR #31 と同じ）。将来 moon がこのメモリを使い始めたら壊れる。メモリは一度増えたら減らない。
 - **配り方。** MoonBit のパッケージ（`http`、`http/wasm`）と JS のファイル（`adapter.mjs`）を一緒に配る必要がある。mooncakes.io に JS のファイルを含めて出せるか、wrangler からどう参照させるかは調べていない。いまは同じリポジトリの相対パスで `import` している（wrangler の esbuild がまとめる）。
 - **`moon.pkg` の link 設定は、アプリの側に書くしかない。** export する関数はアプリのパッケージにあり、ハンドラーもアプリが渡すので、`serve` の 1 関数はアプリが書く。
 - **js-string builtins（PR #31 の案 E）にした場合。** `wasm_esm_integration_builtins` が使えるようになっても、本文がバイト列のまま渡せる線形メモリの形は残す価値がある（バイナリの本文を JS の文字列にすると、壊れるか遅い）。
 
+## JSPI で JS の fetch を待つ（spike）
+
+「Wasm の側から `JS.global.fetch` のように JS の `fetch` を呼べないか」を試した。
+呼ぶこと自体は import でできる。問題は、`fetch` が Promise を返し、Wasm のコードは同期なので待てないこと。
+JSPI はこれを埋める仕組みで、JS の async 関数を `new WebAssembly.Suspending(f)` で包んで import に渡し、export を `WebAssembly.promising(serve)` で包む。
+Wasm がその import を呼ぶと、Wasm のスタックごと止まり、Promise が解決したら続きから動く。Wasm から見ると、ただの同期の関数呼び出しになる。
+
+- **どこで使えるか**: Node 24.21.0 と、wrangler 4.148.0 の workerd（1.20261006.1）の両方で、`WebAssembly.Suspending` と `WebAssembly.promising` が、フラグなしで関数として存在した。
+- **MoonBit の側**: 何も特別なことは要らない。`fn host_fetch(n : Int) -> Int = "host" "fetch"` という普通の import 宣言で、wasm-gc のまま動いた。止まっているあいだも、GC の参照を持ったままのスタックが保たれる。
+- **確かめたこと**: `/tmp` の spike（`examples/proxy` 相当）で、`GET /proxy?url=https://example.com/` が上流の 200 と本文を返した。1 つの要求の中で 2 回続けて `fetch` しても動いた。Node でも `wrangler dev` でも同じ。
+- **同時に来た要求**: Wasm が 1 つの要求で止まっているあいだに、次の要求が `serve` に入ってくる。応答の長さが違う 3 つの要求（Node では上流が 300 ms と 50 ms で返す、`wrangler dev` では example.com / .org / .net）を同時に送り、どれも自分の応答を受け取った。
+
+ただし、線形メモリの番地 0 を共有する今の受け渡しは、そのままでは同時の要求で壊れる。spike では次のようにした。
+
+1. 要求は、`serve` を呼んだその場で（最初に止まる前に）Wasm が読み終える。
+2. `fetch` の結果は、止まる import（`host.fetch`）では JS の側に取っておくだけにし、Wasm が止まらない import（`host.take`）を呼んだときに番地 0 に写す。止まる import が値を返してから Wasm が動き出すまでのあいだに、ほかの要求の JS が走りうるため。
+3. 応答も同じ理由で、`serve` の戻り値ではなく、止まらない import（`host.done(id, n)`）で、その場で JS に写させる。`serve` には要求ごとの id を渡す。
+
+ライブラリにするなら、`@wasm.handle` とアダプターをこの形（`serve(id, n)`、`take`、`done`）に変え、`Request` に「ホストの `fetch` を呼ぶ」関数を足せばよさそう。KV や R2 も、同じように import を足せば呼べるはず（試していない）。
+
+- 本番の Workers で JSPI が使えるかは確かめていない（spike の Worker をデプロイしていない）。
+- 止まるたびのコスト、止まったスタックのメモリ、例外が JS と Wasm をまたぐときの扱いは見ていない。
+
 ## 確かめられなかったこと
 
-- デプロイした Workers では試していない（`blog` は PR #31 の版のまま）。本番では、Cloudflare の前段がいくつかの変なエスケープを止める（PR #31 の案 H の節）ほか、`Host` や `cf-*` のヘッダーが増える。
+- 例の `echo` はデプロイしていないので、POST の本文やフォームを本番の Workers で受けたことはない。本番では `cf-*` などのヘッダーが増える。
 - multipart の、`Content-Transfer-Encoding` や、欄の名前に RFC 2231 の `filename*=` を使う形は扱っていない。`filename*` は無視され、`filename` がなければファイルでない欄として扱われる。
 - 本文の上限は決めていない。Workers の要求の本文の上限（プランによる）と、Wasm の線形メモリの上限（4 GiB）のどちらに先に当たるかは見ていない。
 
 ## 次の一歩
 
-1. 非同期の I/O を、(a) の「呼び直す」形で試す。Static Assets から文章を取る TODO の決めることと、そのままつながる。
+1. JSPI の形（spike）をライブラリに取り込み、本番の Workers で動くか確かめる。Static Assets から文章を取る TODO の決めることと、そのままつながる（Wasm が Static Assets の `fetch` を待てれば、文章を先に全部渡さなくてよい）。
 2. ライブラリを別の module（`moon.mod`）に分けて、ブログから依存する形にしてみる。
 3. 本文の文字列化と JSON 化が 1 バイトあたり 30 ns かかる内訳を分けて測る。
