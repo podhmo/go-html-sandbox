@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "podhmo/html-sandbox/examples/echo"
+package "podhmo/html-sandbox/pkg/http/wasm/integration"
 
 // Values
 pub fn serve(Int) -> Int

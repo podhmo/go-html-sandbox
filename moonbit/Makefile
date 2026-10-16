@@ -3,9 +3,9 @@
 # examples/blog/cloudflare/ through wrangler, whose build command runs moon
 # again. Run `make help` for the targets.
 #
-# The blog, the libraries in pkg/, and the echo example are maintained:
-# test always runs all their tests, including echo's, which drives
-# pkg/http/wasm through adapter.mjs on Node as an integration test. The
+# The blog and the libraries in pkg/ are maintained: test always runs all
+# their tests, including the integration test of pkg/http/wasm, which runs
+# a stub app through adapter.mjs on Node. The
 # modules in experiments/ are one-off spikes that import this module
 # through moon.work; check only makes sure they still build. To work on
 # one part, run moon directly (`moon test -p ...`).
@@ -53,11 +53,11 @@ build: embed
 	$(WASM_OPT) $(WASM_OPT_FLAGS) $(WASM) -o $(APP_WASM)
 	@ls -l $(WASM) $(APP_WASM)
 
-## test: run the tests, and the echo example on Node through pkg/http/wasm/adapter.mjs (its Wasm as moon builds it, without wasm-opt)
+## test: run the tests, and the integration test of pkg/http/wasm on Node (its stub app's Wasm as moon builds it, without wasm-opt)
 test: embed
 	moon test
-	moon build --target wasm-gc --release examples/echo
-	node --test examples/echo/test.mjs
+	moon build --target wasm-gc --release pkg/http/wasm/integration
+	node --test pkg/http/wasm/integration/test.mjs
 
 ## check: what to run before every commit (test, then moon fmt, moon check on wasm-gc and native, moon check in experiments/, and moon info)
 # moon info has no --check; it rewrites the .mbti files, and git diff fails
@@ -82,9 +82,9 @@ deploy:
 compare:
 	moon run --target native $(BLOG)/compare/cmd -- $(GO_URL) $(MOONBIT_URL) $(PATHS)
 
-## dev-echo: serve the echo example on localhost:PORT with wrangler
+## dev-echo: serve the integration test's stub app on localhost:PORT with wrangler
 dev-echo:
-	cd examples/echo && $(WRANGLER) dev --port $(PORT)
+	cd pkg/http/wasm/integration && $(WRANGLER) dev --port $(PORT)
 
 ## clean: remove the build output (experiments/ have their own make clean)
 clean:

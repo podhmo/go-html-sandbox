@@ -19,17 +19,17 @@ build:
 bench:
 	node bench.mjs pr31 lib router
 
-# The echo example's Wasm after wasm-opt -Oz, with the flags of ../../Makefile,
+# The stub app of pkg/http/wasm/integration after wasm-opt -Oz, with the flags of ../../Makefile,
 # as the timings were taken.
-ECHO_WASM := ../../_build/wasm-gc/release/build/examples/echo/echo.wasm
+ECHO_WASM := ../../_build/wasm-gc/release/build/pkg/http/wasm/integration/integration.wasm
 WASM_OPT ?= moon-wasm-opt
 WASM_OPT_FLAGS := -Oz --enable-gc --enable-reference-types --enable-bulk-memory \
 	--enable-sign-ext --enable-nontrapping-float-to-int --enable-mutable-globals \
 	--enable-multivalue
 
-## bench-body: time the echo example with headers and bodies up to 1 MB
+## bench-body: time the stub app of pkg/http/wasm/integration with headers and bodies up to 1 MB
 bench-body:
-	cd ../.. && moon build --target wasm-gc --release examples/echo
+	cd ../.. && moon build --target wasm-gc --release pkg/http/wasm/integration
 	@mkdir -p build
 	$(WASM_OPT) $(WASM_OPT_FLAGS) $(ECHO_WASM) -o build/echo.wasm
 	node bench-body.mjs

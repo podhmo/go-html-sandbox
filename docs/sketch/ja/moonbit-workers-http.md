@@ -11,7 +11,7 @@ TODO.md の「MoonBit の Workers 用アダプターを汎用化する」（[iss
   2. `http/wasm`（`moonbit/http/wasm`）: 線形メモリを通した受け渡し（wire 形式、`handle`）。wasm-gc 専用。
   3. `http/wasm/adapter.mjs`: JS の側。`wasmApp(module, { maxBodySize })` が `fetch` を返す（94 行）。
 - アプリの側に要るのは、`pub fn serve(n : Int) -> Int { @wasm.handle(n, handler) }` の 1 関数と、`moon.pkg` の link 設定（`"exports": ["serve"]`、`"export-memory-name": "memory"`）だけ。
-- **POST、クエリー、本文（テキスト、JSON、バイト列）、フォーム（urlencoded と multipart）、パスの wildcard、メソッドごとのルート、405、複数の `Set-Cookie`、バイナリの応答、Worker の変数**が、Node と `wrangler dev` の両方で使えた（例: `moonbit/examples/echo`）。
+- **POST、クエリー、本文（テキスト、JSON、バイト列）、フォーム（urlencoded と multipart）、パスの wildcard、メソッドごとのルート、405、複数の `Set-Cookie`、バイナリの応答、Worker の変数**が、Node と `wrangler dev` の両方で使えた（例: `moonbit/pkg/http/wasm/integration`）。
 - **ブログもこのライブラリの上に載せ替えた。** `worker` は要求を `Site::handle` に渡すだけになり、`Site` のルーティングは `Router` になった。`make compare` は前と同じく `/%FF//` 以外が Go 版と一致し、Wasm は約 5 KB（1.8%）増え、速さは変わらない。
 - 汎用化で新しく分かった制約: **いまの `serve` は同期なので、ハンドラーから KV、R2、D1、`fetch` などの非同期の I/O を呼べない。** ただし **JSPI（JavaScript Promise Integration）を使えば、Wasm から JS の `fetch` を同期の関数のように呼んで待てることを、Node と `wrangler dev` で確かめた**（「JSPI で JS の fetch を待つ」の節）。本文はすべて一度に受け渡すので、ストリーミングはできない。
 
@@ -107,7 +107,7 @@ pub fn serve(n : Int) -> Int {
 ```
 
 ```js
-import wasm from "../../_build/wasm-gc/release/build/examples/echo/echo.wasm";
+import wasm from "../../../../_build/wasm-gc/release/build/pkg/http/wasm/integration/integration.wasm";
 import { wasmApp } from "../../http/wasm/adapter.mjs";
 export default wasmApp(wasm);
 ```
@@ -122,7 +122,7 @@ export default wasmApp(wasm);
 
 `worker/memory.mbt` を `http/wasm` に移し、要求の解釈を wire 形式に置き換えた。ブログの `worker` は、`req.env` の `BASE_URL` で `Site` を読み、`Site::render(req.path, query=req.raw_query, verb=req.verb)` の結果を `@http.Response` に直すだけになった。
 
-### 2. 例（`moonbit/examples/echo`）
+### 2. 例（`moonbit/pkg/http/wasm/integration`）
 
 ライブラリの機能を一通り使う例を作った。`make test` は Node で、`make dev-echo` は `wrangler dev` で動かす（デプロイはしない）。
 

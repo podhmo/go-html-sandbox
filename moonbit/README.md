@@ -36,6 +36,11 @@ as in `../go`.
   memory as UTF-8 (the method, the URL, the headers, the variables, and
   the body as bytes) and writes the response over it; `adapter.mjs` is
   the host side, `wasmApp(module)`, which gives a `fetch` handler
+- `http/wasm/integration` — the integration test of `http/wasm`: a stub
+  app that echoes back the request (methods, wildcards, the query, text,
+  JSON and form bodies, binary responses, cookies, and variables), and
+  `test.mjs`, which runs it on Node through `adapter.mjs`; `make test`
+  runs it, and `make dev-echo` serves it with wrangler
 
 `examples/blog/`, the blog:
 
@@ -66,13 +71,6 @@ as in `../go`.
   `Content-Type`, and a diff of the body); `compare/cmd` is its native
   CLI, built on `moonbitlang/async`, and the only package that uses it
 
-`examples/echo/`:
-
-- `echo` — an example of `http` outside the blog (methods,
-  wildcards, the query, text, JSON and form bodies, binary responses,
-  cookies, and variables), run on Node by `make test` and with
-  wrangler by `make dev-echo`
-
 And outside the module:
 
 - `experiments` — spikes kept to reproduce the numbers in the notes,
@@ -87,20 +85,19 @@ writes it with inline Wasm. See
 
 ## Development
 
-From `moonbit/` (`make help` lists the targets). The blog, `pkg/`, and
-`examples/echo` are maintained, and `make test` runs all their tests;
-echo's Node test is the integration test of `pkg/http/wasm` through
-`adapter.mjs`. The modules in `experiments/` are one-off spikes, and
+From `moonbit/` (`make help` lists the targets). The blog and `pkg/`
+are maintained, and `make test` runs all their tests, including the
+integration test of `pkg/http/wasm` on Node. The modules in `experiments/` are one-off spikes, and
 `make check` only makes sure they still build. To work on one part, run
 moon directly (`moon test -p podhmo/html-sandbox/pkg/http`).
 
 ```sh
 make build    # the blog's Wasm, into _build/wasm-gc/release/build/examples/blog/worker/worker.wasm, and after wasm-opt -Oz, examples/blog/cloudflare/build/app.wasm
-make test     # moon test, and the echo example on Node through pkg/http/wasm/adapter.mjs
+make test     # moon test, and the integration test of pkg/http/wasm on Node through adapter.mjs
 make check    # before every commit: make test, moon fmt --check, moon check (wasm-gc, native, and in experiments/), moon info
 ```
 
-The blog's `worker`, `http/wasm`, and `examples/echo` are built for wasm-gc only
+The blog's `worker`, `http/wasm`, and `http/wasm/integration` are built for wasm-gc only
 (their inline Wasm does not compile on native) and `compare/cmd` for
 native only (async's I/O is native only), so the CLI and its dependency
 stay out of the Wasm.

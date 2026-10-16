@@ -1,5 +1,5 @@
 // usage: node bench-body.mjs (make bench-body builds build/echo.wasm first)
-// Times the echo example with request headers and bodies of each size.
+// Times the stub app of pkg/http/wasm/integration (the echo app) with request headers and bodies of each size.
 import { readFileSync } from "node:fs";
 import { wasmApp } from "../../pkg/http/wasm/adapter.mjs";
 const app = wasmApp(new WebAssembly.Module(readFileSync("build/echo.wasm")));

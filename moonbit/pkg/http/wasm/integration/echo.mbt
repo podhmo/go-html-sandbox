@@ -1,6 +1,7 @@
-// An example of the http library outside the blog: routes for each
-// method, path wildcards, the query, and request bodies as text, JSON,
-// and forms. ./worker.mjs runs it on Workers; ./test.mjs on Node.
+// A stub app for the integration test of http/wasm: it echoes back what
+// it was given, through routes for each method, path wildcards, the
+// query, and request bodies as text, JSON, and forms. ./test.mjs runs it
+// on Node through ../adapter.mjs; ./worker.mjs runs it with wrangler.
 
 ///|
 const PAGE =

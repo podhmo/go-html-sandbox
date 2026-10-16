@@ -1,12 +1,13 @@
-// Runs the echo example's Wasm on Node through the adapter, with the same
-// Request and Response as Workers: `make test` runs it.
+// The integration test of http/wasm: runs the stub app (./echo.mbt) on
+// Node through the adapter, with the same Request and Response as
+// Workers. `make test` runs it.
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { wasmApp } from "../../pkg/http/wasm/adapter.mjs";
+import { wasmApp } from "../adapter.mjs";
 
-// The Wasm as `moon build --target wasm-gc --release examples/echo` writes it.
-const wasmURL = new URL("../../_build/wasm-gc/release/build/examples/echo/echo.wasm", import.meta.url);
+// The Wasm as `moon build --target wasm-gc --release pkg/http/wasm/integration` writes it.
+const wasmURL = new URL("../../../../_build/wasm-gc/release/build/pkg/http/wasm/integration/integration.wasm", import.meta.url);
 
 const app = wasmApp(new WebAssembly.Module(readFileSync(wasmURL)));
 const env = { GREETING: "hi", NOT_A_STRING: { a: 1 } };

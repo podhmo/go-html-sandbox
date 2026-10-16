@@ -1,0 +1,12 @@
+// Cloudflare Workers config for the stub app, for `make dev-echo` only
+// (it is not deployed).
+{
+  "name": "moonbit-echo",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "build": {
+    "command": "cd ../../../.. && moon build --target wasm-gc --release pkg/http/wasm/integration",
+    "watch_dir": ["../..", "."]
+  },
+  "vars": { "GREETING": "hi" }
+}
