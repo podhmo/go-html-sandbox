@@ -16,7 +16,7 @@ test "linker" {
     ]),
   )
   let gh = "https://github.com/podhmo/html-sandbox/blob/main/"
-  let hello = "go/examples/blog/posts/2026-10-14-hello.md"
+  let hello = "posts/2026-10-14-hello.md"
   let cases = [
     ("TODO.md", "https://example.com/a?b#c", "https://example.com/a?b#c"),
     ("TODO.md", "HTTP://example.com", "HTTP://example.com"),
@@ -31,9 +31,9 @@ test "linker" {
     ("TODO.md", "./docs/ja/design.md#why", "/docs/ja/design#why"),
     ("docs/ja/design.md", "../../TODO.md", "/docs/TODO"),
     ("docs/ja/design.md", "../notes.md", "/docs/notes"),
-    ("TODO.md", "go/examples/blog/posts/2026-10-01-old.md", "/posts/old"),
+    ("TODO.md", "posts/2026-10-01-old.md", "/posts/old"),
     (hello, "2026-10-01-old.md", "/posts/old"),
-    (hello, "../../../../docs/ja/design.md", "/docs/ja/design"),
+    (hello, "../docs/ja/design.md", "/docs/ja/design"),
     (
       "TODO.md",
       ".claude/skills/todo-md/SKILL.md",

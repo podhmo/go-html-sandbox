@@ -10,5 +10,6 @@ than one language.
 
 Shared across implementations:
 
+- [`posts/`](posts) — the blog's posts
 - [`docs/`](docs) — design notes and sketches
 - [`TODO.md`](TODO.md) — open tasks ([archive](TODO-archive.md))

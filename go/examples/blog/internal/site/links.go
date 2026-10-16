@@ -11,7 +11,7 @@ import (
 var repoURL = url.URL{Scheme: "https", Host: "github.com", Path: "/podhmo/html-sandbox/blob/main"}
 
 // postsDir is the directory of the repository that holds the posts.
-const postsDir = "go/examples/blog/posts"
+const postsDir = "posts"
 
 // postSource is the file path of p in the repository.
 func postSource(p Post) string {

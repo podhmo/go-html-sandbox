@@ -8,7 +8,8 @@ rest of the repository stays standard-library only.
 It has no flags: the public origin for OGP tags comes from `BASE_URL` in
 [`wrangler.jsonc`](wrangler.jsonc). Posts and documents are embedded in
 the Wasm binary, as in the server; both builds run `go generate` on
-[`../repodocs`](../repodocs) first, so the documents are always fresh.
+[`../posts`](../posts) and [`../repodocs`](../repodocs) first, so the posts
+and documents are always fresh.
 
 ## Builds
 

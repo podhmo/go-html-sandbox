@@ -17,7 +17,7 @@ WRANGLER ?= npx wrangler@4
 # the Worker (`make dev`).
 GO_URL ?= http://localhost:8080
 MOONBIT_URL ?= http://localhost:$(PORT)
-POSTS := ../go/examples/blog/posts
+POSTS := ../posts
 # The repository's own documents, as the Go blog's repodocs embeds them.
 DOCS := ../TODO.md ../docs
 # The Go blog's site.css and favicon.svg.

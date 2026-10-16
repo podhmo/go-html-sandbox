@@ -13,7 +13,7 @@
     // writes embedded.mbt there.
     "watch_dir": [
       "../el", "../picoel", "../tinymarkdown", "../tinyfrontmatter", "../site", "../http", "../worker",
-      "../../go/examples/blog/posts", "../../go/examples/blog/internal/site", "../../docs"
+      "../../posts", "../../go/examples/blog/internal/site", "../../docs"
     ]
   },
   "vars": {

@@ -22,7 +22,7 @@ It is an experiment in progress; see
 - `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
   `site.css` that pages put in its URL, generated into
   `assets/embedded.mbt` by `scripts/embed-assets.sh`
-- `posts` — `files`, the Go blog's posts (`go/examples/blog/posts/*.md`)
+- `posts` — `files`, the blog's posts (`posts/*.md` in the repository root)
   as pairs of file name and content, generated into `posts/embedded.mbt`
   (ignored by git) by `scripts/embed.sh`
 - `repodocs` — `files`, the repository's own `TODO.md` and
@@ -110,7 +110,7 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 Then open <http://localhost:8787>. wrangler's build command runs
 `make build`, which writes the Wasm, shrunk by `wasm-opt -Oz`, to
 `cloudflare/build/app.wasm`, ignored by git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
-`go/examples/blog/posts/`, or the documents in `docs/` change.
+`posts/`, or the documents in `docs/` change.
 
 ## Comparing with the Go blog
 

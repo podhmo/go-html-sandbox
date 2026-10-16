@@ -32,7 +32,11 @@ func TestOpenRepo(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(outside, "secret.md"), []byte("# secret"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	dir := t.TempDir()
+	repoDir := t.TempDir()
+	dir := filepath.Join(repoDir, "go")
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := openRepo(dir); err == nil {
 		t.Error("want error for a directory without go.mod")
 	}
@@ -40,10 +44,10 @@ func TestOpenRepo(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module x\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "TODO.md"), []byte("# TODO"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoDir, "TODO.md"), []byte("# TODO"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(outside, filepath.Join(dir, "docs")); err != nil {
+	if err := os.Symlink(outside, filepath.Join(repoDir, "docs")); err != nil {
 		t.Skip("symlinks unavailable:", err)
 	}
 	repo, err := openRepo(dir)

@@ -27,25 +27,15 @@ func findModuleRoot(dir string) (string, error) {
 	}
 }
 
-// openRepo opens dir, which must hold go.mod, for -debug. Nothing outside
-// dir can be read through the result: os.Root rejects ".." and symbolic
-// links that lead out of it.
+// openRepo opens the parent of dir, the repository root holding posts/,
+// TODO.md, and docs/, for -debug. dir must be the module root holding
+// go.mod. Nothing outside the repository root can be read through the
+// result: os.Root rejects ".." and symbolic links that lead out of it.
 func openRepo(dir string) (fs.FS, error) {
 	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err != nil {
 		return nil, fmt.Errorf("-root must be the module root holding go.mod: %w", err)
 	}
-	r, err := os.OpenRoot(dir)
-	if err != nil {
-		return nil, err
-	}
-	return r.FS(), nil
-}
-
-// openDocs opens dir, the repository root holding TODO.md and docs/, for
-// -debug. As with openRepo, nothing outside dir can be read through the
-// result, and only the documents are read from it (see site.DocSources).
-func openDocs(dir string) (fs.FS, error) {
-	r, err := os.OpenRoot(dir)
+	r, err := os.OpenRoot(filepath.Dir(dir))
 	if err != nil {
 		return nil, err
 	}

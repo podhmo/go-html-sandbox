@@ -49,8 +49,8 @@ GitHub 風のパイプ区切りの表に対応している。
 
 段落、リスト、見出し、表のセルの中では、`` `code` `` とリンクだけが使える。
 リンクは、`https://...` ならそのまま、リポジトリ内の相対パスならファイルの置き場所から解決される。
-たとえば [tinymarkdown の設計メモ](../../../../docs/sketch/ja/blog.md) はこのサイトの `/docs/` のページへ、
-[パッケージのソース](../../../pkg/tinymarkdown/tinymarkdown.go) は GitHub へリンクする。
+たとえば [tinymarkdown の設計メモ](../docs/sketch/ja/blog.md) はこのサイトの `/docs/` のページへ、
+[パッケージのソース](../go/pkg/tinymarkdown/tinymarkdown.go) は GitHub へリンクする。
 
 ## コードブロック
 

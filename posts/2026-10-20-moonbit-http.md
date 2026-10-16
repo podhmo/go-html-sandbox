@@ -13,7 +13,7 @@ Go の net/http に寄せることは目指さず、同じようなことがで�
 
 | 部分 | 中身 |
 | --- | --- |
-| [`moonbit/http`](../../../../moonbit/README.md) | `Request`、`Response`、`Headers`、クエリーとフォームの解析、`Router`。ホストに依存しないので native でもテストできる |
+| [`moonbit/http`](../moonbit/README.md) | `Request`、`Response`、`Headers`、クエリーとフォームの解析、`Router`。ホストに依存しないので native でもテストできる |
 | `moonbit/http/wasm` | 線形メモリを通した受け渡し。`handle(n, handler)` |
 | `moonbit/http/wasm/adapter.mjs` | JS の側。`wasmApp(module)` が `fetch` を返す（約 90 行） |
 
@@ -79,4 +79,4 @@ wasm は約 5 KB 大きくなり、速さは変わらなかった。
   ただ、JSPI（`WebAssembly.Suspending` と `WebAssembly.promising`）を使うと、wasm から JS の `fetch` を普通の関数のように呼んで待てた。Node と `wrangler dev` の両方で、MoonBit の側は普通の import を宣言するだけで動いた。止まっているあいだに次の要求が入ってくるので、線形メモリの受け渡しは少し組み替える必要がある。本番の Workers ではまだ試していない。
 - **ストリーミング。** 要求も応答も、まるごとメモリに置く。
 
-詳しくは[探索メモ](../../../../docs/sketch/ja/moonbit-workers-http.md)にまとめてある。
+詳しくは[探索メモ](../docs/sketch/ja/moonbit-workers-http.md)にまとめてある。

@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/podhmo/html-sandbox/go/examples/blog/internal/site"
@@ -25,9 +24,9 @@ func main() {
 func run() error {
 	addr := flag.String("addr", "localhost:8080", "address to listen on")
 	baseURL := flag.String("base-url", "", "public URL of the site for OGP tags (default: http://<addr>)")
-	debug := flag.Bool("debug", false, "read posts from files under -root, and docs from its parent directory, instead of the embedded copies")
+	debug := flag.Bool("debug", false, "read posts and docs from files in the parent directory of -root (the repository root) instead of the embedded copies")
 	watch := flag.Bool("watch", false, "reload posts and docs when they change and refresh open pages (implies -debug)")
-	root := flag.String("root", "", "module root (holding go.mod) that -debug reads files from; nothing outside it is read (default: nearest go.mod above the current directory)")
+	root := flag.String("root", "", "module root (holding go.mod); -debug reads files from its parent directory, and nothing outside that (default: nearest go.mod above the current directory)")
 	flag.Parse()
 	if *baseURL == "" {
 		*baseURL = "http://" + *addr
@@ -44,20 +43,17 @@ func run() error {
 				return err
 			}
 		}
-		repo, err := openRepo(*root)
-		if err != nil {
+		// posts/, TODO.md, and docs/ sit in the repository root, above the
+		// module.
+		if docsFS, err = openRepo(*root); err != nil {
 			return err
 		}
-		// TODO.md and docs/ sit in the repository root, above the module.
-		if docsFS, err = openDocs(filepath.Dir(*root)); err != nil {
-			return err
-		}
-		if postsFS, err = fs.Sub(repo, "examples/blog/posts"); err != nil {
+		if postsFS, err = fs.Sub(docsFS, "posts"); err != nil {
 			return err
 		}
 		// A wrong -root would otherwise just show an empty blog.
 		if _, err := fs.Stat(postsFS, "."); err != nil {
-			return fmt.Errorf("-debug reads posts from <root>/examples/blog/posts: %w", err)
+			return fmt.Errorf("-debug reads posts from posts/ in the parent of -root: %w", err)
 		}
 	}
 	load := func() ([]site.Post, []site.Doc, error) {

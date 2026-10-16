@@ -329,7 +329,7 @@ test "markdown in titles" {
 test "links in pages" {
   let s = new_site([
     (
-      "2026-10-14-hello.md", "# Hello [`x`](https://x.test)\n\n- [design](../../../../docs/ja/design.md)\n\n[bad](javascript:alert(1)) [ok](#a)",
+      "2026-10-14-hello.md", "# Hello [`x`](https://x.test)\n\n- [design](../docs/ja/design.md)\n\n[bad](javascript:alert(1)) [ok](#a)",
     ),
   ])
   assert_contains(body(s, "/posts/hello"), [
@@ -339,7 +339,7 @@ test "links in pages" {
   ])
   let s = new_site([
     (
-      "2026-10-14-hello.md", "# Hello\n\n[bad](javascript:alert) and [up](../../../../../x)",
+      "2026-10-14-hello.md", "# Hello\n\n[bad](javascript:alert) and [up](../../x)",
     ),
   ])
   assert_contains(body(s, "/posts/hello"), ["<p>bad and up</p>"])

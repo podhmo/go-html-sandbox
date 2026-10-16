@@ -53,4 +53,4 @@ workerd には、これを有効にする互換性フラグ `wasm_esm_integratio
 | 起動時間 | 2 ms | 2〜3 ms |
 
 起動時間は ms 単位でしか出ないので、差は見えなかった。
-試した方法と数字は、[探索メモ](../../../../docs/sketch/ja/moonbit-workers-adapter.md)にまとめてある。
+試した方法と数字は、[探索メモ](../docs/sketch/ja/moonbit-workers-adapter.md)にまとめてある。

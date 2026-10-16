@@ -34,9 +34,9 @@ func TestLinker(t *testing.T) {
 		{"TODO.md", "./docs/ja/design.md#why", "/docs/ja/design#why"},
 		{"docs/ja/design.md", "../../TODO.md", "/docs/TODO"},
 		{"docs/ja/design.md", "../notes.md", "/docs/notes"},
-		{"TODO.md", "go/examples/blog/posts/2026-10-01-old.md", "/posts/old"},
+		{"TODO.md", "posts/2026-10-01-old.md", "/posts/old"},
 		{postSource(posts[0]), "2026-10-01-old.md", "/posts/old"},
-		{postSource(posts[0]), "../../../../docs/ja/design.md", "/docs/ja/design"},
+		{postSource(posts[0]), "../docs/ja/design.md", "/docs/ja/design"},
 		{"TODO.md", ".claude/skills/todo-md/SKILL.md", gh + ".claude/skills/todo-md/SKILL.md"},
 		{"TODO.md", "go/pkg/el/el.go#L10", gh + "go/pkg/el/el.go#L10"},
 		{"docs/ja/design.md", "../../go/pkg/", gh + "go/pkg"},
@@ -57,7 +57,7 @@ func TestLinker(t *testing.T) {
 
 func TestLinksInPages(t *testing.T) {
 	h := newTestServer(t, fstest.MapFS{
-		"2026-10-14-hello.md": file("# Hello [`x`](https://x.test)\n\n- [design](../../../../docs/ja/design.md)\n\n[bad](javascript:alert(1)) [ok](#a)"),
+		"2026-10-14-hello.md": file("# Hello [`x`](https://x.test)\n\n- [design](../docs/ja/design.md)\n\n[bad](javascript:alert(1)) [ok](#a)"),
 	})
 	_, body := get(t, h, "/posts/hello")
 	for _, want := range []string{
@@ -72,7 +72,7 @@ func TestLinksInPages(t *testing.T) {
 	}
 
 	h = newTestServer(t, fstest.MapFS{
-		"2026-10-14-hello.md": file("# Hello\n\n[bad](javascript:alert) and [up](../../../../../x)"),
+		"2026-10-14-hello.md": file("# Hello\n\n[bad](javascript:alert) and [up](../../x)"),
 	})
 	_, body = get(t, h, "/posts/hello")
 	if want := `<p>bad and up</p>`; !strings.Contains(body, want) {

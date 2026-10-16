@@ -1,16 +1,16 @@
-# Build steps in order: go generate copies ../TODO.md and ../docs into the
-# module so the blog can embed them, then the usual go commands run.
+# Build steps in order: go generate copies ../posts, ../TODO.md, and ../docs
+# into the module so the blog can embed them, then the usual go commands run.
 # Run `make help` for the targets.
 
 BIN := bin/blog
 
 .PHONY: build generate run watch test check clean help
 
-## build: copy the documents in and build the blog into bin/blog
+## build: copy the posts and documents in and build the blog into bin/blog
 build: generate
 	go build -o $(BIN) ./examples/blog
 
-## generate: copy ../TODO.md and ../docs into examples/blog/repodocs/files
+## generate: copy ../posts into examples/blog/posts/files, and ../TODO.md and ../docs into examples/blog/repodocs/files
 generate:
 	go generate ./...
 
@@ -22,7 +22,7 @@ run: generate
 watch:
 	go run ./examples/blog -watch
 
-## test: run the tests, with the documents copied in
+## test: run the tests, with the posts and documents copied in
 test: generate
 	go test ./...
 
@@ -32,10 +32,10 @@ check: generate
 	go vet ./...
 	go test ./...
 
-## clean: remove bin/ and the copied documents
+## clean: remove bin/ and the copied posts and documents
 clean:
 	rm -rf bin
-	find examples/blog/repodocs/files -mindepth 1 -maxdepth 1 ! -name .gitignore -exec rm -rf {} +
+	find examples/blog/posts/files examples/blog/repodocs/files -mindepth 1 -maxdepth 1 ! -name .gitignore -exec rm -rf {} +
 
 help:
 	@sed -n 's/^## //p' $(MAKEFILE_LIST)

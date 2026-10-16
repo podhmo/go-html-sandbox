@@ -1,0 +1,3 @@
+# Filled by go generate; see ../posts.go.
+*
+!.gitignore

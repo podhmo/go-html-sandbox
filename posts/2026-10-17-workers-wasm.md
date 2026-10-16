@@ -8,7 +8,7 @@ Workers 用のエントリポイントは別モジュールの `examples/blog/wo
 
 ## ビルドを 2 つに分けた
 
-[`wrangler.jsonc`](../workers/wrangler.jsonc) には、ビルドの方法が 2 つある。
+[`wrangler.jsonc`](../go/examples/blog/workers/wrangler.jsonc) には、ビルドの方法が 2 つある。
 
 | コマンド | コンパイラ | wasm のサイズ |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ TinyGo のほうが 4 分の 1 ほど小さいが、そのぶん手間もある�
 今デプロイしているのは TinyGo のビルドで、アップロードは gzip 後で約 760 KiB、起動時間は 8 ms と表示された。
 
 TinyGo はホストに入れていない。
-[`workers/bin/tinygo`](../workers/bin/tinygo) は Docker イメージ `tinygo/tinygo` の中で TinyGo を動かすシェルスクリプトで、
+[`workers/bin/tinygo`](../go/examples/blog/workers/bin/tinygo) は Docker イメージ `tinygo/tinygo` の中で TinyGo を動かすシェルスクリプトで、
 これを `PATH` の先頭に置けば `wrangler.jsonc` のビルドコマンドがそのまま使う。
 
 ```sh
@@ -55,4 +55,4 @@ wasm は Cloudflare のエッジで動き、ブラウザが受け取るのはサ
 wasm が小さいほど、エッジで Worker を読み込むときのコンパイルが速いはずで、コールドスタートでは TinyGo が有利になる。
 ただし、標準 Go のビルドと並べた本番での計測はまだしていない。
 
-詳しくは [実験レポート](../../../../docs/sketch/ja/blog-tinygo-workers.md) にまとめてある。
+詳しくは [実験レポート](../docs/sketch/ja/blog-tinygo-workers.md) にまとめてある。
