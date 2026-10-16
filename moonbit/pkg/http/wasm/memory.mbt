@@ -48,38 +48,30 @@ fn write_bytes(at : Int32, b : Bytes) -> Int32 {
 /// write encodes s in UTF-8 at address at, and returns where it ends.
 fn write(at : Int32, s : String) -> Int32 {
   reserve(at + s.length() * 3)
-  let n = s.length()
-  let mut p = at
-  let mut i = 0
-  while i < n {
-    let mut c = s.code_unit_at(i).to_int()
-    i += 1
-    if c is (0xD800..<0xDC00) && i < n {
-      let d = s.code_unit_at(i).to_int()
-      if d is (0xDC00..<0xE000) {
-        c = 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00)
-        i += 1
-      }
-    }
+  // Iterating a String joins each surrogate pair into one Char, and gives
+  // an unpaired surrogate as it is, which is written as three bytes.
+  for ch in s; p = at {
+    let c = ch.to_int()
     if c < 0x80 {
       store8(p, c)
-      p += 1
+      continue p + 1
     } else if c < 0x800 {
       store8(p, 0xC0 | (c >> 6))
       store8(p + 1, 0x80 | (c & 0x3F))
-      p += 2
+      continue p + 2
     } else if c < 0x10000 {
       store8(p, 0xE0 | (c >> 12))
       store8(p + 1, 0x80 | ((c >> 6) & 0x3F))
       store8(p + 2, 0x80 | (c & 0x3F))
-      p += 3
+      continue p + 3
     } else {
       store8(p, 0xF0 | (c >> 18))
       store8(p + 1, 0x80 | ((c >> 12) & 0x3F))
       store8(p + 2, 0x80 | ((c >> 6) & 0x3F))
       store8(p + 3, 0x80 | (c & 0x3F))
-      p += 4
+      continue p + 4
     }
+  } nobreak {
+    p
   }
-  p
 }
