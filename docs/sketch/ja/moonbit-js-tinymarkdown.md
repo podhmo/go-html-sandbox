@@ -16,6 +16,7 @@ ts 版のブログ（`ts/`）は、`go/pkg/tinymarkdown` を TS に移した `ts
 - **TS の移植は要らない。** MoonBit の js ビルドに TS の型を付けるだけで、ブログのコードは変えずに動き、出力も同じ。Markdown の解析の実装は MoonBit の 1 つになり、TS 側に残るのは型の定義だけ。tinymarkdown のテスト（Go のテストケースを TS に移したもの）も、MoonBit 側のテストと重なるので消した。JS オブジェクトの形は `moonbit/pkg/tinymarkdown/js` のテストで見る。
 - **払うのは、バンドルの gzip で 9 KB と、起動時の解析の 2 ms 弱。** ts 版は isolate の起動時に全部の文章を解析するので、この差は起動時間に乗る。本番での起動時間はまだ測っていない（`blog-ts` は TS の移植のままデプロイされている）。
 - **生成した JS はコミットする。** `ts/` の作業に moon を要らないようにするため。MoonBit 側を直したら `moonbit/` で `make ts` を走らせる。忘れると `make check` が落ちる。
+- **tinyfrontmatter は同じようにはできなかった。** MoonBit の `Map` が読み込みのときに乱数を使うので、workerd で Worker が起動しない（[下](#tinyfrontmatter-は同じようにできるか)）。
 
 ## 形
 
@@ -62,3 +63,12 @@ spike の `bench.mjs` の結果（Node 24.21、Apple Silicon（arm64）の Mac�
 | MoonBit の `inlines` | 0.40 ms | 0.27 ms |
 
 解析だけでもほぼ同じ時間がかかるので、遅いのは JS オブジェクトを組むところではなく、MoonBit の解析そのもの。どこが遅いか（行の分割や文字列の組み立てなど）は調べていない。
+
+## tinyfrontmatter は同じようにできるか
+
+**できなかった。** 同じ形で `moonbit/pkg/tinyfrontmatter/js` を作り、`ts/pkg/tinyfrontmatter` を置き換えてみた（2026-10-17、コミットはしていない）。Node の vitest は通ったが、`wrangler dev` では Worker が起動しなかったので戻した。`ts/pkg/tinyfrontmatter` は TS の移植のまま。
+
+- **workerd で起動しない。** `@tinyfrontmatter.split` は `Map` を返す。`Map` を使うと、MoonBit の core のハッシュのシードを作るコードが入る。このコードはモジュールのトップレベルで `crypto.getRandomValues` を呼ぶ（生成された JS の `const _M0FPB4seed = _M0FPB12random__seed();`）。workerd はグローバルスコープでの乱数の生成を禁じているので、`Disallowed operation called within global scope` で止まる。Node では止まらないので、vitest では気づけない。tinymarkdown は `Map` を使わないので、このコードは入らない。
+- **core の実装は共有されない。** `.mjs` はパッケージごとに、MoonBit の core のうち使う部分を抱える。38 行の TS の移植を置き換えるだけで、ブログのバンドルが 511.15 KB → 557.12 KB、gzip で 148.37 KB → 155.98 KB 増えた。
+
+MoonBit の js ビルドを Worker で使うなら、`Map` のようにトップレベルで乱数を使う core の機能を避けるか、`wrangler dev` で起動まで確かめる必要がある。
