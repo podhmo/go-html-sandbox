@@ -36,8 +36,8 @@ pub fn serve(n : Int) -> Int {
 ```
 
 ```js
-import wasm from "./build/echo.wasm";
-import { wasmApp } from "../../http/wasm/adapter.mjs";
+import wasm from "../../../../_build/wasm-gc/release/build/pkg/http/wasm/integration/integration.wasm";
+import { wasmApp } from "../adapter.mjs";
 export default wasmApp(wasm);
 ```
 
@@ -61,7 +61,7 @@ Go 1.22 の `ServeMux` のパターンをまねた。
 
 ## 確かめたこと
 
-例として、`moonbit/examples/echo` に、POST、クエリー、テキストと JSON の本文、urlencoded と multipart のフォーム（100 KB のバイナリのファイル）、`PUT` と `DELETE`、405、複数の `Set-Cookie`、バイナリの応答、Worker の変数を使うルートを置いた。
+例として、`moonbit/pkg/http/wasm/integration` に、POST、クエリー、テキストと JSON の本文、urlencoded と multipart のフォーム（100 KB のバイナリのファイル）、`PUT` と `DELETE`、405、複数の `Set-Cookie`、バイナリの応答、Worker の変数を使うルートを置いた。
 Node と `wrangler dev` の両方で動いた。
 
 このブログは、ライブラリに載せ替えた後も、Go 版と比べて前と同じパスが一致している。
