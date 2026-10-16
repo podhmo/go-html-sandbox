@@ -20,12 +20,18 @@ for (const [name, src, meta, body] of cases) {
   test(name, () => expect(split(src)).toEqual({ meta, body }));
 }
 
+test("keys of Object.prototype are kept", () => {
+  const { meta } = split("---\n__proto__: x\nconstructor: y\n---\n");
+  expect(Object.entries(meta!)).toEqual([["__proto__", "x"], ["constructor", "y"]]);
+});
+
 const errors: [string, string, string][] = [
   ["unclosed", "---\ntitle: x\n", "no closing"],
   ["only opening", "---", "no closing"],
   ["line without colon", "---\ntitle: x\njust text\n---\n", 'line 3: want "key: value"'],
   ["empty key", "---\n: x\n---\n", "line 2"],
   ["duplicate key", "---\na: 1\na: 2\n---\n", 'line 3: duplicate key "a"'],
+  ["duplicate __proto__", "---\n__proto__: 1\n__proto__: 2\n---\n", 'line 3: duplicate key "__proto__"'],
 ];
 for (const [name, src, want] of errors) {
   test(name, () => expect(() => split(src)).toThrow(want));

@@ -14,7 +14,8 @@ const delimiter = "---";
 export function split(src: string): { meta: Record<string, string> | undefined; body: string } {
   const lines = src.split("\n");
   if (trimLine(lines[0]) !== delimiter) return { meta: undefined, body: src };
-  const meta: Record<string, string> = {};
+  // No prototype, so that keys such as "__proto__" are stored like any other.
+  const meta: Record<string, string> = Object.create(null);
   for (let i = 1; i < lines.length; i++) {
     const line = trimLine(lines[i]);
     if (line === delimiter) return { meta, body: lines.slice(i + 1).join("\n") };
