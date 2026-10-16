@@ -25,6 +25,17 @@ ts 版のブログ（`ts/`）は、`go/pkg/tinymarkdown` を TS に移した `ts
 - `ts/pkg/tinymarkdown/tinymarkdown.ts`: 型（`Document`、`Block`、`Inline` など）と、`export { inlines, parse } from "./tinymarkdown.mjs"`。
 - `ts/pkg/tinymarkdown/tinymarkdown.d.mts`: `tinymarkdown.mjs` の型。moon が生成する `.d.ts` は戻り値が `any` なので、手で書いた。moon 0.1.20261012 の `.d.ts` で型が付くのは `String`、`Int`、`Double`、`Bool`、`T?`（`T | undefined`）と関数だけで、`Array`、`struct`、`enum`、`#external type` は `any` になる。型を指定する方法も見当たらなかった。
 
+`.mbti` から `.d.ts` を作る [mizchi/mbts](https://mooncakes.io/docs/mizchi/mbts)（0.0.3、最後のコミットは 2025-12-21）もある。これを使っても、MoonBit 側で JS オブジェクトを組む部分は省けない。値の形を moon 0.1.20261012 の js ビルドで確かめると、次のようだった。
+
+| MoonBit の型 | mbts が付ける型 | 実際の値 |
+| --- | --- | --- |
+| `Array[T]` | `Array<T>` | JS の配列。合っている |
+| `struct` | フィールドを持つ interface | フィールドを持つオブジェクト。合っている |
+| `enum` | `$tag` がケースの名前、中身が `$0`、`$1` | `$tag` は数（`0`、`1`）、中身は `_0`、`_1`。合わない |
+| `Map[K, V]` | JS の `Map<K, V>` | MoonBit のハッシュ表のオブジェクト（`entries`、`size` などを持つ）。合わない |
+
+tinymarkdown の `Block` と `Inline` は enum なので、型が合わない。仮に合っていたとしても、ブログのコードは `kind: "section"` で分けているので、`$tag` の数で分けるように書き直すことになる。
+
 MoonBit の js ビルドでは、`String` は JS の文字列、`Int` は JS の数になる。enum は、ケースごとのクラスに `$tag` と `_0`、`_1` のようなフィールドを持たせた形になる。そのままでは TS の `kind` で分ける型にならないので、MoonBit 側で JS オブジェクトを組んだ。
 
 ## 問いごとの結果
