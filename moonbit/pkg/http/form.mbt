@@ -30,9 +30,9 @@ pub fn Request::form(self : Request) -> Form raise BadRequest {
       match params.iter().find_first(p => p.0 == "boundary") {
         Some((_, boundary)) if boundary != "" =>
           parse_multipart(self.body, boundary)
-        _ => raise BadRequest("multipart form without a boundary")
+        _ => raise BadRequest(message="multipart form without a boundary")
       }
-    _ => raise BadRequest("not a form: \{ty.escape()}")
+    _ => raise BadRequest(message="not a form: \{ty.escape()}")
   }
 }
 
@@ -48,14 +48,14 @@ fn parse_multipart(
   let crlf : Bytes = b"\r\n"
   let blank : Bytes = b"\r\n\r\n"
   guard body.find(delim) is Some(first) else {
-    raise BadRequest("multipart form without its boundary")
+    raise BadRequest(message="multipart form without its boundary")
   }
   let values = []
   let files = []
   for pos = first + delim.length(); !body[pos:].has_prefix(b"--"); {
     let rest = body[pos:]
     guard rest.has_prefix(crlf) else {
-      raise BadRequest("malformed multipart boundary")
+      raise BadRequest(message="malformed multipart boundary")
     }
     let rest = rest[2:]
     // A part with no headers starts with the blank line right away.
@@ -63,12 +63,12 @@ fn parse_multipart(
       ("", 2)
     } else {
       guard rest.find(blank) is Some(h) else {
-        raise BadRequest("multipart part without a blank line")
+        raise BadRequest(message="multipart part without a blank line")
       }
       (@utf8.decode_lossy(rest[:h]), h + 4)
     }
     guard rest[content_at:].find(next) is Some(len) else {
-      raise BadRequest("multipart part without a closing boundary")
+      raise BadRequest(message="multipart part without a closing boundary")
     }
     let data = rest[content_at:content_at + len]
     let next_pos = pos + 2 + content_at + len + next.length()

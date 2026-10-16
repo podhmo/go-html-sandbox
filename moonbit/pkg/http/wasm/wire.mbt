@@ -33,11 +33,13 @@ fn decode_request(data : BytesView) -> @http.Request raise @http.BadRequest {
     None
   }
   guard head_end is Some(head_end) else {
-    raise @http.BadRequest("truncated request")
+    raise @http.BadRequest(message="truncated request")
   }
   let head = @utf8.decode_lossy(data[:head_end])
   let lines = head.split("\n").collect()
-  guard lines.length() >= 4 else { raise @http.BadRequest("truncated request") }
+  guard lines.length() >= 4 else {
+    raise @http.BadRequest(message="truncated request")
+  }
   let headers = @http.Headers()
   let env = Map([])
   let mut in_env = false

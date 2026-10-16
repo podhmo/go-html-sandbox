@@ -50,13 +50,13 @@ fn router() -> @http.Router {
   r.handle("/echo", req => @http.Response::json(200, request_json(req)))
   r.handle("POST /json", req => {
     let value = req.json() catch {
-      @http.BadRequest(msg) => return @http.Response::text(400, "\{msg}\n")
+      e => return @http.Response::text(400, "\{e}\n")
     }
     @http.Response::json(200, { "got": value })
   })
   r.handle("POST /form", req => {
     let form = req.form() catch {
-      @http.BadRequest(msg) => return @http.Response::text(400, "\{msg}\n")
+      e => return @http.Response::text(400, "\{e}\n")
     }
     let files = form.files.map(f => {
       "name": Json(f.name),
