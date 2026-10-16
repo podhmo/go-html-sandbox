@@ -1,11 +1,11 @@
 // The blog as a Hono app, and the Worker's entry point. favicon.svg and
-// site.css never reach it: Workers serves them from public/ as static
+// site.css never reach it: Workers serves them from dist/client/ as static
 // assets, before the Worker runs.
 import { Hono, type Context } from "hono";
 import { loadDocs, loadPosts } from "./content.ts";
 import { linker } from "./links.ts";
 import { DocList, DocPage, ErrorPage, PostList, PostPage, layout, siteDescription } from "./views.tsx";
-import content from "./content.gen.json" with { type: "json" };
+import * as sources from "./sources.ts";
 
 type Env = {
   Bindings: {
@@ -15,8 +15,8 @@ type Env = {
 };
 
 // The posts and documents are parsed once, when the isolate starts.
-const posts = loadPosts(content.posts);
-const docs = loadDocs(content.docs);
+const posts = loadPosts(sources.posts);
+const docs = loadDocs(sources.docs);
 const bySlug = new Map(posts.map((p) => [p.slug, p]));
 const byPath = new Map(docs.map((d) => [d.path, d]));
 

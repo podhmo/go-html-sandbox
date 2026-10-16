@@ -5,7 +5,7 @@ import { jsxRenderer } from "hono/jsx-renderer";
 import { type Block, type Inline, type Item, inlines } from "../../../pkg/tinymarkdown/tinymarkdown.ts";
 import { type Doc, type Post, docPath, firstTitle, postPath } from "./content.ts";
 import { type Linker, noLinks } from "./links.ts";
-import content from "./content.gen.json" with { type: "json" };
+import * as sources from "./sources.ts";
 
 const siteName = "blog";
 export const siteDescription = "Notes rendered with Wasm.";
@@ -50,8 +50,8 @@ export const layout = jsxRenderer(({ children, ...meta }) => {
             <meta property="og:site_name" content={siteName} />
           </>
         )}
-        <link rel="stylesheet" href={`/site.css?v=${content.siteCSSHash}`} />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="stylesheet" href={sources.siteCSS} />
+        <link rel="icon" href={sources.favicon} type="image/svg+xml" />
       </head>
       <body>
         <header class="container">

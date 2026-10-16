@@ -6,19 +6,21 @@
     "node": ">=24"
   },
   "scripts": {
-    "embed": "node examples/blog/scripts/embed.ts",
-    "dev": "cd examples/blog && wrangler dev",
-    "deploy": "cd examples/blog && wrangler deploy",
-    "pretest": "npm run embed",
+    "dev": "vite examples/blog",
+    "build": "vite build examples/blog",
+    "preview": "npm run build && vite preview examples/blog",
+    "deploy": "npm run build && cd examples/blog && wrangler deploy",
     "test": "vitest run",
-    "check": "npm test && tsc --noEmit"
+    "check": "vitest run && tsc --noEmit"
   },
   "dependencies": {
     "hono": "^4.13.13"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.63.1",
     "@types/node": "^26.6.4",
     "typescript": "^7.0.2",
+    "vite": "^8.3.4",
     "vitest": "^5.0.3",
     "wrangler": "^4.148.0"
   }

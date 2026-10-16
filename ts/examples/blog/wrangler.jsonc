@@ -1,21 +1,12 @@
 // Cloudflare Workers config for the blog on Hono; see ../../README.md.
-// `npx wrangler dev` (npm run dev in ../..) serves it on
-// http://localhost:8787. The Go and MoonBit blogs also deploy as blog, so
-// this deploys as blog-ts, beside them.
+// The Vite plugin reads it: `npm run dev` in ../.. serves the Worker on
+// http://localhost:5173. The Go and MoonBit blogs deploy as blog, so this
+// deploys as blog-ts, beside them.
 {
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "blog-ts",
   "main": "./src/app.tsx",
   "compatibility_date": "2026-10-01",
-  "build": {
-    // Writes src/content.gen.json and copies site.css and favicon.svg into
-    // public/; rerun on changes under `wrangler dev`. TODO.md sits in the
-    // repository root, which cannot be watched without watching the output.
-    "command": "node scripts/embed.ts",
-    "watch_dir": ["../../../posts", "../../../docs", "../../../go/examples/blog/internal/site"]
-  },
-  // site.css and favicon.svg, served before the Worker runs; _headers sets
-  // their Cache-Control.
-  "assets": { "directory": "./public" },
   "vars": {
     // Public origin for OGP tags, like the Go blog's -base-url.
     "BASE_URL": "https://blog-ts.podhmo.workers.dev"

@@ -7,14 +7,15 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    // Node 24 runs .ts files as they are, by stripping the types: imports
-    // name the .ts file, and only syntax that can be erased is allowed.
+    // Keep the .ts files runnable on Node 24, which strips the types:
+    // imports name the .ts file, and only syntax that can be erased is
+    // allowed. (.tsx files still need Vite.)
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "types": ["node"]
+    "types": ["node", "vite/client"]
   }
 }
