@@ -11,6 +11,8 @@ pub fn load_docs(ReadOnlyArray[(String, String)]) -> Array[Doc] raise LoadError
 
 pub fn load_posts(ReadOnlyArray[(String, String)]) -> Array[Post] raise LoadError
 
+pub fn unescape_path(String) -> String?
+
 // Errors
 pub(all) suberror LoadError {
   LoadError(message~ : String)
@@ -53,7 +55,7 @@ pub fn Response::text(Int, String) -> Self
 type Site
 pub fn Site::Site(base_url~ : String, posts~ : Array[Post], docs~ : Array[Doc]) -> Self raise LoadError
 pub fn Site::embedded(base_url~ : String) -> Self raise LoadError
-pub fn Site::render(Self, String, query? : String) -> Response
+pub fn Site::render(Self, String, query? : String, verb? : String) -> Response
 
 // Type aliases
 

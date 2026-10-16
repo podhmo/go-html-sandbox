@@ -15,7 +15,7 @@ It is an experiment in progress; see
 - `site` — the blog, ported from the Go blog's `internal/site`:
   `load_posts` and `load_docs` read the embedded files, and
   `Site::render(path)` returns the response for a path (status, headers,
-  and body) for every route of the Go blog: `/`, `/posts/{slug}` and
+  and body; methods other than GET and HEAD get the 404 page) for every route of the Go blog: `/`, `/posts/{slug}` and
   `/docs/{path}` with their `.md` sources, `/docs/`, `/favicon.svg`,
   `/site.css`, the redirects to cleaned paths, and the 404 pages
 - `assets` — the Go blog's `site.css` and `favicon.svg`, and the hash of
@@ -36,23 +36,25 @@ It is an experiment in progress; see
   into the `key: value` pairs of a leading `---` block (`None` without
   one) and the rest, raising `SplitError` on a malformed block; its tests
   are the Go test cases
-- `worker` — the Wasm entry point: `path_push`, `set_base_url`,
-  `set_query`, and `serve` exported (the host pushes `BASE_URL` once and
-  calls `set_base_url`; for each request it pushes the query, if any, and
-  calls `set_query`, then pushes the path and calls `serve`), the
-  response sent back through the imported `host` functions (`status`,
-  then `put` for text one UTF-16 code unit at a time, with `header_name`
-  and `header_value` taking what was put as a header; the rest is the
-  body)
-- `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for each
-  request, and `wrangler.jsonc` builds it
+- `worker` — the Wasm entry point: `serve` and the linear memory
+  exported, nothing imported. The host writes the request into the
+  memory as UTF-8, `BASE_URL`, the method, the query, and the path (still
+  percent-encoded; the Wasm decodes it, as Go's net/http does), one per
+  line; `serve` writes the response over it, the status and the
+  headers (a tab between name and value) one per line, an empty line,
+  and the body, and returns its length
+- `workers` — the Cloudflare Worker: `worker.mjs` runs the Wasm for a
+  request, keeping each 200 response to GET and HEAD by path for the
+  rest of the isolate's life, and `wrangler.jsonc` builds it
 - `compare` — compares the Go blog with the Worker path by path (status,
   `Content-Type`, and a diff of the body); `compare/cmd` is its native
   CLI, built on `moonbitlang/async`, and the only package that uses it
 
-Strings cross between JS and Wasm one code unit at a time because Workers
-compiles imported Wasm modules without the JS string builtins, which
-`use-js-builtin-string` relies on.
+Strings cross between JS and Wasm as UTF-8 in the Wasm's memory because
+Workers compiles imported Wasm modules without the JS string builtins,
+which `use-js-builtin-string` relies on. moon emits one page of linear
+memory even for wasm-gc and leaves it unused; `worker` reads and writes
+it with inline Wasm.
 
 ## Development
 
@@ -60,7 +62,7 @@ From `moonbit/` (`make help` lists the targets):
 
 ```sh
 make test     # moon test
-make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm
+make build    # the Wasm, into _build/wasm-gc/release/build/worker/worker.wasm, and after wasm-opt -Oz, workers/build/app.wasm
 make check    # before every commit: moon fmt --check, moon check (wasm-gc and native), moon test, moon info
 ```
 
@@ -79,7 +81,8 @@ in a subdirectory of `docs/` changes. `make build`, `make test`, and
 `make check` run it every time (`make embed` alone), so use them after
 editing a post or a document.
 
-Needs `moon` on `PATH`, and Node.js for wrangler.
+Needs `moon` and `moon-wasm-opt` (binaryen's `wasm-opt`, installed with
+moon) on `PATH`, and Node.js for wrangler.
 
 ## Running on Workers locally
 
@@ -88,8 +91,8 @@ make dev            # or: make dev PORT=8798, if the Go Worker uses 8787
 ```
 
 Then open <http://localhost:8787>. wrangler's build command runs
-`make build` and copies the Wasm to `workers/build/app.wasm`, ignored by
-git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
+`make build`, which writes the Wasm, shrunk by `wasm-opt -Oz`, to
+`workers/build/app.wasm`, ignored by git, and `wrangler dev` rebuilds when `site/`, `worker/`, the posts in
 `go/examples/blog/posts/`, or the documents in `docs/` change.
 
 ## Comparing with the Go blog

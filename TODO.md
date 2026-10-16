@@ -39,7 +39,7 @@
 
 ### Future work
 
-- [ ] **MoonBit の Workers 用アダプターを最適な形に磨く**: 今のアダプター
+- [-] **MoonBit の Workers 用アダプターを最適な形に磨く**: 今のアダプター
   （`moonbit/workers/worker.mjs` と `moonbit/worker` の export、host の
   import）は、ブログに必要十分で、足りないものはない。ただ、spike から必要に
   応じて継ぎ足してきたものなので、これまでの知見を総動員して最適な形に設計し
@@ -52,4 +52,15 @@
     今と比べる。
   - 完了の条件: `make compare` で Go 版と一致したまま、結果を
     [調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
+  - 探索の記録は[探索メモ](docs/sketch/ja/moonbit-workers-adapter.md)にある。
+    線形メモリに UTF-8 でまとめて渡す案、`moon-wasm-opt -Oz`、workerd の
+    `wasm_esm_integration_builtins` フラグを使う案などを、一つずつ確かめる。
+  - [x] 線形メモリに UTF-8 でまとめて渡す案（D'）と、メソッドを Wasm に渡す案（G）を
+    取り込み、`make compare` で Go 版と一致することを確かめる。
+  - [x] `moon-wasm-opt -Oz` を `make build` に入れる（案 F）。
+  - [x] パスのデコードを Wasm に移し、`/%FF` のような UTF-8 でないパスにも Go 版と
+    同じ 404 を返す（案 H）。
+  - [x] GET と HEAD への 200 の応答を、isolate の中でパスごとにキャッシュする（案 I）。
+  - [ ] フラグ入りの wrangler が入れられるようになったら（2026-10-21 ごろ以降）、
+    `wasm_esm_integration_builtins` を使う案 E を試す。
 
