@@ -409,11 +409,14 @@ skill の Step 0 に従い、`moonbit-refactoring` の「Local refactoring」よ
 | 9dea2ca | `<+` | `encode_head` の `write_string` / `write_char` を `<+` に |
 | 7146e9e | const | echo の `let page`（`#|` の文字列）を `const PAGE` に |
 | fed60c9 | エラーの設計 | `BadRequest(String)` を `BadRequest(message~ : String) derive(Debug)` に。`site` の `LoadError` や `tinyfrontmatter` の `SplitError` と同じ形 |
+| b8b5a36 | カスケード | `Response::header` を `-> Self` から `-> Unit` に。呼び出しは `..header(..)` でつなぐ |
 
 ### 方針を決めたもの
 
 - **ラベル:** これまでのパスと同じく、同じ型の引数が並ぶ箇所にだけ付けた。`Response::text(status, body)` や `Router::handle(pattern, handler)` は型が違うので位置引数のまま。`Response::typed(status, content_type, body)` も、`Body` の値が `Text(..)` / `Binary(..)` と書かれるので、`content_type` との取り違えは型で分かる。
 - **constructor の呼び出し:** skill のとおり `@http.Router()` と型名だけで書く。doc コメントとテスト名は `Router::Router` と書いた。`Site` の private なメソッド `Site::new_router` は「新しい router を作る」という意味の名前なので、そのままにした。
+
+- **破壊的更新は `Unit` を返し、カスケード `..` でつなぐ。** `Response::header` は `self.headers` に `push` してから同じ `self` を返していたので、新しい値を返すように読めた（`let b = a.header(..)` で `a` も変わる）。新しい値を返すにはヘッダの配列を毎回複製する必要があり、ハンドラの中で 1 回組み立てるだけの使い方には合わないので、`-> Unit` にした。`-> Self` のメソッドを `..` でつなぐと、警告 `invalid_cascade` が出る。この書き換えは、パスの後のレビューで指摘を受けて足した。
 
 ### 見送ったもの
 
