@@ -65,19 +65,20 @@
     `cpuTime` を、今の形と比べて[調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
 - [-] **Go と MoonBit の `pkg/el` と `pkg/tinymarkdown` に profiler をかけて速くする**:
   profiler で 2 つのパッケージの重いところを見て、確保と走査を直す。まず Go 版から
-  （[issue #39](https://github.com/podhmo/html-sandbox/issues/39)）。
+  （[調査メモ](docs/sketch/ja/profiling.md)、[issue #39](https://github.com/podhmo/html-sandbox/issues/39)）。
   - [x] Go 版: ベンチを足し、pprof で `tinymarkdown.cells` と `inlines` の走査、
     タグと属性の文字列連結を直した。`Parse` は 85 µs から 56 µs、描画は 97 µs
     から 62 µs になり、描画のアロケートは 0 になった
-    （[調査メモ](docs/sketch/ja/profiling.md)）。
+    （[調査メモ](docs/sketch/ja/profiling-go.md)）。
   - [ ] Go 版（実験）: API を変えて `Inline` をインターフェースから構造体にし、
-    `Inlines` の確保を減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling.md)の
+    `Inlines` の確保を減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling-go.md)の
     追記に記録する。マージするかは未定で、`go-aggressive-tinymarkdown` の枝に置く。
   - [ ] Go 版（実験）: ライターを `io.StringWriter` にして `io.WriteString` を外し、
-    描画の CPU を 20% 減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling.md)の
+    描画の CPU を 20% 減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling-go.md)の
     追記に記録する。マージするかは未定で、`go-aggressive-el` の枝に置く。
   - [ ] MoonBit 版: 同じ 2 つのパッケージを `moon bench` で見て、Go 版で効いた
     ところをなぞる。`make compare` で Go 版と一致したままであることを確かめる。
+    結果は `docs/sketch/ja/profiling-moonbit.md` に書く。
 
 ### Future work
 
