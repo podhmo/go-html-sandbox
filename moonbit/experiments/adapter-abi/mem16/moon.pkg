@@ -1,7 +1,6 @@
 import {
   "podhmo/html-sandbox/examples/blog/site",
   "podhmo/html-sandbox/pkg/http",
-  "moonbitlang/core/encoding/utf8",
 }
 
 supported_targets = "+wasm-gc"

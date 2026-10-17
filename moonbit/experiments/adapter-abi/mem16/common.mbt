@@ -1,12 +1,4 @@
 ///|
-extern "wasm" fn load8(addr : Int32) -> Int32 =
-  #|(func (param i32) (result i32) (i32.load8_u (local.get 0)))
-
-///|
-extern "wasm" fn store8(addr : Int32, v : Int32) =
-  #|(func (param i32) (param i32) (i32.store8 (local.get 0) (local.get 1)))
-
-///|
 extern "wasm" fn load16(addr : Int32) -> Int32 =
   #|(func (param i32) (result i32) (i32.load16_u (local.get 0)))
 
