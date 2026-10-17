@@ -2,15 +2,33 @@
 /// write_escaped writes s escaped the way Go's html.EscapeString does, so
 /// that pages match the Go blog byte for byte.
 fn StringBuilder::write_escaped(self : StringBuilder, s : String) -> Unit {
-  for c in s {
-    match c {
-      '<' => self <+ "&lt;"
-      '>' => self <+ "&gt;"
-      '&' => self <+ "&amp;"
-      '\'' => self <+ "&#39;"
-      '"' => self <+ "&#34;"
-      _ => self.write_char(c)
+  // Write whole runs between the characters that need escaping: the written
+  // bytes are the same as Go's html.EscapeString leaves behind, but far
+  // fewer writes reach the builder than one per character.
+  let n = s.length()
+  let mut start = 0
+  let mut i = 0
+  while i < n {
+    let esc = match s[i] {
+      '<' => "&lt;"
+      '>' => "&gt;"
+      '&' => "&amp;"
+      '\'' => "&#39;"
+      '"' => "&#34;"
+      _ => {
+        i = i + 1
+        continue
+      }
     }
+    if start < i {
+      self.write_view(s[start:i])
+    }
+    self.write_string(esc)
+    i = i + 1
+    start = i
+  }
+  if start < n {
+    self.write_view(s[start:])
   }
 }
 
@@ -49,11 +67,22 @@ fn Node::write_html(self : Node, sb : StringBuilder) -> Unit {
   match self {
     Text(s) => sb.write_escaped(s)
     Raw(s) => sb.write_string(s)
-    Attr(AttrName(k), v) =>
-      sb..write_string(" \{k}=\"")..write_escaped(v).write_char('"')
-    BoolAttr(AttrName(k)) => sb <+ " \{k}"
+    Attr(AttrName(k), v) => {
+      // No "<name" or " name=\"value\"" is built: write the pieces, so that
+      // no string is made just to be written.
+      sb.write_char(' ')
+      sb.write_string(k)
+      sb.write_string("=\"")
+      sb.write_escaped(v)
+      sb.write_char('"')
+    }
+    BoolAttr(AttrName(k)) => {
+      sb.write_char(' ')
+      sb.write_string(k)
+    }
     Element(name, children) => {
-      sb <+ "<\{name.0}"
+      sb.write_char('<')
+      sb.write_string(name.0)
       for c in children {
         if c.is_attr() {
           c.write_html(sb)
@@ -68,7 +97,9 @@ fn Node::write_html(self : Node, sb : StringBuilder) -> Unit {
           c.write_html(sb)
         }
       }
-      sb <+ "</\{name.0}>"
+      sb.write_string("</")
+      sb.write_string(name.0)
+      sb.write_char('>')
     }
   }
 }

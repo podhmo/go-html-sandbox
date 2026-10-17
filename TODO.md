@@ -76,9 +76,13 @@
   - [ ] Go 版（実験）: ライターを `io.StringWriter` にして `io.WriteString` を外し、
     描画の CPU を 20% 減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling-go.md)の
     追記に記録する。マージするかは未定で、`go-aggressive-el` の枝に置く。
-  - [ ] MoonBit 版: 同じ 2 つのパッケージを `moon bench` で見て、Go 版で効いた
-    ところをなぞる。`make compare` で Go 版と一致したままであることを確かめる。
-    結果は `docs/sketch/ja/profiling-moonbit.md` に書く。
+  - [x] MoonBit 版: `moon bench` で前後を取り、`perf` と `addr2line` で内訳を
+    見て、Go 版で効いたところ（セル、インラインの走査、タグと属性の連結）を
+    なぞった。行とセルも `StringView` のまま引き回した。`parse` は native で
+    186 µs から 70 µs、wasm-gc で 299 µs から 109 µs、`render_html` は
+    108 µs から 67 µs / 233 µs から 191 µs になった。出力は変えておらず、
+    `make check` が通る（`make compare` はこの環境では回していない）
+    （[調査メモ](docs/sketch/ja/profiling-moonbit.md)）。
 
 ### Future work
 

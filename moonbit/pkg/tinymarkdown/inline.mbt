@@ -45,30 +45,30 @@ pub fn inlines(s : String) -> Array[Inline] {
 fn split_inlines(s : String, links~ : Bool) -> Array[Inline] {
   let out = []
   let mut text = 0 // start of the plain text not yet emitted
-  fn emit(i : Int32, inline : Inline) {
-    if text < i {
-      out.push(Text(s[text:i].to_owned()))
-    }
-    out.push(inline)
-  }
-
+  let n = s.length()
   let mut i = 0
-  while i < s.length() {
+  while i < n {
     if s[i] == '`' {
-      let n = backquotes(s, i)
-      let end = closing_run(s, from=i + n, n~)
+      let m = backquotes(s, i)
+      let end = closing_run(s, from=i + m, n=m)
       if end < 0 {
-        i += n
+        i += m
         continue
       }
-      emit(i, Code(code_text(s[i + n:end])))
-      i = end + n
+      if text < i {
+        out.push(Text(s[text:i].to_owned()))
+      }
+      out.push(Code(code_text(s[i + m:end])))
+      i = end + m
       text = i
     } else if s[i] == '[' && links {
       match link(s, i) {
         None => i += 1
         Some((label, url, end)) => {
-          emit(i, Link(children=split_inlines(label, links=false), url~))
+          if text < i {
+            out.push(Text(s[text:i].to_owned()))
+          }
+          out.push(Link(children=split_inlines(label, links=false), url~))
           i = end
           text = i
         }
@@ -77,7 +77,7 @@ fn split_inlines(s : String, links~ : Bool) -> Array[Inline] {
       i += 1
     }
   }
-  if text < s.length() {
+  if text < n {
     out.push(Text(s[text:].to_owned()))
   }
   out
@@ -113,10 +113,16 @@ fn link(s : String, i : Int32) -> (String, String, Int32)? {
 }
 
 ///|
-/// backquotes returns the length of the run of backquotes at s[i:].
+/// backquotes returns the length of the run of backquotes at s[i:]. It counts
+/// them directly, where trim_start would build a view and a character set for
+/// every call.
 fn backquotes(s : String, i : Int32) -> Int32 {
-  let rest = s[i:]
-  rest.length() - rest.trim_start(chars="`").length()
+  let n = s.length()
+  let mut j = i
+  while j < n && s[j] == '`' {
+    j = j + 1
+  }
+  j - i
 }
 
 ///|
