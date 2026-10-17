@@ -38,7 +38,7 @@ TS_TINYMARKDOWN := ../ts/pkg/tinymarkdown/tinymarkdown.mjs
 # The modules under experiments/, each with its own moon.mod.
 EXPERIMENTS := $(patsubst %/moon.mod,%,$(wildcard experiments/*/moon.mod))
 
-.PHONY: embed build ts test check dev deploy compare dev-echo clean help
+.PHONY: embed build ts test check bench dev deploy compare dev-echo clean help
 
 ## embed: regenerate the embedded.mbt files: the Go blog's posts, the repository's documents, and the Go blog's site.css and favicon.svg
 # The packages' moon.pkg run the same scripts, but moon reruns them only
@@ -67,6 +67,14 @@ test: embed
 	moon test --target js -p pkg/tinymarkdown/js
 	moon build --target wasm-gc --release pkg/http/wasm/integration
 	node --test pkg/http/wasm/integration/test.mjs
+
+## bench: run the benchmarks of pkg/tinymarkdown and pkg/el (TARGETS="native wasm-gc" by default)
+TARGETS ?= native wasm-gc
+bench:
+	@for t in $(TARGETS); do \
+		echo "== $$t: pkg/tinymarkdown =="; moon bench pkg/tinymarkdown --target $$t || exit 1; \
+		echo "== $$t: pkg/el =="; moon bench pkg/el --target $$t || exit 1; \
+	done
 
 ## check: what to run before every commit (test, then moon fmt, moon check on wasm-gc and native, moon check in experiments/, moon info, and ts)
 # moon info has no --check; it rewrites the .mbti files, and git diff fails

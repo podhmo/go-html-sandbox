@@ -91,14 +91,44 @@ const FENCE = "```"
 const MAX_LEVEL = 5
 
 ///|
-/// SPACES are the characters Go's unicode.IsSpace accepts, so trimming
-/// matches strings.TrimSpace.
-const SPACES = "\t\n\u{0B}\u{0C}\r \u{85}\u{A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}"
+/// trim_space is Go's strings.TrimSpace. It walks the ends itself: `trim` with
+/// a character set would build a set (or, for a non-ASCII one, compare each
+/// character against every member) on every line and every table cell. It
+/// returns a view, as Go's TrimSpace returns a substring, so the caller decides
+/// whether the trimmed text has to be copied.
+fn trim_space(s : StringView) -> StringView {
+  let n = s.length()
+  let mut start = 0
+  while start < n && is_space_code(s[start]) {
+    start = start + 1
+  }
+  let mut end = n
+  while end > start && is_space_code(s[end - 1]) {
+    end = end - 1
+  }
+  s[start:end]
+}
 
 ///|
-/// trim_space is Go's strings.TrimSpace.
-fn trim_space(s : StringView) -> String {
-  s.trim(chars=SPACES).to_owned()
+/// is_space_code reports whether the UTF-16 code unit c is one of the
+/// characters Go's unicode.IsSpace accepts, so that trimming matches
+/// strings.TrimSpace. Every one of them is in the Basic Multilingual Plane, so
+/// a code unit is enough.
+fn is_space_code(c : UInt16) -> Bool {
+  if c <= ' ' {
+    return (c >= '\t' && c <= '\r') || c == ' '
+  }
+  match c {
+    '\u{85}'
+    | '\u{A0}'
+    | '\u{1680}'
+    | '\u{2028}'
+    | '\u{2029}'
+    | '\u{202F}'
+    | '\u{205F}'
+    | '\u{3000}' => true
+    _ => c >= '\u{2000}' && c <= '\u{200A}'
+  }
 }
 
 ///|
@@ -121,10 +151,10 @@ pub fn parse(src : String) -> Document {
 /// scan splits src into a flat list of blocks, with headings as markers.
 fn scan(src : String) -> Array[Flat] {
   let out : Array[Flat] = []
-  let para : Array[String] = []
+  let para : Array[StringView] = []
   let items : Array[RawItem] = []
-  let quote : Array[String] = []
-  let table : Array[String] = []
+  let quote : Array[StringView] = []
+  let table : Array[StringView] = []
   fn flush() {
     if !para.is_empty() {
       out.push(Block(Paragraph(para.join("\n"))))
@@ -147,10 +177,11 @@ fn scan(src : String) -> Array[Flat] {
     }
   }
 
-  let code : Array[String] = []
+  let code : Array[StringView] = []
   let mut in_code = false
   for raw in src.split("\n") {
-    let line = raw.strip_suffix("\r").unwrap_or(raw).to_owned()
+    // line stays a view: only the lines that are kept are copied to a String.
+    let line = raw.strip_suffix("\r").unwrap_or(raw)
     let trimmed = trim_space(line)
     if in_code {
       if trimmed == FENCE {
@@ -185,8 +216,10 @@ fn scan(src : String) -> Array[Flat] {
       if !para.is_empty() || !quote.is_empty() || !table.is_empty() {
         flush()
       }
-      items.push({ indent: indent(line), text: trim_space(rest), })
-    } else if !items.is_empty() && line != trimmed && line[0] is (' ' | '\t') {
+      items.push({ indent: indent(line), text: trim_space(rest).to_owned(), })
+    } else if !items.is_empty() &&
+      line.length() != trimmed.length() &&
+      line[0] is (' ' | '\t') {
       // An indented line continues the item above it.
       items[items.length() - 1].text += "\n\{trimmed}"
     } else {
@@ -214,8 +247,13 @@ priv struct RawItem {
 
 ///|
 /// indent counts the leading spaces and tabs of line.
-fn indent(line : String) -> Int32 {
-  line.length() - line.trim_start(chars=" \t").length()
+fn indent(line : StringView) -> Int32 {
+  let n = line.length()
+  let mut i = 0
+  while i < n && (line[i] == ' ' || line[i] == '\t') {
+    i = i + 1
+  }
+  i
 }
 
 ///|
@@ -241,7 +279,7 @@ fn nest_items(
 /// parse_table parses the lines of a table. It fails, leaving the lines to
 /// be a paragraph, unless the second line is a delimiter row with as many
 /// cells as the header.
-fn parse_table(lines : Array[String]) -> Block? {
+fn parse_table(lines : Array[StringView]) -> Block? {
   guard lines is [header, delim, .. body] else { return None }
   let header = cells(header)
   let delim = cells(delim)
@@ -262,48 +300,86 @@ fn parse_table(lines : Array[String]) -> Block? {
 
 ///|
 /// cells splits a row such as "| a | b |" at unescaped "|". The leading
-/// "|" is required by scan; the trailing one is optional.
+/// "|" is required by scan; the trailing one is optional. It jumps from one
+/// separator to the next, rather than writing every character to a builder.
 fn cells(line : StringView) -> Array[String] {
   let line = line.strip_prefix("|").unwrap_or(line)
   let out = []
-  let b = StringBuilder()
-  for i = 0; i < line.length(); i = i + 1 {
-    if line[i] == '\\' && i + 1 < line.length() && line[i + 1] == '|' {
-      b.write_char('|')
-      continue i + 2
-    } else if line[i] == '|' {
-      out.push(trim_space(b.to_string()))
-      b.reset()
-    } else {
-      b.write_view(line[i:i + 1])
+  let n = line.length()
+  let mut start = 0
+  let mut i = 0
+  while i < n {
+    let j = match line[i:].find("|") {
+      None => break
+      Some(k) => i + k
     }
+    i = j + 1
+    // "\|" is a literal "|", not a separator: a backslash always escapes the
+    // "|" right after it.
+    if j > start && line[j - 1] == '\\' {
+      continue
+    }
+    out.push(trim_space(unescape_cell(line[start:j])).to_owned())
+    start = i
   }
-  let rest = trim_space(b.to_string())
+  let rest = trim_space(unescape_cell(line[start:]))
   if rest != "" {
-    out.push(rest)
+    out.push(rest.to_owned())
   }
   out
+}
+
+///|
+/// unescape_cell turns "\|" into "|". It returns s as is when there is no
+/// backslash, so the common cell does not allocate.
+fn unescape_cell(s : StringView) -> StringView {
+  if s.contains("\\") {
+    s.replace_all(old="\\|", new="|")[:]
+  } else {
+    s
+  }
 }
 
 ///|
 /// is_delimiter reports whether c is a delimiter cell: "---", ":---",
 /// ":---:", or "---:", with at least one "-".
 fn is_delimiter(c : String) -> Bool {
-  let c = c.strip_prefix(":").unwrap_or(c)
-  let c = c.strip_suffix(":").unwrap_or(c)
-  c != "" && c.trim(chars="-") == ""
+  // Count directly: `trim(chars="-")` builds a character set on every cell.
+  let c = c[:]
+  let n = c.length()
+  let mut start = 0
+  let mut end = n
+  if start < end && c[start] == ':' {
+    start = start + 1
+  }
+  if end > start && c[end - 1] == ':' {
+    end = end - 1
+  }
+  if start >= end {
+    return false
+  }
+  for i = start; i < end; i = i + 1 {
+    if c[i] != '-' {
+      return false
+    }
+  }
+  true
 }
 
 ///|
-fn is_heading(line : String) -> Bool {
-  let n = line.length() - line.trim_start(chars="#").length()
-  1 <= n && n <= MAX_LEVEL && n < line.length() && line[n] == ' '
+fn is_heading(line : StringView) -> Bool {
+  let n = line.length()
+  let mut i = 0
+  while i < n && line[i] == '#' {
+    i = i + 1
+  }
+  1 <= i && i <= MAX_LEVEL && i < n && line[i] == ' '
 }
 
 ///|
-fn parse_heading(line : String) -> Flat {
+fn parse_heading(line : StringView) -> Flat {
   let n = line.find(" ").unwrap()
-  Heading(n, trim_space(line[n:]))
+  Heading(n, trim_space(line[n:]).to_owned())
 }
 
 ///|
