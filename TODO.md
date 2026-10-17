@@ -70,6 +70,9 @@
     タグと属性の文字列連結を直した。`Parse` は 85 µs から 56 µs、描画は 97 µs
     から 62 µs になり、描画のアロケートは 0 になった
     （[調査メモ](docs/sketch/ja/profiling.md)）。
+  - [ ] Go 版（実験）: API を変えて `Inline` をインターフェースから構造体にし、
+    `Inlines` の確保を減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling.md)の
+    追記に記録する。マージするかは未定で、`go-aggressive-tinymarkdown` の枝に置く。
   - [ ] MoonBit 版: 同じ 2 つのパッケージを `moon bench` で見て、Go 版で効いた
     ところをなぞる。`make compare` で Go 版と一致したままであることを確かめる。
 

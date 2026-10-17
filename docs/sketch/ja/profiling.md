@@ -48,7 +48,24 @@ go tool pprof -list 'tinymarkdown.inlines' cpu.out
 - `alloc_space` より `alloc_objects` のほうが効いた。この 2 つは、大きいバッファより小さいアロケートが数で効いていた。
 - `runtime.futex` が上位に出るのは、`b.Loop` と `GOMAXPROCS=16` のせいで、ホットスポットではない。
 
+## 追記（実験）: `Inline` をインターフェースから構造体にする
+
+上の節で残した「`Inlines` のアロケートは `Inline` インターフェースへの箱詰め」を、API を変えて取る実験。MoonBit との対応は気にしない方針で、Go だけを見る。
+
+- `Inline` を種別つきの構造体にすると、箱詰めが消える。まず素直に 4 つのフィールド（`Kind`、`Text`、`Children`、`URL`）を持つ構造体にしたところ、1 つ 64 バイトになり、`append` の伸長で写す量が増えて**遅く**なった（`BenchmarkInlines` で 98.5 µs → 152 µs、384 KB/op）。箱詰めのアロケートは消えても、大きい値を伸長のたびに写すほうが高くついた。
+- リンクはまれなので、リンクの子と URL はポインタの先（`*linkData`）に置き、`Inline` を 32 バイトに収めた。子と URL は `Children()` と `URL()` で取る。
+- あわせて、`Inlines` の結果のスライスを、`` ` `` と `[` の数から見積もって先に確保する。これだけでも効く（インターフェースのままでも 98.5 → 77.3 µs）。
+
+| | 前（PR #43） | インターフェース + 先確保 | 64 バイトの構造体 + 先確保 | 32 バイトの構造体 + 先確保 |
+| --- | --- | --- | --- | --- |
+| `BenchmarkInlines` | 98.5 µs/op、128,624 B/op、1,735 allocs/op | 77.3 µs/op、56,624 B/op、1,725 allocs/op | 74.2 µs/op、115,200 B/op、6 allocs/op | 58.2 µs/op、57,920 B/op、10 allocs/op |
+
+- アロケートは 1,735 から 10 に減った。時間は 41% 減り、バイト数はほぼ同じ。箱詰めを消すより、値を小さく保つこととスライスを先に確保することのほうが効いた。
+- API は変わる。`Text`・`Code`・`Link` は型から関数になり、リンクの子と URL は `Children()` と `URL()` で取る。呼んでいるのは `site` だけだったので、そこだけ直せば済んだ。
+- 出力は変えていない（実サーバーの 11 ページで diff なし）。
+- `BenchmarkParse` の残りは `scan` の行ごとの蓄積（`strings.Join` とスライス）で、こちらは触っていない。
+
 ## 次にやること
 
 - MoonBit 版の `pkg/el` と `pkg/tinymarkdown` を同じ目で見る（`moon bench`。関数レベルの内訳が要れば js ビルドを Node の `--cpu-prof` で）。
-- `Inlines` のアロケートを減らすなら、`Inline` の API を見直すところから。
+- `Inlines` のアロケートは上の追記で減らした（`Inline` を構造体にする API 変更）。残るのは `Parse` の `scan` が行ごとに蓄積しているところ。

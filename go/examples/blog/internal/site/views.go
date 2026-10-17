@@ -231,13 +231,11 @@ func plainText(s string) string {
 	var walk func([]tinymarkdown.Inline)
 	walk = func(ins []tinymarkdown.Inline) {
 		for _, in := range ins {
-			switch in := in.(type) {
-			case tinymarkdown.Text:
-				b.WriteString(string(in))
-			case tinymarkdown.Code:
-				b.WriteString(string(in))
-			case tinymarkdown.Link:
-				walk(in.Children)
+			switch in.Kind {
+			case tinymarkdown.InlineText, tinymarkdown.InlineCode:
+				b.WriteString(in.Text)
+			case tinymarkdown.InlineLink:
+				walk(in.Children())
 			}
 		}
 	}
@@ -250,14 +248,14 @@ func plainText(s string) string {
 func renderInlines(ins []tinymarkdown.Inline, link linker) []pe.Node {
 	var out []pe.Node
 	for _, in := range ins {
-		switch in := in.(type) {
-		case tinymarkdown.Text:
-			out = append(out, pe.Text(string(in)))
-		case tinymarkdown.Code:
-			out = append(out, pe.Code(string(in)))
-		case tinymarkdown.Link:
-			children := renderInlines(in.Children, link)
-			if href, ok := link(in.URL); ok {
+		switch in.Kind {
+		case tinymarkdown.InlineText:
+			out = append(out, pe.Text(in.Text))
+		case tinymarkdown.InlineCode:
+			out = append(out, pe.Code(in.Text))
+		case tinymarkdown.InlineLink:
+			children := renderInlines(in.Children(), link)
+			if href, ok := link(in.URL()); ok {
 				out = append(out, pe.A(href, children...))
 			} else {
 				out = append(out, children...)

@@ -2,30 +2,68 @@ package tinymarkdown
 
 import "strings"
 
+// InlineKind tells what an Inline holds.
+type InlineKind uint8
+
+const (
+	// InlineText is plain text, in Text.
+	InlineText InlineKind = iota
+	// InlineCode is the content of a `code` span, in Text.
+	InlineCode
+	// InlineLink is a [text](url) link: Children and URL.
+	InlineLink
+)
+
 // Inline is a piece of the text held by a Section title, a Paragraph, or a
-// List item. Block parsing leaves that text as is; Inlines splits it.
-type Inline interface {
-	inline()
+// List item. Block parsing leaves that text as is; Inlines splits it into
+// plain text, code spans, and links.
+//
+// It is a struct rather than an interface: a document is mostly text and code
+// spans, and a slice of interfaces boxed every one of them on the heap. Links
+// are rare enough to keep behind a pointer, so that a text or code inline
+// stays small.
+type Inline struct {
+	Kind InlineKind
+	Text string // InlineText and InlineCode
+	link *linkData
 }
 
-// Text is plain text.
-type Text string
-
-// Code is the content of a `code` span.
-type Code string
-
-// Link is a [text](url) link. Children hold the parsed text, which may
-// contain code spans but no links.
-type Link struct {
+// linkData is what an InlineLink adds to an Inline.
+type linkData struct {
 	Children []Inline
-	URL      string // as written; resolving it is up to the renderer
+	URL      string
 }
 
-func (Text) inline() {}
-func (Code) inline() {}
-func (Link) inline() {}
+// URL is the target of an InlineLink, and "" otherwise.
+func (in Inline) URL() string {
+	if in.link == nil {
+		return ""
+	}
+	return in.link.URL
+}
 
-// Inlines splits s into Text, Code, and Link.
+// Children are the inlines inside an InlineLink, and nil otherwise.
+func (in Inline) Children() []Inline {
+	if in.link == nil {
+		return nil
+	}
+	return in.link.Children
+}
+
+// Text returns plain text.
+func Text(s string) Inline { return Inline{Kind: InlineText, Text: s} }
+
+// Code returns the content of a `code` span.
+func Code(s string) Inline { return Inline{Kind: InlineCode, Text: s} }
+
+// Link returns a [text](url) link. Children hold the parsed text, which may
+// contain code spans but no links. URL is as written; resolving it is up to
+// the renderer.
+func Link(children []Inline, url string) Inline {
+	return Inline{Kind: InlineLink, link: &linkData{Children: children, URL: url}}
+}
+
+// Inlines splits s into plain text, code spans, and links.
 //
 // As in CommonMark, a code span opens with a run of backquotes and closes
 // with the next run of the same length, so a span opened by two backquotes
@@ -44,7 +82,10 @@ func Inlines(s string) []Inline {
 }
 
 func inlines(s string, links bool) []Inline {
-	var out []Inline
+	// Every backquote run and every bracket starts at most one node, and the
+	// text around them at most one more each: this upper bound is close
+	// enough to save the repeated growth of the slice.
+	out := make([]Inline, 0, 1+strings.Count(s, "`")+strings.Count(s, "["))
 	text := 0 // start of the plain text not yet emitted
 	i := 0
 	for i < len(s) {
@@ -86,13 +127,17 @@ func inlines(s string, links bool) []Inline {
 			if text < i {
 				out = append(out, Text(s[text:i]))
 			}
-			out = append(out, Link{Children: inlines(label, false), URL: url})
+			out = append(out, Link(inlines(label, false), url))
 			i = end
 			text = i
 		}
 	}
 	if text < len(s) {
 		out = append(out, Text(s[text:]))
+	}
+	if len(out) == 0 {
+		// Keep the nil result the tests and callers expect for no nodes.
+		return nil
 	}
 	return out
 }
