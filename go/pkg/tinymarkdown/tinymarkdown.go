@@ -248,23 +248,35 @@ func parseTable(lines []string) (Table, bool) {
 func cells(line string) []string {
 	line = strings.TrimPrefix(line, "|")
 	var out []string
-	var b strings.Builder
-	for i := 0; i < len(line); i++ {
-		switch {
-		case line[i] == '\\' && i+1 < len(line) && line[i+1] == '|':
-			b.WriteByte('|')
-			i++
-		case line[i] == '|':
-			out = append(out, strings.TrimSpace(b.String()))
-			b.Reset()
-		default:
-			b.WriteByte(line[i])
+	start, i := 0, 0
+	for i < len(line) {
+		j := strings.IndexByte(line[i:], '|')
+		if j < 0 {
+			break
 		}
+		j += i
+		i = j + 1
+		// "\|" is a literal "|", not a separator: a backslash always
+		// escapes the "|" right after it.
+		if j > start && line[j-1] == '\\' {
+			continue
+		}
+		out = append(out, strings.TrimSpace(unescapeCell(line[start:j])))
+		start = i
 	}
-	if rest := strings.TrimSpace(b.String()); rest != "" {
+	if rest := strings.TrimSpace(unescapeCell(line[start:])); rest != "" {
 		out = append(out, rest)
 	}
 	return out
+}
+
+// unescapeCell turns "\|" into "|". It returns s as is when there is no
+// backslash, so the common cell does not allocate.
+func unescapeCell(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+	return strings.ReplaceAll(s, `\|`, "|")
 }
 
 // isDelimiter reports whether c is a delimiter cell: "---", ":---", ":---:",
