@@ -63,6 +63,15 @@
   MoonBit 版でも同じことが起きるかを確かめる。
   - 完了の条件: `make compare` で Go 版と一致したまま、Startup Time と `wrangler tail` の
     `cpuTime` を、今の形と比べて[調査メモ](docs/sketch/ja/moonbit-workers-wasm.md)に記録する。
+- [-] **Go と MoonBit の `pkg/el` と `pkg/tinymarkdown` に profiler をかけて速くする**:
+  profiler で 2 つのパッケージの重いところを見て、確保と走査を直す。まず Go 版から
+  （[issue #39](https://github.com/podhmo/html-sandbox/issues/39)）。
+  - [x] Go 版: ベンチを足し、pprof で `tinymarkdown.cells` と `inlines` の走査、
+    タグと属性の文字列連結を直した。`Parse` は 85 µs から 56 µs、描画は 97 µs
+    から 62 µs になり、描画のアロケートは 0 になった
+    （[調査メモ](docs/sketch/ja/profiling.md)）。
+  - [ ] MoonBit 版: 同じ 2 つのパッケージを `moon bench` で見て、Go 版で効いた
+    ところをなぞる。`make compare` で Go 版と一致したままであることを確かめる。
 
 ### Future work
 
