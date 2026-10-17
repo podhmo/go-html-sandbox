@@ -88,13 +88,14 @@ writes it with inline Wasm. See
 From `moonbit/` (`make help` lists the targets). The blog and `pkg/`
 are maintained, and `make test` runs all their tests, including the
 integration test of `pkg/http/wasm` on Node. The modules in `experiments/` are one-off spikes, and
-`make check` only makes sure they still build. To work on one part, run
+`make -s check` only makes sure they still build (the `-s` drops make's
+own echo, leaving the tools' output). To work on one part, run
 moon directly (`moon test -p podhmo/html-sandbox/pkg/http`).
 
 ```sh
 make build    # the blog's Wasm, into _build/wasm-gc/release/build/examples/blog/worker/worker.wasm, and after wasm-opt -Oz, examples/blog/cloudflare/build/app.wasm
 make test     # moon test, and the integration test of pkg/http/wasm on Node through adapter.mjs
-make check    # before every commit: make test, moon fmt --check, moon check (wasm-gc, native, and in experiments/), moon info
+make -s check # before every commit: make test, moon fmt --check, moon check (wasm-gc, native, and in experiments/), moon info
 ```
 
 The blog's `worker`, `http/wasm`, and `http/wasm/integration` are built for wasm-gc only
@@ -110,7 +111,7 @@ posts into `posts/embedded.mbt`, and `TODO.md` and `docs/**/*.md` into
 the script when a post or a file directly in `docs/` is added or removed,
 or `TODO.md` is edited, not when a post or document is edited or a file
 in a subdirectory of `docs/` changes. `make build`, `make test`, and
-`make check` run it every time (`make embed` alone), so use them after
+`make -s check` run it every time (`make embed` alone), so use them after
 editing a post or a document.
 
 Needs `moon` and `moon-wasm-opt` (binaryen's `wasm-opt`, installed with
