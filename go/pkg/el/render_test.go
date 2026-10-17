@@ -61,7 +61,7 @@ func TestRenderUnknownNode(t *testing.T) {
 
 type failWriter struct{}
 
-func (failWriter) Write([]byte) (int, error) { return 0, errors.New("boom") }
+func (failWriter) WriteString(string) (int, error) { return 0, errors.New("boom") }
 
 func TestRenderPropagatesWriteError(t *testing.T) {
 	if err := Render(failWriter{}, El(P, Text("x")), HTMLRenderer{}); err == nil {

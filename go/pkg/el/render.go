@@ -5,20 +5,27 @@ import (
 	"io"
 )
 
+// Writer is where a Renderer writes. Renderers only ever write strings, so
+// they take an io.StringWriter rather than an io.Writer: io.WriteString is
+// not inlined and pays a type assertion for every piece written, which is
+// most of what a render does. bytes.Buffer, strings.Builder, and bufio.Writer
+// are Writers; wrap anything else that is only an io.Writer, such as os.File.
+type Writer = io.StringWriter
+
 // Renderer writes nodes in some output format. Render dispatches each node
 // to the matching method; ElementNode implementations call Render again for
 // their children.
 type Renderer interface {
-	Text(w io.Writer, n TextNode) error
-	Raw(w io.Writer, n RawNode) error
-	Element(w io.Writer, n ElementNode) error
-	Attr(w io.Writer, n AttrNode) error
-	BoolAttr(w io.Writer, n BoolAttrNode) error
+	Text(w Writer, n TextNode) error
+	Raw(w Writer, n RawNode) error
+	Element(w Writer, n ElementNode) error
+	Attr(w Writer, n AttrNode) error
+	BoolAttr(w Writer, n BoolAttrNode) error
 }
 
 // Render writes n to w using r. This is the only place that switches on
 // node types.
-func Render(w io.Writer, n Node, r Renderer) error {
+func Render(w Writer, n Node, r Renderer) error {
 	switch n := n.(type) {
 	case TextNode:
 		return r.Text(w, n)
@@ -56,22 +63,22 @@ var voidElements = map[Tag]bool{
 // HTMLRenderer writes HTML5. The zero value is ready to use.
 type HTMLRenderer struct{}
 
-func (HTMLRenderer) Text(w io.Writer, n TextNode) error {
+func (HTMLRenderer) Text(w Writer, n TextNode) error {
 	return writeEscaped(w, string(n))
 }
 
-func (HTMLRenderer) Raw(w io.Writer, n RawNode) error {
-	_, err := io.WriteString(w, string(n))
+func (HTMLRenderer) Raw(w Writer, n RawNode) error {
+	_, err := w.WriteString(string(n))
 	return err
 }
 
-func (r HTMLRenderer) Element(w io.Writer, n ElementNode) error {
-	// The tag is written in pieces rather than concatenated: io.WriteString
-	// avoids the allocation that "<"+name+">" would make for every element.
-	if _, err := io.WriteString(w, "<"); err != nil {
+func (r HTMLRenderer) Element(w Writer, n ElementNode) error {
+	// The tag is written in pieces rather than concatenated: a concatenation
+	// would allocate for every element.
+	if _, err := w.WriteString("<"); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string(n.Name)); err != nil {
+	if _, err := w.WriteString(string(n.Name)); err != nil {
 		return err
 	}
 	for _, c := range n.Children {
@@ -81,7 +88,7 @@ func (r HTMLRenderer) Element(w io.Writer, n ElementNode) error {
 			}
 		}
 	}
-	if _, err := io.WriteString(w, ">"); err != nil {
+	if _, err := w.WriteString(">"); err != nil {
 		return err
 	}
 	if voidElements[n.Name] {
@@ -94,37 +101,37 @@ func (r HTMLRenderer) Element(w io.Writer, n ElementNode) error {
 			}
 		}
 	}
-	if _, err := io.WriteString(w, "</"); err != nil {
+	if _, err := w.WriteString("</"); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string(n.Name)); err != nil {
+	if _, err := w.WriteString(string(n.Name)); err != nil {
 		return err
 	}
-	_, err := io.WriteString(w, ">")
+	_, err := w.WriteString(">")
 	return err
 }
 
-func (HTMLRenderer) Attr(w io.Writer, n AttrNode) error {
-	if _, err := io.WriteString(w, " "); err != nil {
+func (HTMLRenderer) Attr(w Writer, n AttrNode) error {
+	if _, err := w.WriteString(" "); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string(n.Name)); err != nil {
+	if _, err := w.WriteString(string(n.Name)); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, `="`); err != nil {
+	if _, err := w.WriteString(`="`); err != nil {
 		return err
 	}
 	if err := writeEscaped(w, n.Value); err != nil {
 		return err
 	}
-	_, err := io.WriteString(w, `"`)
+	_, err := w.WriteString(`"`)
 	return err
 }
 
 // writeEscaped writes s to w with the characters html.EscapeString escapes,
 // using the same replacements, but straight to w: no buffer and no string
 // is built for every value that needs escaping.
-func writeEscaped(w io.Writer, s string) error {
+func writeEscaped(w Writer, s string) error {
 	last := 0
 	for i := 0; i < len(s); i++ {
 		var repl string
@@ -142,22 +149,24 @@ func writeEscaped(w io.Writer, s string) error {
 		default:
 			continue
 		}
-		if _, err := io.WriteString(w, s[last:i]); err != nil {
+		if _, err := w.WriteString(s[last:i]); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(w, repl); err != nil {
+		if _, err := w.WriteString(repl); err != nil {
 			return err
 		}
 		last = i + 1
 	}
-	if _, err := io.WriteString(w, s[last:]); err != nil {
-		return err
-	}
-	return nil
+	_, err := w.WriteString(s[last:])
+	return err
 }
 
-func (HTMLRenderer) BoolAttr(w io.Writer, n BoolAttrNode) error {
-	_, err := io.WriteString(w, " "+string(n))
+func (HTMLRenderer) BoolAttr(w Writer, n BoolAttrNode) error {
+	// Written in two pieces: " "+string(n) would allocate.
+	if _, err := w.WriteString(" "); err != nil {
+		return err
+	}
+	_, err := w.WriteString(string(n))
 	return err
 }
 
@@ -168,14 +177,14 @@ func (HTMLRenderer) BoolAttr(w io.Writer, n BoolAttrNode) error {
 // The zero value is ready to use.
 type PlainRenderer struct{}
 
-func (PlainRenderer) Text(w io.Writer, n TextNode) error {
-	_, err := io.WriteString(w, string(n))
+func (PlainRenderer) Text(w Writer, n TextNode) error {
+	_, err := w.WriteString(string(n))
 	return err
 }
 
-func (PlainRenderer) Raw(io.Writer, RawNode) error { return nil }
+func (PlainRenderer) Raw(Writer, RawNode) error { return nil }
 
-func (r PlainRenderer) Element(w io.Writer, n ElementNode) error {
+func (r PlainRenderer) Element(w Writer, n ElementNode) error {
 	lw, ok := w.(*lineWriter)
 	if !ok {
 		lw = &lineWriter{w: w}
@@ -197,9 +206,9 @@ func (r PlainRenderer) Element(w io.Writer, n ElementNode) error {
 	return nil
 }
 
-func (PlainRenderer) Attr(io.Writer, AttrNode) error { return nil }
+func (PlainRenderer) Attr(Writer, AttrNode) error { return nil }
 
-func (PlainRenderer) BoolAttr(io.Writer, BoolAttrNode) error { return nil }
+func (PlainRenderer) BoolAttr(Writer, BoolAttrNode) error { return nil }
 
 // blockElements are put on their own lines by PlainRenderer.
 var blockElements = map[Tag]bool{
@@ -216,14 +225,14 @@ var blockElements = map[Tag]bool{
 // lineWriter remembers the last byte written so that breakLine never emits
 // a blank line or a leading newline.
 type lineWriter struct {
-	w    io.Writer
+	w    Writer
 	last byte // 0 until something is written
 }
 
-func (lw *lineWriter) Write(p []byte) (int, error) {
-	n, err := lw.w.Write(p)
+func (lw *lineWriter) WriteString(s string) (int, error) {
+	n, err := lw.w.WriteString(s)
 	if n > 0 {
-		lw.last = p[n-1]
+		lw.last = s[n-1]
 	}
 	return n, err
 }
@@ -232,6 +241,6 @@ func (lw *lineWriter) breakLine() error {
 	if lw.last == 0 || lw.last == '\n' {
 		return nil
 	}
-	_, err := lw.Write([]byte{'\n'})
+	_, err := lw.WriteString("\n")
 	return err
 }

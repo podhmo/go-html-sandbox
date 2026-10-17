@@ -9,7 +9,6 @@
 package picoel
 
 import (
-	"io"
 	"time"
 
 	"github.com/podhmo/html-sandbox/go/pkg/el"
@@ -18,13 +17,14 @@ import (
 // Aliases so that callers can render pages without importing pkg/el.
 type (
 	Node          = el.Node
+	Writer        = el.Writer
 	Renderer      = el.Renderer
 	HTMLRenderer  = el.HTMLRenderer
 	PlainRenderer = el.PlainRenderer
 )
 
 // Render writes n to w using r.
-func Render(w io.Writer, n Node, r Renderer) error {
+func Render(w Writer, n Node, r Renderer) error {
 	return el.Render(w, n, r)
 }
 
