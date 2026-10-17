@@ -73,6 +73,9 @@
   - [ ] Go 版（実験）: API を変えて `Inline` をインターフェースから構造体にし、
     `Inlines` の確保を減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling.md)の
     追記に記録する。マージするかは未定で、`go-aggressive-tinymarkdown` の枝に置く。
+  - [ ] Go 版（実験）: ライターを `io.StringWriter` にして `io.WriteString` を外し、
+    描画の CPU を 20% 減らす。速くなったかを[調査メモ](docs/sketch/ja/profiling.md)の
+    追記に記録する。マージするかは未定で、`go-aggressive-el` の枝に置く。
   - [ ] MoonBit 版: 同じ 2 つのパッケージを `moon bench` で見て、Go 版で効いた
     ところをなぞる。`make compare` で Go 版と一致したままであることを確かめる。
 

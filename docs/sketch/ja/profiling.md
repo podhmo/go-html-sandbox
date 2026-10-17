@@ -65,7 +65,24 @@ go tool pprof -list 'tinymarkdown.inlines' cpu.out
 - 出力は変えていない（実サーバーの 11 ページで diff なし）。
 - `BenchmarkParse` の残りは `scan` の行ごとの蓄積（`strings.Join` とスライス）で、こちらは触っていない。
 
+## 追記（実験）: `el` のライターを `io.Writer` から `io.StringWriter` にする
+
+`el` の CPU プロファイルでは `io.WriteString` が 30% を占めていた。これはインラインされない関数で、呼ぶたびに `w.(io.StringWriter)` の型アサーションをする。描画は短い断片を数多く書くので、この 1 回ぶんが積み上がる。そこで、`Render` と `Renderer` の受け取るライターを `io.Writer` から `io.StringWriter`（`el.Writer` という別名。`bytes.Buffer` も `strings.Builder` も `bufio.Writer` もこれを満たす）に変え、`io.WriteString(w, s)` を `w.WriteString(s)` にした。
+
+- ついでに、`BoolAttr` が `" "+string(n)` を連結していた（値なし属性ごとに文字列を 1 つ作る）。`" "` と本体を分けて書くようにした。
+- `voidElements` と `blockElements` の map 引き（プロファイルで 16%）を `switch` にしたところ、**遅く**なった（`BenchmarkRenderHTML` で 52.0 µs → 55.9 µs）。短い文字列を何度も比べる `switch` より、AES ハッシュの効く map のほうが速い。map に戻した。
+- 呼び出し側は `pkg/picoel` の別名に `Writer` を足し、`render_test.go` の `failWriter` を `WriteString` にするだけで済んだ。`os.File` のように `io.StringWriter` でないものへ書くには `bufio.Writer` などで包む必要がある（API の変更点）。
+
+| | 前（PR #43 / B） | 後 |
+| --- | --- | --- |
+| `BenchmarkRenderHTML` | 64.2 µs/op、0 B/op、0 allocs/op | 51.3 µs/op、0 B/op、0 allocs/op |
+
+- 20% 減った。アロケートは前から 0 のまま。
+- 残る上位は `writeEscaped` の走査（30%）と、`bytes.Buffer` への写し（`memmove`、11%）。`writeEscaped` は 5 文字を 1 バイトずつ見ていて、そこは触っていない。
+- 出力は変えていない（実サーバーの 11 ページで diff なし、`make check` が通る）。`make compare` は MoonBit の道具立てが要るのでこの環境では回していないが、Go 側の出力は同じ。
+
 ## 次にやること
 
 - MoonBit 版の `pkg/el` と `pkg/tinymarkdown` を同じ目で見る（`moon bench`。関数レベルの内訳が要れば js ビルドを Node の `--cpu-prof` で）。
 - `Inlines` のアロケートは上の追記で減らした（`Inline` を構造体にする API 変更）。残るのは `Parse` の `scan` が行ごとに蓄積しているところ。
+- `el` の残りは `writeEscaped` の 1 バイトずつの走査。`io.WriteString` は上の追記で外した。
