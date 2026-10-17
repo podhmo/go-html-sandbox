@@ -46,13 +46,23 @@ func Inlines(s string) []Inline {
 func inlines(s string, links bool) []Inline {
 	var out []Inline
 	text := 0 // start of the plain text not yet emitted
-	emit := func(i int, in Inline) {
-		if text < i {
-			out = append(out, Text(s[text:i]))
+	i := 0
+	for i < len(s) {
+		// Jump to the next backquote, or bracket, rather than walking
+		// every byte: everything before it is plain text.
+		j := len(s)
+		if b := strings.IndexByte(s[i:], '`'); b >= 0 && i+b < j {
+			j = i + b
 		}
-		out = append(out, in)
-	}
-	for i := 0; i < len(s); {
+		if links {
+			if b := strings.IndexByte(s[i:], '['); b >= 0 && i+b < j {
+				j = i + b
+			}
+		}
+		if j == len(s) {
+			break
+		}
+		i = j
 		switch {
 		case s[i] == '`':
 			n := backquotes(s, i)
@@ -61,20 +71,24 @@ func inlines(s string, links bool) []Inline {
 				i += n
 				continue
 			}
-			emit(i, Code(codeText(s[i+n:end])))
+			if text < i {
+				out = append(out, Text(s[text:i]))
+			}
+			out = append(out, Code(codeText(s[i+n:end])))
 			i = end + n
 			text = i
-		case s[i] == '[' && links:
+		case links && s[i] == '[':
 			label, url, end, ok := link(s, i)
 			if !ok {
 				i++
 				continue
 			}
-			emit(i, Link{Children: inlines(label, false), URL: url})
+			if text < i {
+				out = append(out, Text(s[text:i]))
+			}
+			out = append(out, Link{Children: inlines(label, false), URL: url})
 			i = end
 			text = i
-		default:
-			i++
 		}
 	}
 	if text < len(s) {

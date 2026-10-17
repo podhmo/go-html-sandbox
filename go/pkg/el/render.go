@@ -2,7 +2,6 @@ package el
 
 import (
 	"fmt"
-	"html"
 	"io"
 )
 
@@ -58,8 +57,7 @@ var voidElements = map[Tag]bool{
 type HTMLRenderer struct{}
 
 func (HTMLRenderer) Text(w io.Writer, n TextNode) error {
-	_, err := io.WriteString(w, html.EscapeString(string(n)))
-	return err
+	return writeEscaped(w, string(n))
 }
 
 func (HTMLRenderer) Raw(w io.Writer, n RawNode) error {
@@ -68,7 +66,12 @@ func (HTMLRenderer) Raw(w io.Writer, n RawNode) error {
 }
 
 func (r HTMLRenderer) Element(w io.Writer, n ElementNode) error {
-	if _, err := io.WriteString(w, "<"+string(n.Name)); err != nil {
+	// The tag is written in pieces rather than concatenated: io.WriteString
+	// avoids the allocation that "<"+name+">" would make for every element.
+	if _, err := io.WriteString(w, "<"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string(n.Name)); err != nil {
 		return err
 	}
 	for _, c := range n.Children {
@@ -91,13 +94,66 @@ func (r HTMLRenderer) Element(w io.Writer, n ElementNode) error {
 			}
 		}
 	}
-	_, err := io.WriteString(w, "</"+string(n.Name)+">")
+	if _, err := io.WriteString(w, "</"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string(n.Name)); err != nil {
+		return err
+	}
+	_, err := io.WriteString(w, ">")
 	return err
 }
 
 func (HTMLRenderer) Attr(w io.Writer, n AttrNode) error {
-	_, err := io.WriteString(w, " "+string(n.Name)+`="`+html.EscapeString(n.Value)+`"`)
+	if _, err := io.WriteString(w, " "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string(n.Name)); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, `="`); err != nil {
+		return err
+	}
+	if err := writeEscaped(w, n.Value); err != nil {
+		return err
+	}
+	_, err := io.WriteString(w, `"`)
 	return err
+}
+
+// writeEscaped writes s to w with the characters html.EscapeString escapes,
+// using the same replacements, but straight to w: no buffer and no string
+// is built for every value that needs escaping.
+func writeEscaped(w io.Writer, s string) error {
+	last := 0
+	for i := 0; i < len(s); i++ {
+		var repl string
+		switch s[i] {
+		case '&':
+			repl = "&amp;"
+		case '\'':
+			repl = "&#39;"
+		case '<':
+			repl = "&lt;"
+		case '>':
+			repl = "&gt;"
+		case '"':
+			repl = "&#34;"
+		default:
+			continue
+		}
+		if _, err := io.WriteString(w, s[last:i]); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(w, repl); err != nil {
+			return err
+		}
+		last = i + 1
+	}
+	if _, err := io.WriteString(w, s[last:]); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (HTMLRenderer) BoolAttr(w io.Writer, n BoolAttrNode) error {
